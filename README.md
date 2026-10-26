@@ -1,4 +1,4 @@
-# Learning Management System (LMS) - Phase 1 Foundation
+# Learning Management System (LMS)
 
 A scalable and modern Learning Management System (LMS) platform designed for courses, interactive learning, and student-instructor collaboration.
 
