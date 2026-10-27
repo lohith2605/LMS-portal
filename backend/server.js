@@ -10,6 +10,12 @@ const cookieParser = require('cookie-parser');
 const requestLogger = require('./middleware/requestLogger');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const instructorRoutes = require('./routes/instructorRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+const certificateRoutes = require('./routes/certificateRoutes');
 const { logger } = require('./utils/logger');
 
 const app = express();
@@ -59,6 +65,13 @@ app.use(cookieParser());
 // 3. Application Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/instructor', instructorRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/certificates', certificateRoutes);
+
 
 // Root route
 app.get('/', (req, res) => {

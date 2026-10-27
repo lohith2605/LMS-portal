@@ -13,6 +13,9 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 import StudentDashboard from './pages/StudentDashboard';
 import InstructorDashboard from './pages/InstructorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import CourseDetailsPage from './pages/CourseDetailsPage';
+import CoursePlayerPage from './pages/CoursePlayerPage';
+import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function DashboardRedirect() {
@@ -51,6 +54,21 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+      {/* Course Discovery & Player Pages */}
+      <Route path="/courses/:idOrSlug" element={<CourseDetailsPage />} />
+      <Route
+        path="/courses/:idOrSlug/learn"
+        element={
+          <ProtectedRoute>
+            <CoursePlayerPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Public Certificate Verification */}
+      <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
+      <Route path="/certificates/:certificateId" element={<CertificateVerifyPage />} />
 
       {/* Role-Adaptive Dashboard Dispatcher */}
       <Route

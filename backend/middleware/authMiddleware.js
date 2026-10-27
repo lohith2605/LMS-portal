@@ -102,7 +102,40 @@ const restrictTo = (...allowedRoles) => {
   };
 };
 
+const optionalProtect = async (req, res, next) => {
+  try {
+    let token = null;
+    if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
+    } else if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer ')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return next();
+    }
+
+    const secret = process.env.JWT_SECRET || 'learnspace_development_jwt_secret_fallback_key';
+    const decoded = jwt.verify(token, secret);
+    const currentUser = await User.findById(decoded.id);
+
+    if (currentUser && currentUser.accountStatus === 'active') {
+      req.user = sanitizeUser(currentUser);
+      req.userDoc = currentUser;
+    }
+    next();
+  } catch (error) {
+    // Fail open for optional auth
+    next();
+  }
+};
+
 module.exports = {
   protect,
   restrictTo,
+  optionalProtect,
 };
+
