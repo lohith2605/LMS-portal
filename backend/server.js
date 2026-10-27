@@ -6,18 +6,46 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
+const cookieParser = require('cookie-parser');
 const requestLogger = require('./middleware/requestLogger');
 const healthRoutes = require('./routes/healthRoutes');
+const authRoutes = require('./routes/authRoutes');
 const { logger } = require('./utils/logger');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const rawClientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : [];
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+];
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...rawClientUrls]));
 
 // 2. Global Middleware
 app.use(cors({
-  origin: CLIENT_URL,
+  origin: (origin, callback) => {
+    // Allow non-browser requests or same-origin
+    if (!origin) return callback(null, true);
+
+    // In development mode, allow any localhost or 127.0.0.1 port (e.g., Vite on 5174)
+    if (NODE_ENV !== 'production') {
+      const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      if (isLocalhost) {
+        return callback(null, true);
+      }
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(null, false);
+  },
   credentials: true,
 }));
 
@@ -26,9 +54,11 @@ app.use(requestLogger);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // 3. Application Routes
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -68,6 +98,22 @@ const startServer = async () => {
       const dbHost = mongoose.connection.host || 'MongoDB Atlas';
       const isDbConnected = mongoose.connection.readyState === 1;
 
+      const registeredEndpoints = [
+        { method: 'POST', path: '/api/auth/register', access: 'Public, Rate-limited' },
+        { method: 'POST', path: '/api/auth/login', access: 'Public, Rate-limited' },
+        { method: 'POST', path: '/api/auth/logout', access: 'Authenticated' },
+        { method: 'GET', path: '/api/auth/me', access: 'Authenticated Session' },
+        { method: 'POST', path: '/api/auth/forgot-password', access: 'Public, Rate-limited' },
+        { method: 'POST', path: '/api/auth/reset-password', access: 'Public, Rate-limited' },
+        { method: 'PATCH', path: '/api/auth/change-password', access: 'Authenticated' },
+        { method: 'POST', path: '/api/auth/verify-email', access: 'Public' },
+        { method: 'POST', path: '/api/auth/resend-verification', access: 'Authenticated' },
+        { method: 'GET', path: '/api/auth/student-only', access: 'Student, Admin' },
+        { method: 'GET', path: '/api/auth/instructor-only', access: 'Instructor, Admin' },
+        { method: 'GET', path: '/api/auth/admin-only', access: 'Admin Only' },
+        { method: 'GET', path: '/api/health', access: 'Public Health Check' },
+      ];
+
       // Display UTSAV-style professional banner
       logger.banner({
         appName: 'LMS — Learning Management System API',
@@ -78,6 +124,7 @@ const startServer = async () => {
         dbStatus: isDbConnected ? 'Connected' : 'Disconnected',
         dbHost: `MongoDB Atlas (${dbHost})`,
         isDbConnected,
+        endpoints: registeredEndpoints,
       });
     });
 
