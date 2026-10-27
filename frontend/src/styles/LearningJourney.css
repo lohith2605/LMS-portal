@@ -1,0 +1,256 @@
+/* ==========================================================================
+   The Learning Journey Styles
+   Connected Progression Pipeline (Horizontal on Desktop, Vertical on Mobile)
+   ========================================================================== */
+
+.journey-section {
+  padding-top: var(--space-20);
+  padding-bottom: var(--space-24);
+  background-color: var(--bg-page);
+  position: relative;
+}
+
+.journey-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto var(--space-12);
+}
+
+.journey-header .section-eyebrow {
+  justify-content: center;
+}
+
+.journey-header .section-description {
+  margin: 0 auto;
+}
+
+/* Progression Stepper Track */
+.journey-stepper {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+  position: relative;
+  margin-bottom: var(--space-10);
+}
+
+/* Horizontal connecting line behind the steps */
+.journey-stepper::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background-color: var(--border-subtle);
+  z-index: 1;
+}
+
+.journey-step-item {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0 var(--space-2);
+  transition: all var(--transition-fast);
+}
+
+/* Step Node Circle */
+.step-node {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-fast);
+}
+
+.journey-step-item:hover .step-node {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.journey-step-item.active .step-node {
+  background-color: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-sm);
+}
+
+.step-number-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-blue-dark);
+  margin-bottom: 2px;
+}
+
+.step-label {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin-bottom: var(--space-1);
+}
+
+.step-desc-short {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 190px;
+}
+
+/* Interactive Stage Showcase Banner */
+.journey-preview-panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.journey-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.journey-panel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent-blue-dark);
+}
+
+.journey-panel-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.journey-panel-body {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.journey-panel-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.journey-point-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.journey-panel-visual {
+  background-color: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.panel-mini-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.panel-mini-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-sage-pale);
+  color: var(--accent-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.panel-mini-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.panel-mini-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+  .journey-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: flex-start;
+  }
+
+  .journey-stepper::before {
+    left: 24px;
+    top: 24px;
+    bottom: 24px;
+    width: 2px;
+    height: auto;
+  }
+
+  .journey-step-item {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+    gap: var(--space-4);
+    width: 100%;
+    padding: var(--space-2) 0;
+  }
+
+  .step-node {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .step-desc-short {
+    max-width: 100%;
+  }
+
+  .journey-preview-panel {
+    grid-template-columns: 1fr;
+    padding: var(--space-6);
+  }
+}

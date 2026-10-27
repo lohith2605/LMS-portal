@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --color-page: #F2F2F0;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F8F8F6;
+  --color-surface-elevated: #FFFFFF;
+
+  --color-primary: #171717;
+  --color-secondary: #686868;
+  --color-tertiary: #8A8A86;
+
+  --color-accent-blue: #637D91;
+  --color-accent-blue-dark: #4A6376;
+  --color-accent-blue-pale: #E9EFF2;
+
+  --color-accent-sage: #8E9F86;
+  --color-accent-sage-dark: #5F7158;
+  --color-accent-sage-soft: #A8B5A0;
+  --color-accent-sage-pale: #EDF0E9;
+
+  --color-border-subtle: #E4E4E1;
+  --color-border-medium: #D5D5D0;
+  --color-border-focus: #171717;
+
+  --shadow-xs: 0 1px 2px rgba(23, 23, 23, 0.04);
+  --shadow-sm: 0 2px 5px rgba(23, 23, 23, 0.04), 0 1px 2px rgba(23, 23, 23, 0.02);
+  --shadow-card: 0 3px 10px rgba(23, 23, 23, 0.03), 0 1px 3px rgba(23, 23, 23, 0.02);
+  --shadow-elevated: 0 14px 30px -6px rgba(23, 23, 23, 0.07), 0 4px 10px -2px rgba(23, 23, 23, 0.03);
+  --shadow-preview: 0 20px 48px -12px rgba(23, 23, 23, 0.10), 0 2px 6px rgba(23, 23, 23, 0.03);
+}
+
+:root {
+  --bg-page: #F2F2F0;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #F8F8F6;
+  --bg-surface-elevated: #FFFFFF;
+  
+  --text-primary: #171717;
+  --text-secondary: #686868;
+  --text-tertiary: #8A8A86;
+  --text-inverse: #FFFFFF;
+
+  --accent-blue: #637D91;
+  --accent-blue-dark: #4A6376;
+  --accent-blue-pale: #E9EFF2;
+  
+  --accent-sage: #8E9F86;
+  --accent-sage-dark: #5F7158;
+  --accent-sage-soft: #A8B5A0;
+  --accent-sage-pale: #EDF0E9;
+
+  --border-subtle: #E4E4E1;
+  --border-medium: #D5D5D0;
+  --border-focus: #171717;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --container-max: 1240px;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Keyframe Animations for Drawers and Modals */
+@keyframes drawerSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
