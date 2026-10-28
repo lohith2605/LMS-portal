@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/useAuth';
+import { useNotifications } from '../context/useNotifications';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import MobileNavigation from '../components/dashboard/MobileNavigation';
@@ -15,6 +16,7 @@ export default function DashboardLayout({
   children,
 }) {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
@@ -43,7 +45,7 @@ export default function DashboardLayout({
           logout={logout}
           onOpenMobileNav={() => setMobileNavOpen(true)}
           onOpenNotifications={() => setNotificationsOpen(true)}
-          unreadCount={announcements?.length || 0}
+          unreadCount={unreadCount}
           onOpenPasswordModal={() => setPasswordModalOpen(true)}
         />
 

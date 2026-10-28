@@ -57,16 +57,21 @@ export default function DashboardHeader({
 
       {/* Right: Actions & Profile */}
       <div className="flex items-center gap-3">
-        {/* Notification Trigger */}
+        {/* Notification Trigger with Badge */}
         <button
           type="button"
           onClick={onOpenNotifications}
-          aria-label="View announcements"
+          aria-label={unreadCount > 0 ? `View notifications (${unreadCount} unread)` : 'View notifications'}
           className="relative p-2 rounded-xl border border-border-subtle bg-white text-secondary hover:text-primary transition-colors cursor-pointer"
         >
           <Bell size={16} />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent-sage-dark animate-pulse" />
+            <span
+              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-[10px] font-bold text-white flex items-center justify-center leading-none shadow-xs"
+              aria-label={`${unreadCount} unread notifications`}
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
           )}
         </button>
 

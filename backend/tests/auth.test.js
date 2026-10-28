@@ -57,6 +57,15 @@ const createMockUserDoc = (data) => {
       this.passwordResetExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
       return resetToken;
     },
+    createEmailVerificationToken() {
+      const verifyToken = crypto.randomBytes(32).toString('hex');
+      this.emailVerificationTokenHash = crypto
+        .createHash('sha256')
+        .update(verifyToken)
+        .digest('hex');
+      this.emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      return verifyToken;
+    },
     async save() {
       // If password changed, rehash
       if (this._newPassword) {
@@ -120,6 +129,12 @@ test.beforeEach(() => {
       found = mockUsers.find((u) => {
         const matchesHash = u.passwordResetTokenHash === query.passwordResetTokenHash;
         const notExpired = u.passwordResetExpiresAt && u.passwordResetExpiresAt > (query.passwordResetExpiresAt?.$gt || new Date(0));
+        return matchesHash && notExpired;
+      });
+    } else if (query.emailVerificationTokenHash) {
+      found = mockUsers.find((u) => {
+        const matchesHash = u.emailVerificationTokenHash === query.emailVerificationTokenHash;
+        const notExpired = u.emailVerificationExpiresAt && u.emailVerificationExpiresAt > (query.emailVerificationExpiresAt?.$gt || new Date(0));
         return matchesHash && notExpired;
       });
     }
@@ -540,4 +555,124 @@ test('20. Change password verifies current password before updating', async () =
 
   assert.strictEqual(successRes.status, 200);
   assert.ok(successRes.body.message.includes('updated successfully'));
+});
+
+// ============================================================================
+// 21. Email Verification with valid token
+// ============================================================================
+test('21. Valid email verification token marks user as emailVerified', async () => {
+  const user = createMockUserDoc({
+    name: 'Unverified Student',
+    email: 'unverified@example.com',
+    password: 'Password123',
+    emailVerified: false,
+  });
+  mockUsers.push(user);
+
+  const rawToken = user.createEmailVerificationToken();
+
+  const res = await request(app)
+    .post('/api/auth/verify-email')
+    .send({ token: rawToken });
+
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.user.emailVerified, true);
+  assert.strictEqual(user.emailVerified, true);
+});
+
+// ============================================================================
+// 22. Verification token cannot be reused (single-use)
+// ============================================================================
+test('22. Email verification token cannot be reused', async () => {
+  const user = createMockUserDoc({
+    name: 'Single Use Test',
+    email: 'singleuse@example.com',
+    password: 'Password123',
+    emailVerified: false,
+  });
+  mockUsers.push(user);
+
+  const rawToken = user.createEmailVerificationToken();
+
+  // First verification succeeds
+  const res1 = await request(app)
+    .post('/api/auth/verify-email')
+    .send({ token: rawToken });
+  assert.strictEqual(res1.status, 200);
+
+  // Second verification with same token fails
+  const res2 = await request(app)
+    .post('/api/auth/verify-email')
+    .send({ token: rawToken });
+  assert.strictEqual(res2.status, 400);
+  assert.ok(res2.body.error.includes('invalid or has expired'));
+});
+
+// ============================================================================
+// 23. Invalid or expired verification token rejected
+// ============================================================================
+test('23. Invalid or expired email verification token is rejected (400)', async () => {
+  const res = await request(app)
+    .post('/api/auth/verify-email')
+    .send({ token: 'nonexistent_token_hex_123456789' });
+
+  assert.strictEqual(res.status, 400);
+  assert.ok(res.body.error.includes('invalid or has expired'));
+});
+
+// ============================================================================
+// 24. Missing verification token rejected
+// ============================================================================
+test('24. Missing verification token returns 400 Bad Request', async () => {
+  const res = await request(app)
+    .post('/api/auth/verify-email')
+    .send({});
+
+  assert.strictEqual(res.status, 400);
+  assert.ok(res.body.error.includes('token is required'));
+});
+
+// ============================================================================
+// 25. Authenticated user can request resend of verification email
+// ============================================================================
+test('25. Authenticated user can request resend of verification email', async () => {
+  const user = createMockUserDoc({
+    name: 'Needs Resend',
+    email: 'resend@example.com',
+    password: 'Password123',
+    emailVerified: false,
+  });
+  mockUsers.push(user);
+
+  const token = jwt.sign({ id: user._id, role: 'student' }, TEST_SECRET, { expiresIn: '1h' });
+
+  const res = await request(app)
+    .post('/api/auth/resend-verification')
+    .set('Cookie', [`jwt=${token}`]);
+
+  assert.strictEqual(res.status, 200);
+  assert.ok(res.body.message.includes('verification email has been sent'));
+  assert.ok(user.emailVerificationTokenHash);
+});
+
+// ============================================================================
+// 26. Already verified user cannot request resend
+// ============================================================================
+test('26. Already verified user is rejected when requesting resend', async () => {
+  const user = createMockUserDoc({
+    name: 'Already Verified',
+    email: 'verified@example.com',
+    password: 'Password123',
+    emailVerified: true,
+  });
+  mockUsers.push(user);
+
+  const token = jwt.sign({ id: user._id, role: 'student' }, TEST_SECRET, { expiresIn: '1h' });
+
+  const res = await request(app)
+    .post('/api/auth/resend-verification')
+    .set('Cookie', [`jwt=${token}`]);
+
+  assert.strictEqual(res.status, 400);
+  assert.ok(res.body.error.includes('already verified'));
 });

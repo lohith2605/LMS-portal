@@ -6,6 +6,7 @@ const QuizAttempt = require('../models/QuizAttempt');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
 const { logger } = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 /**
  * Helper to resolve course and active enrollment for student
@@ -248,6 +249,20 @@ const claimCertificate = async (req, res) => {
     enrollment.certificateId = certificateId;
     enrollment.status = 'completed';
     await enrollment.save();
+
+    // Dispatch in-app notification for earned certificate
+    try {
+      await notificationService.createNotification({
+        recipient: req.user.id,
+        type: 'certificate_issued',
+        title: 'Certificate of Completion Issued!',
+        message: `Congratulations! Your certificate for "${course.title}" is ready to view.`,
+        link: `/verify-certificate/${certificateId}`,
+        metadata: { certificateId, courseId: course._id },
+      });
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch certificate notification: ${notifErr.message}`);
+    }
 
     logger.success(
       `Certificate ${certificateId} issued to ${req.user.email} for course "${course.title}"`

@@ -94,6 +94,10 @@ export const authService = {
     const res = await api.post('/auth/verify-email', { token });
     return res.data;
   },
+  resendVerification: async () => {
+    const res = await api.post('/auth/resend-verification');
+    return res.data;
+  },
 };
 
 export const dashboardService = {
@@ -593,6 +597,26 @@ export const discussionService = {
   },
   toggleLockDiscussion: async (id) => {
     const res = await api.patch(`/discussions/${id}/lock`);
+    return res.data;
+  },
+};
+
+
+export const notificationService = {
+  getNotifications: async (params = {}) => {
+    const res = await api.get('/notifications', { params });
+    return res.data;
+  },
+  getUnreadCount: async () => {
+    const res = await api.get('/notifications/unread-count');
+    return res.data;
+  },
+  markAsRead: async (id) => {
+    const res = await api.patch(`/notifications/${id}/read`);
+    return res.data;
+  },
+  markAllAsRead: async () => {
+    const res = await api.patch('/notifications/mark-all-read');
     return res.data;
   },
 };

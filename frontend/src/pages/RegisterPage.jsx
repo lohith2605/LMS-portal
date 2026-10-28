@@ -27,6 +27,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [pendingInstructorNotice, setPendingInstructorNotice] = useState(null);
+  const [registeredStudentNotice, setRegisteredStudentNotice] = useState(null);
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -97,8 +98,10 @@ export default function RegisterPage() {
           res.message || 'Your instructor application has been submitted and is pending administrator review.'
         );
       } else {
-        // Active student session: navigate to dashboard
-        navigate('/student/dashboard', { replace: true });
+        setRegisteredStudentNotice({
+          name: res.user?.name || trimmedName,
+          email: res.user?.email || trimmedEmail,
+        });
       }
     } catch (err) {
       setFormError(err.normalizedMessage || 'Registration failed. Please try again.');
@@ -106,6 +109,42 @@ export default function RegisterPage() {
       setSubmitting(false);
     }
   };
+
+  if (registeredStudentNotice) {
+    return (
+      <AuthLayout
+        eyebrow="WELCOME TO LEARNSPACE"
+        headline="Account created successfully."
+        description="We've sent a verification link to your email address. Verify your account to secure your credentials and unlock all course features."
+        highlights={registerHighlights}
+        panelBadge="Welcome"
+        formTitle="Verify Your Email"
+        formSubtitle="A confirmation email has been dispatched to your inbox."
+      >
+        <div className="py-2 text-center">
+          <div className="w-12 h-12 bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
+            <CheckCircle2 size={24} />
+          </div>
+          <h3 className="text-base font-bold text-[#171717] mb-2">
+            Check your inbox, {registeredStudentNotice.name}
+          </h3>
+          <p className="text-xs text-[#686868] leading-relaxed mb-6">
+            We sent a verification link to <strong className="text-[#171717]">{registeredStudentNotice.email}</strong>. Click the link to complete verification and secure your coursework credentials.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate('/student/dashboard', { replace: true })}
+              className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <span>Continue to Student Workspace</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   if (pendingInstructorNotice) {
     return (

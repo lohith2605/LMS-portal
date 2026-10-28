@@ -205,12 +205,39 @@ test.beforeEach(() => {
     return p;
   };
 
-  Course.find = (query = {}) => {
+  const filterCourseList = (query = {}) => {
     let list = [...mockCourses];
     if (query.status) list = list.filter((c) => c.status === query.status);
     if (query.instructor) list = list.filter((c) => c.instructor.toString() === query.instructor.toString());
     if (query.category) list = list.filter((c) => c.category === query.category);
     if (query.level) list = list.filter((c) => c.level === query.level);
+    if (query.$or && Array.isArray(query.$or)) {
+      list = list.filter((c) => {
+        return query.$or.some((cond) => {
+          if (cond.title && cond.title.$regex) {
+            const re = new RegExp(cond.title.$regex, cond.title.$options || 'i');
+            if (re.test(c.title || '')) return true;
+          }
+          if (cond.summary && cond.summary.$regex) {
+            const re = new RegExp(cond.summary.$regex, cond.summary.$options || 'i');
+            if (re.test(c.summary || '')) return true;
+          }
+          if (cond.description && cond.description.$regex) {
+            const re = new RegExp(cond.description.$regex, cond.description.$options || 'i');
+            if (re.test(c.description || '')) return true;
+          }
+          return false;
+        });
+      });
+    }
+    return list;
+  };
+
+  Course.find = (query = {}) => {
+    let list = filterCourseList(query);
+    let skipVal = 0;
+    let limitVal = list.length;
+    let sortObj = null;
 
     const queryObj = {
       populate: (path) => {
@@ -223,19 +250,36 @@ test.beforeEach(() => {
         });
         return queryObj;
       },
-      sort: () => queryObj,
-      skip: () => queryObj,
-      limit: () => queryObj,
-      lean: () => Promise.resolve(list),
-      then: (resolve) => Promise.resolve(list).then(resolve),
+      sort: (s) => {
+        sortObj = s;
+        return queryObj;
+      },
+      skip: (n) => {
+        skipVal = Math.max(0, n || 0);
+        return queryObj;
+      },
+      limit: (n) => {
+        limitVal = Math.max(0, n || 0);
+        return queryObj;
+      },
+      lean: () => {
+        let res = [...list];
+        if (sortObj) {
+          if (sortObj.title === 1) {
+            res.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+          } else if (sortObj.createdAt === -1) {
+            res.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          }
+        }
+        return Promise.resolve(res.slice(skipVal, skipVal + limitVal));
+      },
+      then: (resolve) => queryObj.lean().then(resolve),
     };
     return queryObj;
   };
 
   Course.countDocuments = (query = {}) => {
-    let list = [...mockCourses];
-    if (query.status) list = list.filter((c) => c.status === query.status);
-    if (query.instructor) list = list.filter((c) => c.instructor.toString() === query.instructor.toString());
+    const list = filterCourseList(query);
     return Promise.resolve(list.length);
   };
 
@@ -576,4 +620,162 @@ test('10. Admin can approve or reject pending courses', async () => {
   assert.strictEqual(rejectRes.statusCode, 200);
   assert.strictEqual(rejectRes.body.course.status, 'rejected');
   assert.strictEqual(rejectRes.body.course.rejectionReason, 'Video audio is distorted in lesson 2.');
+});
+
+test('11. GET /api/courses searches published courses by keyword across title, summary, and description', async () => {
+  const instructor = createMockUser({ name: 'Teacher', email: 'teacher@example.com', role: 'instructor' });
+  createMockCourse({
+    title: 'Modern TypeScript and Node',
+    summary: 'Build robust backend architectures with type safety.',
+    description: 'Deep dive into advanced TypeScript patterns.',
+    category: 'Development',
+    status: 'published',
+    instructor: instructor._id,
+  });
+  createMockCourse({
+    title: 'Figma to UI Components',
+    summary: 'Design systems and accessible interfaces.',
+    description: 'Learn modern design token workflows.',
+    category: 'Design',
+    status: 'published',
+    instructor: instructor._id,
+  });
+  createMockCourse({
+    title: 'Draft Secret Node Course',
+    summary: 'Node internals under construction.',
+    description: 'Not yet ready for learners.',
+    category: 'Development',
+    status: 'draft',
+    instructor: instructor._id,
+  });
+
+  const res = await request(app).get('/api/courses?search=typescript');
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.body.courses.length, 1);
+  assert.strictEqual(res.body.courses[0].title, 'Modern TypeScript and Node');
+  assert.strictEqual(res.body.pagination.total, 1);
+
+  // Search matching summary keyword
+  const summaryRes = await request(app).get('/api/courses?search=interfaces');
+  assert.strictEqual(summaryRes.statusCode, 200);
+  assert.strictEqual(summaryRes.body.courses.length, 1);
+  assert.strictEqual(summaryRes.body.courses[0].title, 'Figma to UI Components');
+});
+
+test('12. GET /api/courses filters courses by category and ignores All', async () => {
+  const instructor = createMockUser({ name: 'Teacher', email: 'teacher@example.com', role: 'instructor' });
+  createMockCourse({
+    title: 'PostgreSQL Database Optimization',
+    category: 'Data',
+    status: 'published',
+    instructor: instructor._id,
+  });
+  createMockCourse({
+    title: 'Product Management Essentials',
+    category: 'Business',
+    status: 'published',
+    instructor: instructor._id,
+  });
+
+  // Filter category Data
+  const dataRes = await request(app).get('/api/courses?category=Data');
+  assert.strictEqual(dataRes.statusCode, 200);
+  assert.strictEqual(dataRes.body.courses.length, 1);
+  assert.strictEqual(dataRes.body.courses[0].category, 'Data');
+
+  // category=All should return all published courses
+  const allRes = await request(app).get('/api/courses?category=All');
+  assert.strictEqual(allRes.statusCode, 200);
+  assert.strictEqual(allRes.body.courses.length, 2);
+});
+
+test('13. GET /api/courses filters courses by level and ignores All', async () => {
+  const instructor = createMockUser({ name: 'Teacher', email: 'teacher@example.com', role: 'instructor' });
+  createMockCourse({
+    title: 'Intro to Python',
+    level: 'Beginner',
+    status: 'published',
+    instructor: instructor._id,
+  });
+  createMockCourse({
+    title: 'Advanced Distributed Systems',
+    level: 'Advanced',
+    status: 'published',
+    instructor: instructor._id,
+  });
+
+  const advRes = await request(app).get('/api/courses?level=Advanced');
+  assert.strictEqual(advRes.statusCode, 200);
+  assert.strictEqual(advRes.body.courses.length, 1);
+  assert.strictEqual(advRes.body.courses[0].level, 'Advanced');
+
+  const allRes = await request(app).get('/api/courses?level=All');
+  assert.strictEqual(allRes.statusCode, 200);
+  assert.strictEqual(allRes.body.courses.length, 2);
+});
+
+test('14. GET /api/courses sorts courses by title and newest', async () => {
+  const instructor = createMockUser({ name: 'Teacher', email: 'teacher@example.com', role: 'instructor' });
+  createMockCourse({
+    title: 'Zebra Testing Track',
+    status: 'published',
+    instructor: instructor._id,
+  });
+  createMockCourse({
+    title: 'Alpha Architecture Track',
+    status: 'published',
+    instructor: instructor._id,
+  });
+
+  const sortRes = await request(app).get('/api/courses?sort=title');
+  assert.strictEqual(sortRes.statusCode, 200);
+  assert.strictEqual(sortRes.body.courses[0].title, 'Alpha Architecture Track');
+  assert.strictEqual(sortRes.body.courses[1].title, 'Zebra Testing Track');
+});
+
+test('15. GET /api/courses enforces bounded pagination', async () => {
+  const instructor = createMockUser({ name: 'Teacher', email: 'teacher@example.com', role: 'instructor' });
+  for (let i = 1; i <= 5; i++) {
+    createMockCourse({
+      title: `Course Number ${i}`,
+      status: 'published',
+      instructor: instructor._id,
+    });
+  }
+
+  // Page 1 with limit 2
+  const p1Res = await request(app).get('/api/courses?page=1&limit=2');
+  assert.strictEqual(p1Res.statusCode, 200);
+  assert.strictEqual(p1Res.body.courses.length, 2);
+  assert.strictEqual(p1Res.body.pagination.page, 1);
+  assert.strictEqual(p1Res.body.pagination.limit, 2);
+  assert.strictEqual(p1Res.body.pagination.total, 5);
+  assert.strictEqual(p1Res.body.pagination.totalPages, 3);
+
+  // Negative page or excessive limit bounds safely
+  const boundedRes = await request(app).get('/api/courses?page=-5&limit=200');
+  assert.strictEqual(boundedRes.statusCode, 200);
+  assert.strictEqual(boundedRes.body.pagination.page, 1);
+  assert.strictEqual(boundedRes.body.pagination.limit, 50);
+});
+
+test('16. GET /api/courses returns empty results and never leaks unpublished courses', async () => {
+  const instructor = createMockUser({ name: 'Teacher', email: 'teacher@example.com', role: 'instructor' });
+  createMockCourse({
+    title: 'Draft Unreleased Course',
+    summary: 'Secret subject',
+    status: 'draft',
+    instructor: instructor._id,
+  });
+  createMockCourse({
+    title: 'Pending Review Course',
+    summary: 'Awaiting admin approval',
+    status: 'pending_review',
+    instructor: instructor._id,
+  });
+
+  const res = await request(app).get('/api/courses?search=Secret');
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.body.courses.length, 0);
+  assert.strictEqual(res.body.pagination.total, 0);
 });

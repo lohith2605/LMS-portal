@@ -8,6 +8,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const cloudinaryStorageService = require('../services/cloudinaryStorageService');
 const { logger } = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 /**
  * Helper: Verify instructor ownership of course
@@ -374,6 +375,37 @@ const publishAssignment = async (req, res) => {
     assignment.status = 'published';
     await assignment.save();
 
+    // Real-time notification: batch notify active enrolled learners
+    try {
+      const courseId = assignment.course?._id || assignment.course;
+      const enrollments = await Enrollment.find({
+        course: courseId,
+        status: { $in: ['active', 'completed'] },
+      }).select('student');
+
+      if (enrollments && enrollments.length > 0) {
+        const notifPayloads = enrollments
+          .map((enr) => ({
+            recipient: enr.student,
+            type: 'assignment_published',
+            title: 'New Assignment Published',
+            message: `A new assignment "${assignment.title}" has been published in your course.`,
+            link: '/student/dashboard?tab=assignments',
+            metadata: {
+              assignmentId: assignment._id,
+              courseId,
+            },
+          }))
+          .filter((item) => item.recipient && item.recipient.toString() !== req.user.id);
+
+        if (notifPayloads.length > 0) {
+          await notificationService.createBatchNotifications(notifPayloads);
+        }
+      }
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch assignment published notifications: ${notifErr.message}`);
+    }
+
     logger.success(`Assignment published: "${assignment.title}" by ${req.user.email}`);
 
     return res.status(200).json({
@@ -575,6 +607,28 @@ const gradeSubmission = async (req, res) => {
     submission.status = 'graded';
 
     await submission.save();
+
+    // Real-time notification: notify student when grade is published
+    try {
+      const studentId = submission.student?._id || submission.student;
+      if (submission.isGradePublished && studentId && studentId.toString() !== req.user.id) {
+        await notificationService.createNotification({
+          recipient: studentId,
+          type: 'submission_graded',
+          title: 'Assignment Graded',
+          message: `Your submission for "${submission.assignment?.title || 'Assignment'}" has been graded: ${finalGrade}/${maxMarks}.`,
+          link: '/student/dashboard?tab=assignments',
+          metadata: {
+            assignmentId: submission.assignment?._id || submission.assignment,
+            submissionId: submission._id,
+            grade: finalGrade,
+            maxMarks,
+          },
+        });
+      }
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch submission graded notification: ${notifErr.message}`);
+    }
 
     logger.success(
       `Submission graded: ID ${submission._id} by instructor ${req.user.email} -> ${finalGrade}/${maxMarks}`
@@ -1337,6 +1391,28 @@ const submitAssignment = async (req, res) => {
         );
       }
 
+      // Real-time notification: notify course instructor of resubmission
+      try {
+        const instructorId = assignment.instructor?._id || assignment.instructor;
+        if (instructorId && instructorId.toString() !== req.user.id) {
+          await notificationService.createNotification({
+            recipient: instructorId,
+            type: 'assignment_submitted',
+            title: 'Assignment Resubmitted',
+            message: `${req.user.name || 'A student'} resubmitted assignment "${assignment.title}" (v${submission.version}).`,
+            link: '/instructor/dashboard?tab=assignments',
+            metadata: {
+              assignmentId: assignment._id,
+              submissionId: submission._id,
+              studentId: req.user.id,
+              version: submission.version,
+            },
+          });
+        }
+      } catch (notifErr) {
+        logger.warn(`Failed to dispatch assignment resubmitted notification: ${notifErr.message}`);
+      }
+
       logger.success(`Assignment resubmitted (v${submission.version}) by ${req.user.email} for "${assignment.title}"`);
 
       return res.status(200).json({
@@ -1364,6 +1440,28 @@ const submitAssignment = async (req, res) => {
         { _id: { $in: pendingUploadsToConsume } },
         { $set: { status: 'consumed', submission: submission._id, consumedAt: new Date() } }
       );
+    }
+
+    // Real-time notification: notify course instructor of initial submission
+    try {
+      const instructorId = assignment.instructor?._id || assignment.instructor;
+      if (instructorId && instructorId.toString() !== req.user.id) {
+        await notificationService.createNotification({
+          recipient: instructorId,
+          type: 'assignment_submitted',
+          title: 'Assignment Submitted',
+          message: `${req.user.name || 'A student'} submitted assignment "${assignment.title}".`,
+          link: '/instructor/dashboard?tab=assignments',
+          metadata: {
+            assignmentId: assignment._id,
+            submissionId: submission._id,
+            studentId: req.user.id,
+            version: 1,
+          },
+        });
+      }
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch assignment submitted notification: ${notifErr.message}`);
     }
 
     logger.success(`Assignment submitted (v1) by ${req.user.email} for "${assignment.title}"`);

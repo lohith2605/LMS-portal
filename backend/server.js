@@ -17,6 +17,9 @@ const instructorRoutes = require('./routes/instructorRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const http = require('http');
+const { initSocket } = require('./services/socketService');
 const { logger } = require('./utils/logger');
 
 const app = express();
@@ -73,6 +76,7 @@ app.use('/api/instructor', instructorRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/discussions', discussionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // Root route
@@ -108,7 +112,9 @@ const startServer = async () => {
     // Connect to database before accepting traffic
     await connectDB();
 
-    serverInstance = app.listen(PORT, () => {
+    const httpServer = http.createServer(app);
+    initSocket(httpServer);
+    serverInstance = httpServer.listen(PORT, () => {
       // Extract safe database host info without credentials
       const dbHost = mongoose.connection.host || 'MongoDB Atlas';
       const isDbConnected = mongoose.connection.readyState === 1;

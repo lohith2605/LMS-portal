@@ -4,6 +4,7 @@ const DiscussionReply = require('../models/DiscussionReply');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const { logger } = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 /**
  * Helper: Extract string user ID safely regardless of whether user object has .id or ._id
@@ -564,6 +565,28 @@ const createReply = async (req, res) => {
     discussion.lastActivityAt = new Date();
     await discussion.save();
 
+    // Real-time notification: notify discussion author if not self-reply
+    try {
+      const discussionAuthorId = (discussion.author._id || discussion.author).toString();
+      const replierId = getUserId(req.user);
+      if (discussionAuthorId && discussionAuthorId !== replierId) {
+        await notificationService.createNotification({
+          recipient: discussionAuthorId,
+          type: 'discussion_reply',
+          title: 'New Reply to Your Discussion',
+          message: `${req.user.name || 'Someone'} replied to your discussion "${discussion.title}".`,
+          link: `/courses/${discussion.course}/discussions/${discussion._id}`,
+          metadata: {
+            discussionId: discussion._id,
+            courseId: discussion.course,
+            replyId: reply._id,
+          },
+        });
+      }
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch discussion reply notification: ${notifErr.message}`);
+    }
+
     const populatedReply = await DiscussionReply.findById(reply._id)
       .populate('author', 'name email role avatar')
       .lean();
@@ -801,6 +824,28 @@ const toggleAcceptedAnswer = async (req, res) => {
     discussion.acceptedBy = getUserId(req.user);
 
     await Promise.all([reply.save(), discussion.save()]);
+
+    // Real-time notification: notify reply author if not self-accept
+    try {
+      const replyAuthorId = (reply.author._id || reply.author).toString();
+      const currentUserId = getUserId(req.user);
+      if (replyAuthorId && replyAuthorId !== currentUserId) {
+        await notificationService.createNotification({
+          recipient: replyAuthorId,
+          type: 'reply_accepted',
+          title: 'Your Answer Was Accepted!',
+          message: `Your answer on "${discussion.title}" was marked as the accepted solution.`,
+          link: `/courses/${discussion.course}/discussions/${discussion._id}`,
+          metadata: {
+            discussionId: discussion._id,
+            courseId: discussion.course,
+            replyId: reply._id,
+          },
+        });
+      }
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch accepted answer notification: ${notifErr.message}`);
+    }
 
     logger.success(
       `Answer accepted for question "${discussion.title}" (${discussion._id}) by ${req.user.email}`

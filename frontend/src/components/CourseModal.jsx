@@ -50,11 +50,11 @@ export default function CourseModal({ course, onClose, onEnrollInterest }) {
         <div className="flex flex-wrap gap-4 text-xs text-secondary pb-4 border-b border-border-subtle mb-4">
           <span className="inline-flex items-center gap-1">
             <Clock size={13} aria-hidden="true" />
-            {course.duration}
+            {course.duration || course.estimatedDuration || '6 weeks'}
           </span>
           <span className="inline-flex items-center gap-1">
             <BookOpen size={13} aria-hidden="true" />
-            {course.lessonsCount} structured lessons
+            {course.lessonsCount ?? course.totalLessons ?? 0} structured lessons
           </span>
           <span className="inline-flex items-center gap-1">
             <Award size={13} aria-hidden="true" />
@@ -68,50 +68,54 @@ export default function CourseModal({ course, onClose, onEnrollInterest }) {
         </p>
 
         {/* Syllabus Section */}
-        <div className="mb-5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-secondary mb-2.5">
-            Curriculum Structure
-          </h4>
-          <div className="flex flex-col gap-2">
-            {course.syllabus.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2.5 p-2.5 sm:px-3 bg-surface-subtle rounded-lg border border-border-subtle text-xs"
-              >
-                <span className="font-bold text-accent-blue-dark min-w-[60px]">
-                  Part 0{idx + 1}
-                </span>
-                <span className="text-primary font-medium">
-                  {item}
-                </span>
-              </div>
-            ))}
+        {((course.syllabus && course.syllabus.length > 0) || (course.sections && course.sections.length > 0)) && (
+          <div className="mb-5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-secondary mb-2.5">
+              Curriculum Structure
+            </h4>
+            <div className="flex flex-col gap-2">
+              {(course.syllabus || course.sections.map((s) => s.title)).map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2.5 p-2.5 sm:px-3 bg-surface-subtle rounded-lg border border-border-subtle text-xs"
+                >
+                  <span className="font-bold text-accent-blue-dark min-w-[60px]">
+                    Part 0{idx + 1}
+                  </span>
+                  <span className="text-primary font-medium">
+                    {item}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Learning Outcome & Prerequisites */}
-        <div className="grid grid-cols-1 gap-3 mb-6">
-          <div className="p-3 bg-accent-sage-pale rounded-lg border border-[#A8B5A0]/40">
-            <div className="text-[11px] font-bold uppercase text-accent-sage-dark mb-1">
-              Core Outcome
-            </div>
-            <div className="text-xs text-primary font-medium">
-              {course.outcomes}
+        {(course.outcomes || (course.learningObjectives && course.learningObjectives.length > 0)) && (
+          <div className="grid grid-cols-1 gap-3 mb-6">
+            <div className="p-3 bg-accent-sage-pale rounded-lg border border-[#A8B5A0]/40">
+              <div className="text-[11px] font-bold uppercase text-accent-sage-dark mb-1">
+                Core Outcome
+              </div>
+              <div className="text-xs text-primary font-medium">
+                {course.outcomes || course.learningObjectives.join(' • ')}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Instructor */}
         <div className="flex items-center gap-3 p-3 bg-surface-subtle rounded-xl border border-border-subtle mb-6">
           <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">
-            {course.instructor.initials}
+            {course.instructor?.initials || course.instructor?.name?.slice(0, 2).toUpperCase() || 'LS'}
           </div>
           <div>
             <div className="text-sm font-bold text-primary">
-              {course.instructor.name}
+              {course.instructor?.name || 'Instructor'}
             </div>
             <div className="text-[11px] text-secondary">
-              {course.instructor.role}
+              {course.instructor?.role || 'Educator'}
             </div>
           </div>
         </div>

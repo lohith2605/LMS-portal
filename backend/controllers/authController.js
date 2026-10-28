@@ -51,6 +51,23 @@ const register = async (req, res) => {
 
     logger.info(`New user registered: ${newUser.email} (${newUser.role}, ${newUser.accountStatus})`);
 
+    // Generate verification token and dispatch email
+    if (typeof newUser.createEmailVerificationToken === 'function') {
+      const verifyToken = newUser.createEmailVerificationToken();
+      await newUser.save({ validateBeforeSave: false });
+
+      const verifyUrl = `${CLIENT_URL}/verify-email?token=${verifyToken}`;
+      try {
+        await sendVerificationEmail({
+          to: newUser.email,
+          name: newUser.name,
+          verifyUrl,
+        });
+      } catch (emailErr) {
+        logger.error(`Error sending verification email during registration: ${emailErr.message}`);
+      }
+    }
+
     // If pending approval, inform user without session issuance
     if (assignedStatus === 'pending') {
       return res.status(201).json({
