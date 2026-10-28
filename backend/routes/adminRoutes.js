@@ -10,6 +10,11 @@ const {
   approveCourse,
   rejectCourse,
 } = require('../controllers/adminController');
+const {
+  getAdminReviews,
+  hideReview,
+  restoreReview,
+} = require('../controllers/reviewController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // All admin routes require authenticated session with admin role
@@ -32,5 +37,9 @@ router.patch('/courses/:id/reject', rejectCourse);
 // User management
 router.get('/users', getUsers);
 
-module.exports = router;
+// Phase 12: Review Moderation Queue & Actions
+router.get('/reviews', getAdminReviews);
+router.patch('/reviews/:id/hide', hideReview);
+router.patch('/reviews/:id/restore', restoreReview);
 
+module.exports = router;

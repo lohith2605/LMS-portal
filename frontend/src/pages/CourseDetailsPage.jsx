@@ -15,9 +15,11 @@ import {
   ChevronUp,
   UserCheck,
   MessageSquare,
+  Star,
 } from 'lucide-react';
 import { courseService } from '../services/api';
 import { useAuth } from '../context/useAuth';
+import CourseReviewsSection from '../components/reviews/CourseReviewsSection';
 
 export default function CourseDetailsPage() {
   const { idOrSlug } = useParams();
@@ -230,6 +232,18 @@ export default function CourseDetailsPage() {
               <Globe size={14} className="text-[#686868]" />
               <span>{course.language}</span>
             </div>
+
+            <div className="flex items-center gap-1.5">
+              <Star size={14} className={course.ratingSummary && course.ratingSummary.totalReviews > 0 ? "fill-amber-400 text-amber-400" : "text-[#B5B5B0]"} />
+              {course.ratingSummary && course.ratingSummary.totalReviews > 0 ? (
+                <span>
+                  <strong className="text-[#171717]">{course.ratingSummary.averageRating.toFixed(1)}</strong>
+                  <span className="text-[#686868] ml-1">({course.ratingSummary.totalReviews} {course.ratingSummary.totalReviews === 1 ? 'review' : 'reviews'})</span>
+                </span>
+              ) : (
+                <span className="text-[#686868]">New (Unrated)</span>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -385,6 +399,13 @@ export default function CourseDetailsPage() {
                 </div>
               )}
             </div>
+
+            {/* Course Ratings & Reviews Section */}
+            <CourseReviewsSection
+              courseIdOrSlug={idOrSlug}
+              isEnrolled={isEnrolled}
+              user={user}
+            />
           </div>
 
           {/* Right Column: Enrollment Card */}
@@ -484,6 +505,16 @@ export default function CourseDetailsPage() {
                     <Award size={14} /> Certificate
                   </span>
                   <span className="font-medium text-[#171717]">Included on finish</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Star size={14} className={course.ratingSummary && course.ratingSummary.totalReviews > 0 ? "fill-amber-400 text-amber-400" : "text-[#B5B5B0]"} /> Rating
+                  </span>
+                  <span className="font-medium text-[#171717]">
+                    {course.ratingSummary && course.ratingSummary.totalReviews > 0
+                      ? `${course.ratingSummary.averageRating.toFixed(1)} / 5.0 (${course.ratingSummary.totalReviews})`
+                      : 'New'}
+                  </span>
                 </div>
               </div>
             </div>

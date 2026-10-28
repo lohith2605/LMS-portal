@@ -25,6 +25,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useNotifications } from '../context/useNotifications';
@@ -41,6 +42,7 @@ import EmptyState from '../components/dashboard/EmptyState';
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
+import AcademicCalendar from '../components/dashboard/AcademicCalendar';
 
 
 const EXPLORE_CATEGORIES = ['All', 'Development', 'Design', 'Data', 'Business', 'Other'];
@@ -1124,11 +1126,18 @@ export default function StudentDashboard() {
                             {descriptionText}
                           </p>
 
-                          <div className="flex items-center gap-2 mb-4 text-[11px] text-tertiary">
+                          <div className="flex flex-wrap items-center gap-2 mb-4 text-[11px] text-tertiary">
                             <span className="inline-flex items-center gap-1">
                               <BookOpen size={12} />
                               <span>{lessonsCount} lessons</span>
                             </span>
+                            {course.totalReviews > 0 ? (
+                              <span className="inline-flex items-center gap-1 font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                <Star size={11} className="fill-amber-400 text-amber-400" />
+                                <span>{course.averageRating.toFixed(1)}</span>
+                                <span className="text-secondary font-normal">({course.totalReviews})</span>
+                              </span>
+                            ) : null}
                           </div>
                         </div>
 
@@ -1499,26 +1508,12 @@ export default function StudentDashboard() {
 
           {/* TAB: CALENDAR */}
           {activeTab === 'calendar' && (
-            <div className="space-y-6">
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                <h2 className="text-base font-bold text-primary mb-1">
-                  Academic Schedule & Live Sessions
-                </h2>
-                <p className="text-xs text-secondary">
-                  Instructor office hours, cohort sync meetings, and project review calendar.
-                </p>
-              </div>
-
-              <EmptyState
-                icon={Calendar}
-                title="Your schedule is clear."
-                description="Live session invites and cohort calendar feeds will synchronize with your student profile once enrolled in an active learning track."
-                actionLabel="Browse Available Tracks"
-                onAction={() => setActiveTab('explore')}
-                secondaryActionLabel="Return to Overview"
-                onSecondaryAction={() => setActiveTab('overview')}
-              />
-            </div>
+            <AcademicCalendar
+              onOpenAssignmentSubmission={(item) => {
+                setSelectedAssignmentForSubmission(item);
+                setSubmissionModalOpen(true);
+              }}
+            />
           )}
 
           {/* TAB: ANNOUNCEMENTS */}

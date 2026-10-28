@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const reviewService = require('../services/reviewService');
 const { logger } = require('../utils/logger');
 
 /**
@@ -79,6 +80,9 @@ const getCourses = async (req, res) => {
         .lean(),
     ]);
 
+    const courseIds = rawCourses.map((c) => c._id);
+    const ratingsMap = await reviewService.getBatchCourseRatings(courseIds);
+
     // Format and sanitize courses for catalog view
     const courses = rawCourses.map((c) => {
       const totalLessons = (c.sections || []).reduce(
@@ -110,6 +114,8 @@ const getCourses = async (req, res) => {
         prerequisites: c.prerequisites || '',
         publishedAt: c.publishedAt,
         createdAt: c.createdAt,
+        averageRating: ratingsMap[c._id.toString()]?.averageRating || 0,
+        totalReviews: ratingsMap[c._id.toString()]?.totalReviews || 0,
       };
     });
 
@@ -191,6 +197,8 @@ const getCourseByIdOrSlug = async (req, res) => {
       0
     );
 
+    const ratingSummary = await reviewService.calculateRatingSummary(course._id);
+
     const courseData = {
       _id: course._id.toString(),
       title: course.title,
@@ -219,10 +227,12 @@ const getCourseByIdOrSlug = async (req, res) => {
       sections,
       publishedAt: course.publishedAt,
       createdAt: course.createdAt,
+      ratingSummary,
     };
 
     return res.status(200).json({
       course: courseData,
+      ratingSummary,
       isEnrolled,
       hasFullAccess,
       enrollment: enrollment

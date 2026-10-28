@@ -12,6 +12,7 @@ import {
   ChevronRight,
   RefreshCw,
   Inbox,
+  Clock,
 } from 'lucide-react';
 import { useNotifications } from '../../context/useNotifications';
 
@@ -69,6 +70,12 @@ const getNotificationIcon = (type) => {
         icon: Award,
         bg: 'bg-amber-50 text-amber-700 border-amber-200',
         label: 'Certificate',
+      };
+    case 'deadline_reminder':
+      return {
+        icon: Clock,
+        bg: 'bg-amber-50 text-amber-700 border-amber-200',
+        label: 'Deadline Reminder',
       };
     default:
       return {

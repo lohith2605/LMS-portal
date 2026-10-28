@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, ArrowRight, Layers, Sparkles, BarChart3, Compass } from 'lucide-react';
+import { Clock, ArrowRight, Layers, Sparkles, BarChart3, Compass, Star } from 'lucide-react';
 
 export default function CourseCard({ course, onSelectCourse }) {
   const getCategoryIcon = (cat) => {
@@ -31,6 +31,8 @@ export default function CourseCard({ course, onSelectCourse }) {
   const duration = course.duration || course.estimatedDuration || '6 weeks';
   const lessonsCount = course.lessonsCount ?? course.totalLessons ?? 0;
   const descriptionText = course.summary || course.description || '';
+  const totalReviews = course.totalReviews || 0;
+  const averageRating = course.averageRating || 0;
 
   return (
     <article
@@ -115,11 +117,20 @@ export default function CourseCard({ course, onSelectCourse }) {
 
         {/* Bottom actions & metadata */}
         <div className="flex items-center justify-between pt-2">
-          <div className="text-[11px] text-secondary flex items-center gap-1">
-            <Clock size={12} aria-hidden="true" />
-            <span>
-              {duration} • {lessonsCount} lessons
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-[11px] text-secondary flex items-center gap-1">
+              <Clock size={12} aria-hidden="true" />
+              <span>
+                {duration} • {lessonsCount} lessons
+              </span>
+            </div>
+            {totalReviews > 0 ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                <Star size={10} className="fill-amber-400 text-amber-400" />
+                <span>{averageRating.toFixed(1)}</span>
+                <span className="text-secondary font-normal">({totalReviews})</span>
+              </span>
+            ) : null}
           </div>
 
           <button

@@ -19,6 +19,7 @@ const notificationSchema = new mongoose.Schema(
         'reply_accepted',
         'certificate_issued',
         'course_announcement',
+        'deadline_reminder',
       ],
       index: true,
     },

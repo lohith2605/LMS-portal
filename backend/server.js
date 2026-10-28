@@ -18,6 +18,8 @@ const studentRoutes = require('./routes/studentRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const calendarRoutes = require('./routes/calendarRoutes');
+const { startDeadlineReminderScheduler, stopDeadlineReminderScheduler } = require('./services/deadlineReminderScheduler');
 const http = require('http');
 const { initSocket } = require('./services/socketService');
 const { logger } = require('./utils/logger');
@@ -77,6 +79,7 @@ app.use('/api/student', studentRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 
 // Root route
@@ -114,6 +117,9 @@ const startServer = async () => {
 
     const httpServer = http.createServer(app);
     initSocket(httpServer);
+    if (NODE_ENV !== 'test') {
+      startDeadlineReminderScheduler();
+    }
     serverInstance = httpServer.listen(PORT, () => {
       // Extract safe database host info without credentials
       const dbHost = mongoose.connection.host || 'MongoDB Atlas';

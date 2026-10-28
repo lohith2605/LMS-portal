@@ -16,6 +16,8 @@ import {
   RefreshCw,
   FolderLock,
   BookOpen,
+  Star,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { adminService, authService } from '../services/api';
@@ -70,6 +72,17 @@ export default function AdminDashboard() {
   });
   const [previewCourse, setPreviewCourse] = useState(null);
 
+  // Phase 12: Review Moderation Queue State
+  const [moderationSubTab, setModerationSubTab] = useState('courses');
+  const [adminReviews, setAdminReviews] = useState([]);
+  const [adminReviewsLoading, setAdminReviewsLoading] = useState(false);
+  const [adminReviewsFilter, setAdminReviewsFilter] = useState('all');
+  const [adminReviewPage, setAdminReviewPage] = useState(1);
+  const [adminReviewTotalPages, setAdminReviewTotalPages] = useState(1);
+  const [adminReviewTotalCount, setAdminReviewTotalCount] = useState(0);
+  const [reviewActionFeedback, setReviewActionFeedback] = useState({ type: '', text: '' });
+  const [reviewActionInProgress, setReviewActionInProgress] = useState(null);
+
   // User directory state
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -88,6 +101,56 @@ export default function AdminDashboard() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
   const [pwMessage, setPwMessage] = useState({ type: '', text: '' });
+
+  // Phase 12: Fetch Reviews for Moderation
+  const fetchAdminReviews = useCallback(async (page = 1, status = adminReviewsFilter) => {
+    try {
+      setAdminReviewsLoading(true);
+      setReviewActionFeedback({ type: '', text: '' });
+      const res = await adminService.getReviews({
+        page,
+        limit: 10,
+        status: status !== 'all' ? status : undefined,
+      });
+      setAdminReviews(res.reviews || []);
+      setAdminReviewPage(res.pagination?.page || 1);
+      setAdminReviewTotalPages(res.pagination?.totalPages || 1);
+      setAdminReviewTotalCount(res.pagination?.total || 0);
+    } catch (err) {
+      setReviewActionFeedback({
+        type: 'error',
+        text: err.normalizedMessage || 'Failed to load reviews for moderation.',
+      });
+    } finally {
+      setAdminReviewsLoading(false);
+    }
+  }, [adminReviewsFilter]);
+
+  const handleHideReview = async (reviewId) => {
+    try {
+      setReviewActionInProgress(reviewId);
+      await adminService.hideReview(reviewId, 'Content violates platform policy');
+      setReviewActionFeedback({ type: 'success', text: 'Review has been hidden from public display.' });
+      fetchAdminReviews(adminReviewPage, adminReviewsFilter);
+    } catch (err) {
+      setReviewActionFeedback({ type: 'error', text: err.normalizedMessage || 'Failed to hide review.' });
+    } finally {
+      setReviewActionInProgress(null);
+    }
+  };
+
+  const handleRestoreReview = async (reviewId) => {
+    try {
+      setReviewActionInProgress(reviewId);
+      await adminService.restoreReview(reviewId);
+      setReviewActionFeedback({ type: 'success', text: 'Review has been restored to public display.' });
+      fetchAdminReviews(adminReviewPage, adminReviewsFilter);
+    } catch (err) {
+      setReviewActionFeedback({ type: 'error', text: err.normalizedMessage || 'Failed to restore review.' });
+    } finally {
+      setReviewActionInProgress(null);
+    }
+  };
 
   // 1. Fetch overview metrics
   const fetchOverview = useCallback(async () => {
@@ -210,8 +273,9 @@ export default function AdminDashboard() {
       adminService.getUsers({ page: 1, limit: 10 }),
       adminService.getPlatformHealth(),
       adminService.getPendingCourses().catch(() => ({ pendingCourses: [] })),
+      adminService.getReviews({ page: 1, limit: 10 }).catch(() => ({ reviews: [] })),
     ])
-      .then(([overviewRes, pendingRes, usersRes, healthRes, coursesRes]) => {
+      .then(([overviewRes, pendingRes, usersRes, healthRes, coursesRes, reviewsRes]) => {
         if (isMounted) {
           setMetrics(overviewRes.metrics);
           setMetricsLoading(false);
@@ -223,6 +287,9 @@ export default function AdminDashboard() {
           setUserTotalCount(usersRes.pagination?.total || 0);
           setHealthData(healthRes);
           setPendingCourses(coursesRes.pendingCourses || []);
+          setAdminReviews(reviewsRes.reviews || []);
+          setAdminReviewTotalPages(reviewsRes.pagination?.totalPages || 1);
+          setAdminReviewTotalCount(reviewsRes.pagination?.total || 0);
         }
       })
       .catch((err) => {
@@ -944,9 +1011,230 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB: COURSE MODERATION */}
+          {/* TAB: COURSE & REVIEW MODERATION */}
           {activeTab === 'moderation' && (
             <div className="space-y-6">
+              {/* Moderation Category Switcher */}
+              <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
+                <button
+                  type="button"
+                  onClick={() => setModerationSubTab('courses')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    moderationSubTab === 'courses'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-surface-subtle text-secondary hover:text-primary'
+                  }`}
+                >
+                  Pending Course Submissions ({pendingCourses.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModerationSubTab('reviews');
+                    fetchAdminReviews(1, adminReviewsFilter);
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    moderationSubTab === 'reviews'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-surface-subtle text-secondary hover:text-primary'
+                  }`}
+                >
+                  Student Course Reviews ({adminReviewTotalCount})
+                </button>
+              </div>
+
+              {moderationSubTab === 'reviews' ? (
+                /* Review Moderation Queue */
+                <div className="space-y-6">
+                  <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-base font-bold text-primary">
+                          Student Review Moderation
+                        </h2>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                          {adminReviewTotalCount} total reviews
+                        </span>
+                      </div>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Audit student reviews, hide policy-violating remarks, or restore previously hidden reviews to public listings.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      {['all', 'approved', 'hidden'].map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => {
+                            setAdminReviewsFilter(f);
+                            fetchAdminReviews(1, f);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition capitalize cursor-pointer ${
+                            adminReviewsFilter === f
+                              ? 'bg-primary text-white shadow-xs'
+                              : 'bg-surface-subtle border border-border-subtle text-secondary hover:text-primary'
+                          }`}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => fetchAdminReviews(adminReviewPage, adminReviewsFilter)}
+                        className="p-2 rounded-xl border border-border-subtle bg-white text-secondary hover:text-primary transition cursor-pointer"
+                        title="Refresh reviews"
+                      >
+                        <RefreshCw size={14} className={adminReviewsLoading ? 'animate-spin' : ''} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {reviewActionFeedback.text && (
+                    <div
+                      className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${
+                        reviewActionFeedback.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-rose-50 text-rose-800 border-rose-200'
+                      }`}
+                    >
+                      <span>{reviewActionFeedback.text}</span>
+                      <button
+                        type="button"
+                        onClick={() => setReviewActionFeedback({ type: '', text: '' })}
+                        className="font-bold ml-2 cursor-pointer"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  )}
+
+                  {adminReviewsLoading ? (
+                    <LoadingState message="Loading reviews for moderation..." />
+                  ) : adminReviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {adminReviews.map((r) => {
+                        const isHidden = r.moderationStatus === 'hidden';
+                        return (
+                          <div
+                            key={r._id}
+                            className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-card transition"
+                          >
+                            <div className="space-y-2 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-bold text-primary">
+                                  {r.course?.title || 'Unknown Course'}
+                                </span>
+                                <span className="text-tertiary">•</span>
+                                <span className="text-xs text-secondary">
+                                  By <strong className="font-semibold text-primary">{r.student?.name || 'Student'}</strong> ({r.student?.email || 'N/A'})
+                                </span>
+                                <span
+                                  className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                                    isHidden
+                                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  }`}
+                                >
+                                  {r.moderationStatus}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-0.5 text-amber-400">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star
+                                      key={s}
+                                      size={13}
+                                      className={s <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-xs font-bold text-primary">{r.rating} stars</span>
+                                <span className="text-xs text-tertiary">
+                                  {new Date(r.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+
+                              {r.reviewText && (
+                                <p className="text-xs text-secondary italic bg-surface-subtle p-3 rounded-xl border border-border-subtle/60">
+                                  &ldquo;{r.reviewText}&rdquo;
+                                </p>
+                              )}
+
+                              {isHidden && r.moderationReason && (
+                                <p className="text-[11px] text-rose-700 font-medium">
+                                  Moderation note: {r.moderationReason}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+                              {isHidden ? (
+                                <button
+                                  type="button"
+                                  disabled={reviewActionInProgress === r._id}
+                                  onClick={() => handleRestoreReview(r._id)}
+                                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {reviewActionInProgress === r._id ? 'Restoring...' : 'Restore Review'}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={reviewActionInProgress === r._id}
+                                  onClick={() => handleHideReview(r._id)}
+                                  className="px-3.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {reviewActionInProgress === r._id ? 'Hiding...' : 'Hide Review'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Review Pagination */}
+                      {adminReviewTotalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2 text-xs">
+                          <button
+                            type="button"
+                            disabled={adminReviewPage <= 1 || adminReviewsLoading}
+                            onClick={() => fetchAdminReviews(adminReviewPage - 1, adminReviewsFilter)}
+                            className="px-3 py-1.5 rounded-xl border border-border-subtle bg-white text-secondary hover:text-primary transition cursor-pointer disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+                          <span className="font-semibold text-tertiary">
+                            Page {adminReviewPage} of {adminReviewTotalPages}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={adminReviewPage >= adminReviewTotalPages || adminReviewsLoading}
+                            onClick={() => fetchAdminReviews(adminReviewPage + 1, adminReviewsFilter)}
+                            className="px-3 py-1.5 rounded-xl border border-border-subtle bg-white text-secondary hover:text-primary transition cursor-pointer disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={MessageSquare}
+                      title="No reviews in moderation queue."
+                      description="There are currently no reviews matching your selected status filter."
+                      actionLabel="Show All Reviews"
+                      onAction={() => {
+                        setAdminReviewsFilter('all');
+                        fetchAdminReviews(1, 'all');
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                /* Course Moderation Queue */
+                <div className="space-y-6">
               <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -1082,6 +1370,8 @@ export default function AdminDashboard() {
                   actionLabel="Return to Overview"
                   onAction={() => setActiveTab('overview')}
                 />
+              )}
+                </div>
               )}
             </div>
           )}

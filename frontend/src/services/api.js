@@ -190,6 +190,30 @@ export const adminService = {
     const res = await api.patch(`/admin/courses/${id}/reject`, { rejectionReason });
     return res.data;
   },
+
+  /**
+   * Fetch reviews for admin moderation
+   */
+  getReviews: async (params = {}) => {
+    const res = await api.get('/admin/reviews', { params });
+    return res.data;
+  },
+
+  /**
+   * Hide an inappropriate review
+   */
+  hideReview: async (id, reason = '') => {
+    const res = await api.patch(`/admin/reviews/${id}/hide`, { reason });
+    return res.data;
+  },
+
+  /**
+   * Restore a hidden review to public display
+   */
+  restoreReview: async (id) => {
+    const res = await api.patch(`/admin/reviews/${id}/restore`);
+    return res.data;
+  },
 };
 
 export const courseService = {
@@ -617,6 +641,60 @@ export const notificationService = {
   },
   markAllAsRead: async () => {
     const res = await api.patch('/notifications/mark-all-read');
+    return res.data;
+  },
+};
+
+
+export const calendarService = {
+  getCalendarEvents: async (params = {}) => {
+    const res = await api.get('/calendar', { params });
+    return res.data;
+  },
+  getUpcomingDeadlines: async (params = {}) => {
+    const res = await api.get('/calendar/upcoming', { params });
+    return res.data;
+  },
+};
+
+export const reviewService = {
+  /**
+   * Fetch public paginated reviews and summary for a course
+   */
+  getCourseReviews: async (idOrSlug, params = {}) => {
+    const res = await api.get(`/courses/${idOrSlug}/reviews`, { params });
+    return res.data;
+  },
+
+  /**
+   * Check eligibility and retrieve student's existing review
+   */
+  getMyReview: async (idOrSlug) => {
+    const res = await api.get(`/courses/${idOrSlug}/reviews/my-review`);
+    return res.data;
+  },
+
+  /**
+   * Submit a new course review
+   */
+  createReview: async (idOrSlug, data) => {
+    const res = await api.post(`/courses/${idOrSlug}/reviews`, data);
+    return res.data;
+  },
+
+  /**
+   * Update an existing review
+   */
+  updateReview: async (idOrSlug, reviewId, data) => {
+    const res = await api.patch(`/courses/${idOrSlug}/reviews/${reviewId}`, data);
+    return res.data;
+  },
+
+  /**
+   * Delete a student review
+   */
+  deleteReview: async (idOrSlug, reviewId) => {
+    const res = await api.delete(`/courses/${idOrSlug}/reviews/${reviewId}`);
     return res.data;
   },
 };
