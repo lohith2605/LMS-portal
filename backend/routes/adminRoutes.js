@@ -15,6 +15,7 @@ const {
   hideReview,
   restoreReview,
 } = require('../controllers/reviewController');
+const { getAdminAnalytics } = require('../controllers/analyticsController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // All admin routes require authenticated session with admin role
@@ -23,6 +24,9 @@ router.use(restrictTo('admin'));
 
 // Platform summary and analytics
 router.get('/overview', getOverview);
+
+// Phase 13: Learning Analytics
+router.get('/analytics', getAdminAnalytics);
 
 // Instructor approval queue
 router.get('/instructors/pending', getPendingInstructors);

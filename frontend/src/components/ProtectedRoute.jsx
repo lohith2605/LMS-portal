@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-page flex flex-col items-center justify-center p-4">
-        <div className="w-10 h-10 border-3 border-accent-blue/20 border-t-accent-blue rounded-full animate-spin mb-4" />
+        <div className="w-10 h-10 border-2 border-accent-blue/20 border-t-accent-blue rounded-full animate-spin mb-4" />
         <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
           Restoring session...
         </p>

@@ -43,6 +43,7 @@ import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
 import AcademicCalendar from '../components/dashboard/AcademicCalendar';
+import StudentAnalyticsView from '../components/analytics/StudentAnalyticsView';
 
 
 const EXPLORE_CATEGORIES = ['All', 'Development', 'Design', 'Data', 'Business', 'Other'];
@@ -321,6 +322,8 @@ export default function StudentDashboard() {
 
   const getPageTitle = () => {
     switch (activeTab) {
+      case 'analytics':
+        return 'Learning Analytics';
       case 'learning':
         return 'My Learning';
       case 'certificates':
@@ -524,8 +527,8 @@ export default function StudentDashboard() {
 
                 {data?.enrolledCourses && data.enrolledCourses.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.enrolledCourses.map((enr) => {
-                      const c = enr.course;
+                    {data.enrolledCourses.filter((enr) => enr && enr.course).map((enr) => {
+                      const c = enr.course || {};
                       return (
                         <div
                           key={enr.id}
@@ -691,6 +694,9 @@ export default function StudentDashboard() {
             </>
           )}
 
+          {/* TAB: LEARNING ANALYTICS */}
+          {activeTab === 'analytics' && <StudentAnalyticsView />}
+
           {/* TAB: MY LEARNING */}
           {activeTab === 'learning' && (
             <div className="space-y-6">
@@ -712,8 +718,8 @@ export default function StudentDashboard() {
 
               {data?.enrolledCourses && data.enrolledCourses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {data.enrolledCourses.map((enr) => {
-                    const c = enr.course;
+                  {data.enrolledCourses.filter((enr) => enr && enr.course).map((enr) => {
+                    const c = enr.course || {};
                     return (
                       <div
                         key={enr.id}
@@ -1134,7 +1140,7 @@ export default function StudentDashboard() {
                             {course.totalReviews > 0 ? (
                               <span className="inline-flex items-center gap-1 font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                                 <Star size={11} className="fill-amber-400 text-amber-400" />
-                                <span>{course.averageRating.toFixed(1)}</span>
+                                <span>{Number(course.averageRating || 0).toFixed(1)}</span>
                                 <span className="text-secondary font-normal">({course.totalReviews})</span>
                               </span>
                             ) : null}
@@ -1566,7 +1572,7 @@ export default function StudentDashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-surface-subtle text-primary border border-border-subtle">
-                                {item.type.replace('_', ' ')}
+                                {(item.type || 'notification').replace('_', ' ')}
                               </span>
                               <span className="text-xs text-tertiary">
                                 {new Date(item.createdAt).toLocaleDateString(undefined, {

@@ -40,11 +40,15 @@ const {
   returnSubmissionForRevision,
   downloadInstructorSubmissionFile,
 } = require('../controllers/assignmentController');
+const { getInstructorAnalytics } = require('../controllers/analyticsController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // All instructor routes require authentication and instructor (or admin) role
 router.use(protect);
 router.use(restrictTo('instructor', 'admin'));
+
+// Phase 13: Learning Analytics
+router.get('/analytics', getInstructorAnalytics);
 
 // Course lifecycle endpoints
 router.post('/courses', createCourse);

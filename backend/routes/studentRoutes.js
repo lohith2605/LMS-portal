@@ -15,12 +15,16 @@ const {
   getStudentSubmission,
   getStudentGrades,
 } = require('../controllers/assignmentController');
+const { getStudentAnalytics } = require('../controllers/analyticsController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { uploadSingle } = require('../middleware/uploadMiddleware');
 
 // All student routes require authentication and student (or admin) role
 router.use(protect);
 router.use(restrictTo('student', 'admin'));
+
+// Phase 13: Learning Analytics
+router.get('/analytics', getStudentAnalytics);
 
 router.get('/enrollments', getStudentEnrollments);
 router.get('/courses/:courseId', getStudentCourse);

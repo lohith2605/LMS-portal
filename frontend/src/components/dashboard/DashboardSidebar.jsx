@@ -16,6 +16,7 @@ import {
   FolderLock,
   Award,
   FileCheck,
+  BarChart3,
 } from 'lucide-react';
 
 export default function DashboardSidebar({
@@ -31,6 +32,7 @@ export default function DashboardSidebar({
       case 'admin':
         return [
           { id: 'overview', label: 'Platform Overview', icon: LayoutDashboard },
+          { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
           { id: 'approvals', label: 'Instructor Approvals', icon: CheckCircle2 },
           { id: 'users', label: 'User Directory', icon: Users },
           { id: 'moderation', label: 'Course Moderation', icon: FolderLock },
@@ -40,6 +42,7 @@ export default function DashboardSidebar({
       case 'instructor':
         return [
           { id: 'overview', label: 'Teaching Overview', icon: LayoutDashboard },
+          { id: 'analytics', label: 'Course Analytics', icon: BarChart3 },
           { id: 'courses', label: 'My Courses', icon: BookOpen },
           { id: 'assignments', label: 'Assignments & Projects', icon: FileCheck },
           { id: 'reviews', label: 'Submissions & Grading', icon: FileText },
@@ -52,6 +55,7 @@ export default function DashboardSidebar({
       default:
         return [
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+          { id: 'analytics', label: 'Learning Analytics', icon: BarChart3 },
           { id: 'learning', label: 'My Learning', icon: BookOpen },
           { id: 'certificates', label: 'Earned Certificates', icon: Award },
           { id: 'explore', label: 'Explore Courses', icon: Compass },

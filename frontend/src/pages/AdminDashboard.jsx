@@ -6,7 +6,6 @@ import {
   Clock,
   KeyRound,
   AlertTriangle,
-  Server,
   Activity,
   UserCheck,
   UserX,
@@ -26,6 +25,7 @@ import MetricCard from '../components/dashboard/MetricCard';
 import EmptyState from '../components/dashboard/EmptyState';
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
+import AdminAnalyticsView from '../components/analytics/AdminAnalyticsView';
 
 const ADMIN_ANNOUNCEMENTS = [
   {
@@ -395,6 +395,8 @@ export default function AdminDashboard() {
 
   const getPageTitle = () => {
     switch (activeTab) {
+      case 'analytics':
+        return 'Platform-Wide Learning Analytics';
       case 'approvals':
         return 'Instructor Approval Queue';
       case 'users':
@@ -407,14 +409,14 @@ export default function AdminDashboard() {
         return 'Admin Credentials & Security';
       case 'overview':
       default:
-        return 'Administrative Console';
+        return null;
     }
   };
 
   return (
     <DashboardLayout
       title={getPageTitle()}
-      subtitle="Platform governance, security, and verification"
+      subtitle={getPageTitle() ? 'Platform governance, security, and verification' : null}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={ADMIN_ANNOUNCEMENTS}
@@ -431,57 +433,33 @@ export default function AdminDashboard() {
         <div className="space-y-8">
           {/* Welcome Banner */}
           <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold mb-2">
-                  <ShieldAlert size={13} />
-                  <span>Privileged System Administrator</span>
-                </div>
+            <div className="max-w-2xl">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                Platform Overview
+              </h1>
 
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-                  Platform Overview
-                </h1>
+              <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
+                Manage users, review instructor applications, and oversee the learning platform.
+              </p>
 
-                <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
-                  Manage users, review instructor applications, and oversee the learning platform.
-                </p>
+              <div className="flex flex-wrap items-center gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('approvals')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>Review Instructor Queue ({pendingInstructors.length})</span>
+                </button>
 
-                <div className="flex flex-wrap items-center gap-3 mt-5">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('approvals')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
-                  >
-                    <CheckCircle2 size={14} />
-                    <span>Review Instructor Queue ({pendingInstructors.length})</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('users')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
-                  >
-                    <Users size={14} />
-                    <span>View All Users</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Server / Cluster Status Pills */}
-              <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[11px]">
-                    <Activity size={13} />
-                    <span>Cluster: Atlas Connected</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-[11px]">
-                    <Server size={13} />
-                    <span>API: Healthy</span>
-                  </span>
-                </div>
-                <span className="text-[11px] text-tertiary">
-                  Authenticated: <strong className="text-primary font-medium">{user?.email}</strong>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('users')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <Users size={14} />
+                  <span>View All Users</span>
+                </button>
               </div>
             </div>
           </div>
@@ -525,9 +503,9 @@ export default function AdminDashboard() {
                   <MetricCard
                     title="Total Registered Users"
                     value={metrics?.totalUsers ?? 0}
-                    subtitle="Platform accounts stored in MongoDB"
+                    subtitle="Registered platform accounts"
                     icon={Users}
-                    badge="Atlas DB"
+                    badge="Total"
                     badgeType="default"
                     onClick={() => setActiveTab('users')}
                   />
@@ -748,6 +726,9 @@ export default function AdminDashboard() {
               </div>
             </>
           )}
+
+          {/* TAB: PLATFORM ANALYTICS */}
+          {activeTab === 'analytics' && <AdminAnalyticsView />}
 
           {/* TAB: INSTRUCTOR APPROVALS (Dedicated Queue) */}
           {activeTab === 'approvals' && (

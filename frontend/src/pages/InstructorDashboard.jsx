@@ -38,6 +38,7 @@ import CourseStudio from '../components/dashboard/CourseStudio';
 import QuizStudioModal from '../components/dashboard/QuizStudioModal';
 import AssignmentStudioModal from '../components/dashboard/AssignmentStudioModal';
 import SubmissionGradingModal from '../components/dashboard/SubmissionGradingModal';
+import InstructorAnalyticsView from '../components/analytics/InstructorAnalyticsView';
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
@@ -419,6 +420,8 @@ export default function InstructorDashboard() {
 
   const getPageTitle = () => {
     switch (activeTab) {
+      case 'analytics':
+        return 'Teaching & Course Analytics';
       case 'courses':
         return 'Course Management';
       case 'assignments':
@@ -435,14 +438,14 @@ export default function InstructorDashboard() {
         return 'Account & Security';
       case 'overview':
       default:
-        return 'Instructor Workspace';
+        return null;
     }
   };
 
   return (
     <DashboardLayout
       title={getPageTitle()}
-      subtitle="Educator & course administration console"
+      subtitle={getPageTitle() ? 'Educator & course administration console' : null}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={data?.announcements || []}
@@ -488,58 +491,38 @@ export default function InstructorDashboard() {
 
           {/* Welcome Banner */}
           <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-sage-dark" />
-                  <span>Instructor Teaching Workspace</span>
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-                  Welcome back, {firstName}
-                </h1>
-
-                <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
-                  Manage your courses, support your learners, and review their progress.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 mt-5">
-                  <button
-                    type="button"
-                    onClick={() => setCourseStudioModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
-                  >
-                    <PlusCircle size={14} />
-                    <span>Create Course</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('courses')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
-                  >
-                    <BookOpen size={13} />
-                    <span>View My Courses</span>
-                  </button>
-                </div>
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-sage-dark" />
+                <span>Instructor Teaching Workspace</span>
               </div>
 
-              {/* Status Indicator */}
-              <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2 text-xs">
-                {isApproved ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40 font-semibold text-[11px]">
-                    <CheckCircle2 size={13} />
-                    <span>Verified Educator Console</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-semibold text-[11px]">
-                    <Clock size={13} />
-                    <span>Pending Admin Approval</span>
-                  </span>
-                )}
-                <span className="text-[11px] text-tertiary">
-                  Account: <strong className="text-primary font-medium">{user?.email}</strong>
-                </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                Welcome back, {firstName}
+              </h1>
+
+              <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
+                Manage your courses, support your learners, and review their progress.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setCourseStudioModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
+                >
+                  <PlusCircle size={14} />
+                  <span>Create Course</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('courses')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <BookOpen size={13} />
+                  <span>View My Courses</span>
+                </button>
               </div>
             </div>
           </div>
@@ -718,6 +701,9 @@ export default function InstructorDashboard() {
               </div>
             </>
           )}
+
+          {/* TAB: TEACHING ANALYTICS */}
+          {activeTab === 'analytics' && <InstructorAnalyticsView />}
 
           {/* TAB: MY COURSES */}
           {activeTab === 'courses' && (

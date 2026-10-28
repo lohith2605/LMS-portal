@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Send and receive HttpOnly cookies
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -695,6 +696,32 @@ export const reviewService = {
    */
   deleteReview: async (idOrSlug, reviewId) => {
     const res = await api.delete(`/courses/${idOrSlug}/reviews/${reviewId}`);
+    return res.data;
+  },
+};
+
+export const analyticsService = {
+  /**
+   * Fetch authenticated student learning analytics
+   */
+  getStudentAnalytics: async () => {
+    const res = await api.get('/student/analytics');
+    return res.data;
+  },
+
+  /**
+   * Fetch authenticated instructor course portfolio analytics
+   */
+  getInstructorAnalytics: async () => {
+    const res = await api.get('/instructor/analytics');
+    return res.data;
+  },
+
+  /**
+   * Fetch platform-wide analytics for administrator
+   */
+  getAdminAnalytics: async () => {
+    const res = await api.get('/admin/analytics');
     return res.data;
   },
 };

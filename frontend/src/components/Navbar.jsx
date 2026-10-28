@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
@@ -134,6 +134,14 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
             <>
               <button
                 type="button"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50/90 hover:bg-rose-100 border border-rose-200/90 px-3 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                onClick={() => navigate('/login?role=admin')}
+              >
+                <ShieldCheck size={14} className="text-rose-600" />
+                <span>Admin Login</span>
+              </button>
+              <button
+                type="button"
                 className="hidden md:inline-flex text-sm font-semibold text-secondary hover:text-primary hover:bg-black/5 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
                 onClick={() => (onOpenAuth ? onOpenAuth('login') : navigate('/login'))}
               >
@@ -240,6 +248,17 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                 </>
               ) : (
                 <>
+                  <button
+                    type="button"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      navigate('/login?role=admin');
+                    }}
+                  >
+                    <ShieldCheck size={16} className="text-rose-600" />
+                    <span>Admin Login</span>
+                  </button>
                   <button
                     type="button"
                     className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-white text-primary border border-border-subtle hover:bg-surface-subtle shadow-xs transition-all text-center cursor-pointer"

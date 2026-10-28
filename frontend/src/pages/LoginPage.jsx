@@ -7,13 +7,18 @@ import {
   AlertCircle,
   Compass,
   Target,
-  Layers
+  Layers,
+  ShieldCheck,
 } from 'lucide-react';
 import AuthLayout from '../layouts/AuthLayout';
 import { useAuth } from '../context/useAuth';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isAdminRole = searchParams.get('role') === 'admin';
+
+  const [email, setEmail] = useState(() => (isAdminRole ? 'admin@learnspace.io' : ''));
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +26,6 @@ export default function LoginPage() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Return to intended page if safe, otherwise role-appropriate dashboard
   const destination = location.state?.from?.pathname || '/dashboard';
@@ -89,10 +93,21 @@ export default function LoginPage() {
       description="Return to your courses, continue building practical skills, and keep your learning journey moving forward."
       highlights={loginHighlights}
       quote="Learn with purpose. Progress with confidence."
-      panelBadge="Sign In"
-      formTitle="Welcome back"
-      formSubtitle="Sign in to your LearnSpace account to resume your courses and track your progress."
+      panelBadge={isAdminRole ? 'Admin Portal' : 'Sign In'}
+      formTitle={isAdminRole ? 'Administrator Sign In' : 'Welcome back'}
+      formSubtitle={
+        isAdminRole
+          ? 'Sign in with your administrative credentials to access the LearnSpace platform console.'
+          : 'Sign in to your LearnSpace account to resume your courses and track your progress.'
+      }
     >
+      {isAdminRole && (
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-800 animate-[modalFadeIn_180ms_ease-out]">
+          <ShieldCheck size={16} className="text-rose-600 shrink-0" />
+          <span>Administrator Access Portal. Sign in with administrative credentials.</span>
+        </div>
+      )}
+
       {formError && (
         <div
           className="mb-5 p-3.5 bg-red-50/90 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-[modalFadeIn_180ms_ease-out]"
