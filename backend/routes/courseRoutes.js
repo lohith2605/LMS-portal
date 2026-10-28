@@ -19,6 +19,10 @@ const {
   claimCertificate,
 } = require('../controllers/completionController');
 const { getCourseAssignments } = require('../controllers/assignmentController');
+const {
+  getCourseDiscussions,
+  createDiscussion,
+} = require('../controllers/discussionController');
 const { protect, restrictTo, optionalProtect } = require('../middleware/authMiddleware');
 
 // Public & authenticated course browsing
@@ -56,5 +60,9 @@ router.post('/:idOrSlug/claim-certificate', protect, claimCertificate);
 
 // Course assignments
 router.get('/:idOrSlug/assignments', protect, getCourseAssignments);
+
+// Phase 7: Course Discussion Forum & Q&A
+router.get('/:idOrSlug/discussions', protect, getCourseDiscussions);
+router.post('/:idOrSlug/discussions', protect, createDiscussion);
 
 module.exports = router;

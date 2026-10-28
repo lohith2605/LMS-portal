@@ -32,25 +32,27 @@ export default function DashboardHeader({
           <Menu size={18} />
         </button>
 
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col">
-            <h1 className="text-sm sm:text-base font-extrabold text-primary tracking-tight">
-              {title}
-            </h1>
-            {subtitle && (
-              <span className="text-[11px] text-secondary hidden sm:block">
-                {subtitle}
-              </span>
-            )}
+        {title ? (
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col">
+              <h1 className="text-sm sm:text-base font-extrabold text-primary tracking-tight">
+                {title}
+              </h1>
+              {subtitle && (
+                <span className="text-[11px] text-secondary hidden sm:block">
+                  {subtitle}
+                </span>
+              )}
+            </div>
+            <span
+              className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border hidden sm:inline-block ${
+                roleBadges[role] || roleBadges.student
+              }`}
+            >
+              {role}
+            </span>
           </div>
-          <span
-            className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border hidden sm:inline-block ${
-              roleBadges[role] || roleBadges.student
-            }`}
-          >
-            {role}
-          </span>
-        </div>
+        ) : null}
       </div>
 
       {/* Right: Actions & Profile */}

@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Printer,
   FileCheck,
+  MessageSquare,
 } from 'lucide-react';
 import {
   courseService,
@@ -28,10 +29,13 @@ import {
   assignmentService,
 } from '../services/api';
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
+import { useAuth } from '../context/useAuth';
+import CourseDiscussionForum from '../components/dashboard/CourseDiscussionForum';
 
 export default function CoursePlayerPage() {
   const { idOrSlug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
 
   // Navigation & Active View: 'lesson' | 'quiz' | 'completion'
   const [activeView, setActiveView] = useState('lesson');
@@ -92,15 +96,27 @@ export default function CoursePlayerPage() {
 
   // Load lesson content
   const loadLesson = useCallback(
-    async (lessonId) => {
+    async (lessonId, shouldActivateView = true) => {
       try {
         setLessonLoading(true);
-        setActiveView('lesson');
+        if (shouldActivateView) {
+          setActiveView('lesson');
+        }
         const data = await courseService.getLessonContent(idOrSlug, lessonId);
         setActiveSection(data.section);
         setActiveLesson(data.lesson);
         setIsLessonCompleted(Boolean(data.isCompleted));
-        setSearchParams({ lesson: lessonId }, { replace: true });
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            if (shouldActivateView) {
+              next.delete('view');
+            }
+            next.set('lesson', lessonId);
+            return next;
+          },
+          { replace: true }
+        );
       } catch (err) {
         setError(err.normalizedMessage || 'Failed to load lesson content.');
       } finally {
@@ -109,6 +125,27 @@ export default function CoursePlayerPage() {
     },
     [idOrSlug, setSearchParams]
   );
+
+  // Open Discussions view and sync query param
+  const handleOpenDiscussions = useCallback(() => {
+    setActiveView('discussions');
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('view', 'discussions');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
+
+  // Sync activeView with URL query params on navigation / back-forward
+  useEffect(() => {
+    const view = searchParams.get('view');
+    if (view === 'discussions') {
+      setActiveView('discussions');
+    }
+  }, [searchParams]);
 
   // Fetch quizzes, completion criteria, and assignments
   const fetchQuizzesAndCompletion = useCallback(async () => {
@@ -144,6 +181,11 @@ export default function CoursePlayerPage() {
         setCompletedLessonIds(initialCompleted);
 
         // Determine which lesson to load first
+        const paramView = searchParams.get('view');
+        const isDiscussionsInitial = paramView === 'discussions';
+        if (isDiscussionsInitial) {
+          setActiveView('discussions');
+        }
         const paramLessonId = searchParams.get('lesson');
         const firstLesson = data.course.sections?.[0]?.lessons?.[0] || null;
 
@@ -153,7 +195,7 @@ export default function CoursePlayerPage() {
           (firstLesson ? firstLesson._id : null);
 
         if (targetLessonId) {
-          loadLesson(targetLessonId);
+          loadLesson(targetLessonId, !isDiscussionsInitial);
         }
 
         fetchQuizzesAndCompletion();
@@ -431,6 +473,7 @@ export default function CoursePlayerPage() {
                   (activeLesson?.title || 'Lesson Player')}
               {activeView === 'quiz' && `Assessment • ${activeQuiz?.title || 'Quiz'}`}
               {activeView === 'completion' && 'Course Completion & Verified Certificate'}
+              {activeView === 'discussions' && 'Course Discussion Forum & Q&A'}
             </p>
           </div>
         </div>
@@ -448,6 +491,19 @@ export default function CoursePlayerPage() {
               {progressPercent}% completed
             </span>
           </div>
+
+          <button
+            type="button"
+            onClick={handleOpenDiscussions}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              activeView === 'discussions'
+                ? 'bg-blue-50 text-blue-800 border border-blue-300'
+                : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
+            }`}
+          >
+            <MessageSquare size={14} className="text-accent-blue-dark" />
+            <span className="hidden sm:inline">Q&A Forum</span>
+          </button>
 
           <button
             type="button"
@@ -637,6 +693,30 @@ export default function CoursePlayerPage() {
               </div>
             )}
 
+            {/* COURSE Q&A & DISCUSSION FORUM */}
+            <div className="py-2 border-t border-border-subtle">
+              <button
+                type="button"
+                onClick={handleOpenDiscussions}
+                className={`w-full px-4 py-2.5 flex items-center justify-between text-left transition cursor-pointer ${
+                  activeView === 'discussions'
+                    ? 'bg-blue-50 text-blue-800 font-semibold border-r-2 border-accent-blue-dark'
+                    : 'hover:bg-[#F2F2F0] text-[#686868]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <MessageSquare
+                    size={14}
+                    className={activeView === 'discussions' ? 'text-accent-blue-dark' : 'text-tertiary'}
+                  />
+                  <span className="text-xs">Q&A & Discussion Forum</span>
+                </div>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-subtle text-secondary border border-border-subtle">
+                  Forum
+                </span>
+              </button>
+            </div>
+
             {/* COURSE ASSIGNMENTS & DELIVERABLES */}
             {courseAssignments && courseAssignments.length > 0 && (
               <div className="py-3 border-t border-border-subtle">
@@ -714,6 +794,15 @@ export default function CoursePlayerPage() {
         {/* Main Stage Area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center">
           <div className="w-full max-w-4xl space-y-6">
+            {/* VIEW 4: COURSE DISCUSSION FORUM & Q&A */}
+            {activeView === 'discussions' && (
+              <CourseDiscussionForum
+                courseId={course?._id || idOrSlug}
+                courseTitle={course?.title}
+                currentUser={user}
+              />
+            )}
+
             {/* VIEW 1: LESSON CONTENT */}
             {activeView === 'lesson' && (
               <>

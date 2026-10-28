@@ -185,14 +185,14 @@ export default function StudentDashboard() {
         return 'Account & Security';
       case 'overview':
       default:
-        return 'Student Workspace';
+        return null;
     }
   };
 
   return (
     <DashboardLayout
       title={getPageTitle()}
-      subtitle="Personalized learning workspace"
+      subtitle={getPageTitle() ? 'Personalized learning workspace' : null}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={data?.announcements || []}
@@ -233,26 +233,7 @@ export default function StudentDashboard() {
                     <Compass size={14} />
                     <span>Explore Courses</span>
                   </button>
-
-                  <Link
-                    to="/#curriculum"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all"
-                  >
-                    <span>View Public Catalog</span>
-                    <ExternalLink size={13} />
-                  </Link>
                 </div>
-              </div>
-
-              {/* Status Pill */}
-              <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2 text-xs">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40 font-semibold text-[11px]">
-                  <ShieldCheck size={13} />
-                  <span>Authenticated Learner Session</span>
-                </span>
-                <span className="text-[11px] text-tertiary">
-                  Account: <strong className="text-primary font-medium">{user?.email}</strong>
-                </span>
               </div>
             </div>
           </div>

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   UserCheck,
+  MessageSquare,
 } from 'lucide-react';
 import { courseService } from '../services/api';
 import { useAuth } from '../context/useAuth';
@@ -426,6 +427,14 @@ export default function CourseDetailsPage() {
                   >
                     <span>{isEnrolled ? 'Continue Learning' : 'Launch Workspace'}</span>
                     <PlayCircle size={15} />
+                  </Link>
+
+                  <Link
+                    to={`/courses/${course.slug}/learn?view=discussions`}
+                    className="w-full py-2.5 px-4 rounded-xl bg-white border border-[#E4E4E1] hover:border-[#637D91] text-[#171717] text-xs font-semibold hover:bg-[#F2F2F0] transition flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    <MessageSquare size={14} className="text-[#637D91]" />
+                    <span>Q&A Discussion Forum</span>
                   </Link>
                 </div>
               ) : (

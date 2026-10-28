@@ -47,6 +47,20 @@ const submittedFileSchema = new mongoose.Schema(
       trim: true,
       default: 'application/octet-stream',
     },
+    checksum: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    migratedAt: {
+      type: Date,
+      default: null,
+    },
+    migratedFrom: {
+      type: String,
+      enum: ['base64', 'external', null],
+      default: null,
+    },
     uploadedAt: {
       type: Date,
       default: Date.now,

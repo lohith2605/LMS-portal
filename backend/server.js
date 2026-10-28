@@ -16,6 +16,7 @@ const courseRoutes = require('./routes/courseRoutes');
 const instructorRoutes = require('./routes/instructorRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const discussionRoutes = require('./routes/discussionRoutes');
 const { logger } = require('./utils/logger');
 
 const app = express();
@@ -71,6 +72,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/discussions', discussionRoutes);
 
 
 // Root route

@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
+const PendingUpload = require('../models/PendingUpload');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const cloudinaryStorageService = require('../services/cloudinaryStorageService');
@@ -939,13 +940,42 @@ const uploadSubmissionFile = async (req, res) => {
       return res.status(400).json({ error: sigCheck.error });
     }
 
-    // Upload to Cloudinary using private authenticated delivery
+        // Upload to Cloudinary using private authenticated delivery
     const uploadResult = await cloudinaryStorageService.uploadAssignmentFile(buffer, {
       originalName: originalname,
       mimeType: mimetype,
       assignmentId: assignment._id.toString(),
       studentId: req.user.id.toString(),
     });
+
+    // Record verified pending upload in database bound to student and assignment
+    try {
+      await PendingUpload.create({
+        student: req.user.id,
+        assignment: assignment._id,
+        cloudinaryPublicId: uploadResult.cloudinaryPublicId,
+        originalName: uploadResult.originalName,
+        resourceType: uploadResult.resourceType,
+        deliveryType: uploadResult.deliveryType,
+        format: uploadResult.format,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+        checksum: uploadResult.checksum,
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+    } catch (dbErr) {
+      logger.error(`Failed to register pending upload in database: ${dbErr.message}. Cleaning up uploaded asset.`);
+      try {
+        await cloudinaryStorageService.deleteAsset(uploadResult.cloudinaryPublicId, {
+          resourceType: uploadResult.resourceType,
+          deliveryType: uploadResult.deliveryType,
+        });
+      } catch (delErr) {
+        logger.error(`Failed to cleanup orphaned asset: ${delErr.message}`);
+      }
+      return res.status(500).json({ error: 'Failed to record upload in database. Please try again.' });
+    }
 
     return res.status(200).json({
       message: 'File uploaded successfully to storage.',
@@ -1138,13 +1168,27 @@ const submitAssignment = async (req, res) => {
       });
     }
 
-    // Validate text length if provided
+        // Validate text length if provided
     if (hasText && submissionText.length > 10000) {
       return res.status(400).json({ error: 'Submission text cannot exceed 10,000 characters.' });
     }
 
-    // Validate files if provided
+    // Check for existing active submission before processing files
+    let submission = await AssignmentSubmission.findOne({
+      assignment: assignment._id,
+      student: req.user.id,
+    });
+
+    if (submission && submission.status === 'graded') {
+      return res.status(400).json({
+        error: 'This assignment has already been evaluated and graded. Resubmission is not permitted.',
+      });
+    }
+
+    // Validate files with strict ownership and provenance verification
     const validatedFiles = [];
+    const pendingUploadsToConsume = [];
+
     if (hasFiles) {
       if (!assignment.submissionTypes.includes('file')) {
         return res.status(400).json({ error: 'File submissions are not enabled for this assignment.' });
@@ -1172,21 +1216,78 @@ const submitAssignment = async (req, res) => {
         }
 
         if (file.cloudinaryPublicId) {
-          // Cloudinary stored file: Never store Base64 or permanent raw URLs
+          const publicId = file.cloudinaryPublicId.trim();
+
+          // 1. Verify file ownership against pending uploads for this student and assignment
+          const pendingRecord = await PendingUpload.findOne({
+            cloudinaryPublicId: publicId,
+            student: req.user.id,
+            assignment: assignment._id,
+          });
+
+          // 2. Check if file was already part of an existing submission version for this student and assignment
+          const isAlreadySubmittedFile = submission && (
+            (submission.submittedFiles || []).some((f) => f.cloudinaryPublicId === publicId) ||
+            (submission.history || []).some((h) => (h.submittedFiles || []).some((f) => f.cloudinaryPublicId === publicId))
+          );
+
+          if (!pendingRecord && !isAlreadySubmittedFile) {
+            return res.status(400).json({
+              error: `Invalid or unverified file reference: "${file.originalName || publicId}". Please upload files through the authorized upload channel.`,
+            });
+          }
+
+          if (pendingRecord) {
+            const isExpired = pendingRecord.status === 'expired' || (pendingRecord.expiresAt && new Date() > new Date(pendingRecord.expiresAt));
+            if (isExpired) {
+              return res.status(400).json({
+                error: `Upload session for file "${pendingRecord.originalName}" has expired. Please re-upload your file.`,
+              });
+            }
+
+            // Check if already consumed by a DIFFERENT submission
+            if (
+              pendingRecord.status === 'consumed' &&
+              pendingRecord.submission &&
+              (!submission || pendingRecord.submission.toString() !== submission._id.toString())
+            ) {
+              return res.status(400).json({
+                error: `File "${pendingRecord.originalName}" has already been consumed in another submission.`,
+              });
+            }
+          }
+
+          // Use verified metadata from server-persisted record rather than trusting client body
+          const verified = pendingRecord || (
+            (submission?.submittedFiles || []).find((f) => f.cloudinaryPublicId === publicId) ||
+            (submission?.history || []).flatMap((h) => h.submittedFiles || []).find((f) => f.cloudinaryPublicId === publicId)
+          );
+
           validatedFiles.push({
-            originalName: file.originalName.trim(),
-            cloudinaryPublicId: file.cloudinaryPublicId.trim(),
-            resourceType: file.resourceType || 'raw',
-            deliveryType: file.deliveryType || 'authenticated',
-            format: file.format || ext,
-            fileSize: Number(file.fileSize),
-            mimeType: file.mimeType ? file.mimeType.trim() : 'application/octet-stream',
-            checksum: file.checksum || '',
+            originalName: verified.originalName || file.originalName.trim(),
+            cloudinaryPublicId: verified.cloudinaryPublicId || publicId,
+            resourceType: verified.resourceType || 'raw',
+            deliveryType: verified.deliveryType || 'authenticated',
+            format: verified.format || ext,
+            fileSize: Number(verified.fileSize || file.fileSize),
+            mimeType: verified.mimeType || 'application/octet-stream',
+            checksum: verified.checksum || '',
             storageProvider: 'cloudinary',
             fileUrl: '', // Explicitly empty to prevent Base64 persistence in MongoDB
-            uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date(),
+            uploadedAt: verified.uploadedAt ? new Date(verified.uploadedAt) : new Date(),
           });
+
+          if (pendingRecord && pendingRecord.status === 'pending') {
+            pendingUploadsToConsume.push(pendingRecord._id);
+          }
         } else {
+          // Reject direct Cloudinary URLs supplied in fileUrl
+          if (file.fileUrl && (file.fileUrl.includes('cloudinary.com') || file.fileUrl.includes('res.cloudinary'))) {
+            return res.status(400).json({
+              error: 'Direct Cloudinary URLs are not permitted. Please upload files through the submission portal.',
+            });
+          }
+
           // Backward compatibility: Legacy Base64 or external file
           const isBase64 = file.fileUrl && file.fileUrl.startsWith('data:');
           validatedFiles.push({
@@ -1201,22 +1302,9 @@ const submitAssignment = async (req, res) => {
       }
     }
 
-    // Check for existing active submission
-    let submission = await AssignmentSubmission.findOne({
-      assignment: assignment._id,
-      student: req.user.id,
-    });
-
     const statusValue = isLate ? 'late' : 'submitted';
 
     if (submission) {
-      // If already graded and not returned for revision, check if resubmissions permitted
-      if (submission.status === 'graded') {
-        return res.status(400).json({
-          error: 'This assignment has already been evaluated and graded. Resubmission is not permitted.',
-        });
-      }
-
       // Archive previous version into history
       submission.history.push({
         version: submission.version,
@@ -1241,6 +1329,14 @@ const submitAssignment = async (req, res) => {
         throw saveErr;
       }
 
+      // Mark pending uploads as consumed only AFTER successful persistence
+      if (pendingUploadsToConsume.length > 0) {
+        await PendingUpload.updateMany(
+          { _id: { $in: pendingUploadsToConsume } },
+          { $set: { status: 'consumed', submission: submission._id, consumedAt: new Date() } }
+        );
+      }
+
       logger.success(`Assignment resubmitted (v${submission.version}) by ${req.user.email} for "${assignment.title}"`);
 
       return res.status(200).json({
@@ -1261,6 +1357,14 @@ const submitAssignment = async (req, res) => {
       status: statusValue,
       version: 1,
     });
+
+    // Mark pending uploads as consumed only AFTER successful persistence
+    if (pendingUploadsToConsume.length > 0) {
+      await PendingUpload.updateMany(
+        { _id: { $in: pendingUploadsToConsume } },
+        { $set: { status: 'consumed', submission: submission._id, consumedAt: new Date() } }
+      );
+    }
 
     logger.success(`Assignment submitted (v1) by ${req.user.email} for "${assignment.title}"`);
 

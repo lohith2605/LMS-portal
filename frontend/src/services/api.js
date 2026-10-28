@@ -548,6 +548,53 @@ export const assignmentService = {
   },
 };
 
+
+
+export const discussionService = {
+  getCourseDiscussions: async (courseIdOrSlug, params = {}) => {
+    const res = await api.get(`/discussions/course/${courseIdOrSlug}`, { params });
+    return res.data;
+  },
+  createDiscussion: async (courseIdOrSlug, data) => {
+    const res = await api.post(`/discussions/course/${courseIdOrSlug}`, data);
+    return res.data;
+  },
+  getDiscussionById: async (id, params = {}) => {
+    const res = await api.get(`/discussions/${id}`, { params });
+    return res.data;
+  },
+  updateDiscussion: async (id, data) => {
+    const res = await api.patch(`/discussions/${id}`, data);
+    return res.data;
+  },
+  deleteDiscussion: async (id) => {
+    const res = await api.delete(`/discussions/${id}`);
+    return res.data;
+  },
+  createReply: async (discussionId, data) => {
+    const res = await api.post(`/discussions/${discussionId}/replies`, data);
+    return res.data;
+  },
+  updateReply: async (discussionId, replyId, data) => {
+    const res = await api.patch(`/discussions/${discussionId}/replies/${replyId}`, data);
+    return res.data;
+  },
+  deleteReply: async (discussionId, replyId) => {
+    const res = await api.delete(`/discussions/${discussionId}/replies/${replyId}`);
+    return res.data;
+  },
+  toggleAcceptedAnswer: async (discussionId, replyId) => {
+    const res = await api.patch(`/discussions/${discussionId}/replies/${replyId}/accept`);
+    return res.data;
+  },
+  togglePinDiscussion: async (id) => {
+    const res = await api.patch(`/discussions/${id}/pin`);
+    return res.data;
+  },
+  toggleLockDiscussion: async (id) => {
+    const res = await api.patch(`/discussions/${id}/lock`);
+    return res.data;
+  },
+};
+
 export default api;
-
-
