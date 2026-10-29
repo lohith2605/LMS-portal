@@ -83,11 +83,9 @@ export default function HeroSection({ onExploreCourses, onHowItWorks }) {
         {/* ========================================================= */}
         {/* LOWER SHOWCASE ZONE: Wide Integrated Product Canvas       */}
         {/* ========================================================= */}
-        <Reveal triggerOnMount delayMs={400}>
-          <div className="w-full max-w-[1160px] mx-auto hover-lift transition-all">
-            <ProductPreview />
-          </div>
-        </Reveal>
+        <div className="w-full max-w-[1160px] mx-auto">
+          <ProductPreview />
+        </div>
 
       </div>
     </section>
