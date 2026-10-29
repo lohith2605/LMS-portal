@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
+import SkillShowcaseBanner from '../components/SkillShowcaseBanner';
 import CourseDiscovery from '../components/CourseDiscovery';
 import LearningJourney from '../components/LearningJourney';
 import PlatformFeatures from '../components/PlatformFeatures';
@@ -75,6 +76,12 @@ export default function LandingPage() {
         <HeroSection
           onExploreCourses={() => scrollToSection('courses')}
           onHowItWorks={() => scrollToSection('journey')}
+        />
+
+        {/* Skill Showcase Banners with Floating Glass Stickers */}
+        <SkillShowcaseBanner
+          onExploreCourses={() => scrollToSection('courses')}
+          onGetStarted={() => handleOpenAuth('register')}
         />
 
         {/* Course Discovery & Catalog */}
