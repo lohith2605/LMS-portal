@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
@@ -18,7 +18,11 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     return '/student/dashboard';
   };
 
-  const [activeSection, setActiveSection] = useState('');
+  const [activeSection, setActiveSection] = useState('courses');
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+  const navItemRefs = useRef({});
+  const isManualScrollRef = useRef(false);
+  const scrollTimerRef = useRef(null);
 
   const navItems = [
     { id: 'courses', label: 'Explore Courses' },
@@ -27,11 +31,39 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     { id: 'instructors', label: 'For Instructors' },
   ];
 
+  // Update sliding indicator position based on active item DOM bounding box
+  const updateIndicator = useCallback(() => {
+    const activeEl = navItemRefs.current[activeSection];
+    if (activeEl) {
+      setIndicatorStyle({
+        left: activeEl.offsetLeft,
+        top: activeEl.offsetTop,
+        width: activeEl.offsetWidth,
+        height: activeEl.offsetHeight,
+        opacity: 1,
+      });
+    } else {
+      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }));
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    // Initial mount and section updates
+    updateIndicator();
+  }, [updateIndicator]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [updateIndicator]);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 15);
 
-      // Determine active section based on scroll offset
+      // Avoid intermediate scroll updates during smooth programmatic scrolling
+      if (isManualScrollRef.current) return;
+
       const scrollPos = window.scrollY + 140;
       let current = '';
 
@@ -46,12 +78,22 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           }
         }
       }
-      setActiveSection(current);
+
+      if (current && current !== activeSection) {
+        setActiveSection(current);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeSection]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
   }, []);
 
   // Close mobile drawer on Escape key
@@ -69,6 +111,14 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     e.preventDefault();
     setMobileMenuOpen(false);
     setActiveSection(targetId);
+
+    // Lock scrollspy detection to prevent bouncing/flickering across sections during smooth scrolling
+    isManualScrollRef.current = true;
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      isManualScrollRef.current = false;
+    }, 850);
+
     const element = document.getElementById(targetId);
     if (element) {
       const navOffset = 76;
@@ -100,29 +150,42 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           ariaLabel={`${brandName} Home`}
         />
 
-        {/* Desktop Nav Items with Active + Theme Hover Highlights */}
+        {/* Desktop Nav Items with Silky-Smooth Gliding Indicator */}
         <nav aria-label="Main Navigation">
-          <ul className="hidden md:flex items-center gap-1.5 list-none p-1 rounded-full bg-surface-subtle/70 border border-border-subtle/60 backdrop-blur-xs">
+          <ul className="hidden md:flex items-center list-none p-1 rounded-full bg-surface-subtle/80 border border-border-subtle/70 backdrop-blur-xs relative select-none">
+            {/* Smooth Gliding Active Pill Indicator */}
+            <div
+              className="absolute rounded-full bg-accent-subtle border border-accent/35 shadow-2xs pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+              style={{
+                left: `${indicatorStyle.left}px`,
+                top: `${indicatorStyle.top}px`,
+                width: `${indicatorStyle.width}px`,
+                height: `${indicatorStyle.height}px`,
+                opacity: indicatorStyle.opacity,
+              }}
+              aria-hidden="true"
+            />
+
             {navItems.map((item) => {
               const isActive = activeSection === item.id;
               return (
-                <li key={item.id}>
+                <li
+                  key={item.id}
+                  ref={(el) => {
+                    navItemRefs.current[item.id] = el;
+                  }}
+                  className="relative z-10"
+                >
                   <a
                     href={`#${item.id}`}
                     onClick={(e) => handleNavClick(e, item.id)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                    className={`inline-flex items-center justify-center text-xs font-semibold px-4 py-1.5 rounded-full transition-colors duration-250 cursor-pointer ${
                       isActive
-                        ? 'bg-accent-subtle text-accent border border-accent/30 shadow-2xs'
-                        : 'text-secondary hover:text-primary hover:bg-surface-subtle hover:border-border-subtle/60 border border-transparent'
+                        ? 'text-accent'
+                        : 'text-secondary hover:text-primary hover:bg-surface-subtle/50'
                     }`}
                   >
-                    {isActive && (
-                      <span
-                        className="w-1.5 h-1.5 rounded-full bg-accent animate-live-pulse shrink-0"
-                        aria-hidden="true"
-                      />
-                    )}
                     <span>{item.label}</span>
                   </a>
                 </li>
