@@ -17,6 +17,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import CourseDetailsPage from './pages/CourseDetailsPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import ContactPage from './pages/ContactPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function DashboardRedirect() {
@@ -56,6 +59,9 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/contact" element={<ContactPage />} />
 
       {/* Course Discovery & Player Pages */}
       <Route path="/courses/:idOrSlug" element={<CourseDetailsPage />} />
