@@ -99,6 +99,29 @@ export const authService = {
     const res = await api.post('/auth/resend-verification');
     return res.data;
   },
+
+  /**
+   * Upload or update user profile picture
+   * @param {File} file - Image file (JPG, PNG, WebP)
+   */
+  updateProfilePicture: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const res = await api.patch('/auth/profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  },
+
+  /**
+   * Remove profile picture and restore default avatar
+   */
+  deleteProfilePicture: async () => {
+    const res = await api.delete('/auth/profile-picture');
+    return res.data;
+  },
 };
 
 export const dashboardService = {
@@ -786,6 +809,17 @@ export const analyticsService = {
    */
   getAdminAnalytics: async () => {
     const res = await api.get('/admin/analytics');
+    return res.data;
+  },
+};
+
+export const contactService = {
+  /**
+   * Submit support message or general inquiry
+   * @param {{ name: string, email: string, subject: string, message: string }} payload
+   */
+  submitMessage: async (payload) => {
+    const res = await api.post('/contact', payload);
     return res.data;
   },
 };

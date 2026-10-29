@@ -34,6 +34,7 @@ import {
   FileClock,
   Library,
   BookOpenCheck,
+  Camera,
 } from 'lucide-react';
 import IconChip from '../components/ui/IconChip';
 import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
@@ -53,6 +54,7 @@ import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
 import AcademicCalendar from '../components/dashboard/AcademicCalendar';
+import ProfilePictureModal from '../components/profile/ProfilePictureModal';
 import StudentAnalyticsView from '../components/analytics/StudentAnalyticsView';
 
 
@@ -105,6 +107,7 @@ export default function StudentDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   // Phase 9: Course Discovery & Explore Catalog State
   const [exploreCourses, setExploreCourses] = useState([]);
@@ -401,14 +404,35 @@ export default function StudentDashboard() {
                 </div>
               </div>
 
-              <div className="hidden lg:flex items-center gap-3">
-                <IconChip
-                  icon={GraduationCap}
-                  tone="accent"
-                  size="lg"
-                  animate
-                  className="w-16 h-16 rounded-2xl shadow-card"
-                />
+              <div className="hidden lg:flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  title="Click to edit profile picture"
+                  className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent rounded-2xl"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-accent transition-all">
+                    {user?.avatar?.url ? (
+                      <img
+                        src={user.avatar.url}
+                        alt={user?.name || 'Profile'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.name
+                        ? user.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase()
+                        : 'U'
+                    )}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
+                    <Camera size={12} />
+                  </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1670,6 +1694,62 @@ export default function StudentDashboard() {
           {/* TAB: SECURITY & PROFILE */}
           {activeTab === 'security' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Profile Picture Management Card */}
+              <div className="lg:col-span-2 bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                  <div className="relative group">
+                    <div className="w-20 h-20 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-xl overflow-hidden shadow-xs ring-4 ring-border-subtle">
+                      {user?.avatar?.url ? (
+                        <img
+                          src={user.avatar.url}
+                          alt={user?.name || 'Student avatar'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        user?.name
+                          ? user.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join('')
+                              .toUpperCase()
+                          : 'U'
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarModalOpen(true)}
+                      className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-xl bg-surface border border-border-subtle text-primary shadow-xs hover:bg-surface-subtle transition-transform hover:scale-110 cursor-pointer"
+                      aria-label="Edit Profile Picture"
+                    >
+                      <Camera size={14} />
+                    </button>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                      <h3 className="text-base font-bold text-primary">{user?.name}</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-blue-pale text-accent-blue-dark">
+                        {user?.role}
+                      </span>
+                    </div>
+                    <p className="text-xs text-secondary mb-2">{user?.email}</p>
+                    <p className="text-[11px] text-tertiary">
+                      {user?.avatar?.url
+                        ? 'Custom profile picture active across dashboard and header'
+                        : 'Default system initials in use'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle text-xs font-semibold text-primary transition-all shadow-xs cursor-pointer hover-lift shrink-0"
+                >
+                  <Camera size={15} />
+                  <span>Edit Profile Picture</span>
+                </button>
+              </div>
+
               {/* Password update form */}
               <div className="bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
                 <div className="flex items-center gap-2.5 mb-2">
@@ -1872,6 +1952,12 @@ export default function StudentDashboard() {
           }}
         />
       )}
+
+      {/* Profile Picture Modal */}
+      <ProfilePictureModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+      />
     </DashboardLayout>
   );
 }

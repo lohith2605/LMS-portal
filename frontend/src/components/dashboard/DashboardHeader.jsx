@@ -13,6 +13,7 @@ export default function DashboardHeader({
   onOpenNotifications,
   unreadCount = 0,
   onOpenPasswordModal,
+  onOpenAvatarModal,
 }) {
   const roleBadges = {
     admin: 'bg-rose-100 text-rose-800 border-rose-200',
@@ -89,6 +90,7 @@ export default function DashboardHeader({
           user={user}
           logout={logout}
           onOpenPasswordModal={onOpenPasswordModal}
+          onOpenAvatarModal={onOpenAvatarModal}
         />
       </div>
     </header>

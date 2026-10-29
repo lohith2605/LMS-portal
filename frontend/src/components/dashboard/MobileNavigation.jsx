@@ -29,6 +29,7 @@ export default function MobileNavigation({
   onSelectTab,
   logout,
   onOpenPasswordModal,
+  onOpenAvatarModal,
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -168,9 +169,25 @@ export default function MobileNavigation({
         {/* Footer */}
         <div className="p-4 border-t border-border-subtle bg-surface-subtle/60">
           <div className="p-3 bg-surface border border-border-subtle rounded-2xl shadow-xs mb-3 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold">
-              {initials}
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onOpenAvatarModal) onOpenAvatarModal();
+              }}
+              className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold overflow-hidden ring-1 ring-border-subtle cursor-pointer shrink-0"
+              title="Edit Profile Picture"
+            >
+              {user?.avatar?.url ? (
+                <img
+                  src={user.avatar.url}
+                  alt={user?.name || 'User avatar'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+            </button>
             <div className="overflow-hidden flex-1">
               <span className="text-xs font-bold text-primary block truncate">
                 {user?.name}

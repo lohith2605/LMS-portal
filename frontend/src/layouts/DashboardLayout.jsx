@@ -6,6 +6,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import MobileNavigation from '../components/dashboard/MobileNavigation';
 import NotificationDrawer from '../components/dashboard/NotificationDrawer';
 import ChangePasswordModal from '../components/dashboard/ChangePasswordModal';
+import ProfilePictureModal from '../components/profile/ProfilePictureModal';
 
 export default function DashboardLayout({
   title = 'Dashboard',
@@ -20,6 +21,7 @@ export default function DashboardLayout({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   const role = user?.role || 'student';
 
@@ -33,6 +35,7 @@ export default function DashboardLayout({
         onSelectTab={onSelectTab}
         logout={logout}
         onOpenPasswordModal={() => setPasswordModalOpen(true)}
+        onOpenAvatarModal={() => setAvatarModalOpen(true)}
       />
 
       {/* Main Workspace Column */}
@@ -47,6 +50,7 @@ export default function DashboardLayout({
           onOpenNotifications={() => setNotificationsOpen(true)}
           unreadCount={unreadCount}
           onOpenPasswordModal={() => setPasswordModalOpen(true)}
+          onOpenAvatarModal={() => setAvatarModalOpen(true)}
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1280px] w-full mx-auto">
@@ -64,6 +68,7 @@ export default function DashboardLayout({
         onSelectTab={onSelectTab}
         logout={logout}
         onOpenPasswordModal={() => setPasswordModalOpen(true)}
+        onOpenAvatarModal={() => setAvatarModalOpen(true)}
       />
 
       {/* Notification Drawer */}
@@ -77,6 +82,12 @@ export default function DashboardLayout({
       <ChangePasswordModal
         isOpen={passwordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
+      />
+
+      {/* Profile Picture Modal */}
+      <ProfilePictureModal
+        isOpen={avatarModalOpen}
+        onClose={() => setAvatarModalOpen(false)}
       />
     </div>
   );

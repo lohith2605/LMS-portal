@@ -26,6 +26,7 @@ export default function DashboardSidebar({
   onSelectTab,
   logout,
   onOpenPasswordModal,
+  onOpenAvatarModal,
 }) {
   const getNavItems = () => {
     switch (role) {
@@ -150,9 +151,22 @@ export default function DashboardSidebar({
       <div className="p-4 border-t border-border-subtle bg-surface-subtle/50">
         <div className="p-3 bg-surface border border-border-subtle rounded-2xl shadow-xs mb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold">
-              {initials}
-            </div>
+            <button
+              type="button"
+              onClick={onOpenAvatarModal}
+              title="Click to edit profile picture"
+              className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold overflow-hidden ring-1 ring-border-subtle hover:ring-2 hover:ring-accent transition-all cursor-pointer shrink-0"
+            >
+              {user?.avatar?.url ? (
+                <img
+                  src={user.avatar.url}
+                  alt={user?.name || 'User avatar'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+            </button>
             <div className="overflow-hidden flex-1">
               <span className="text-xs font-bold text-primary block truncate">
                 {user?.name}
