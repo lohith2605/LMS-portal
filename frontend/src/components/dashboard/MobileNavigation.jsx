@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import BrandLogo from '../ui/BrandLogo';
 import {
   X,
   LayoutDashboard,
@@ -118,14 +119,12 @@ export default function MobileNavigation({
         <div>
           {/* Header */}
           <div className="h-16 px-5 border-b border-border-subtle flex items-center justify-between">
-            <Link to="/" onClick={onClose} className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center font-extrabold text-sm tracking-tight">
-                L
-              </div>
-              <span className="font-extrabold text-sm tracking-tight text-primary">
-                LearnSpace
-              </span>
-            </Link>
+            <BrandLogo
+              to="/"
+              onClick={onClose}
+              size="sm"
+              ariaLabel="LearnSpace Home"
+            />
 
             <button
               type="button"

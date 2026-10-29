@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import BrandLogo from '../components/ui/BrandLogo';
 
 export default function AuthLayout({
   children,
@@ -31,21 +32,16 @@ export default function AuthLayout({
 
           {/* Top Brand & Navigation Header */}
           <div className="relative z-10 flex items-center justify-between">
-            <Link
+            <BrandLogo
               to="/"
-              className="flex items-center gap-3 no-underline text-primary font-bold text-lg tracking-tight group"
-              aria-label="LearnSpace Home"
-            >
-              <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-[15px] font-extrabold tracking-tighter shadow-xs group-hover:scale-105 transition-transform">
-                L
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold tracking-tight">LearnSpace</span>
+              size="md"
+              badge={
                 <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-accent-sage-soft/30">
                   {panelBadge}
                 </span>
-              </div>
-            </Link>
+              }
+              ariaLabel="LearnSpace Home"
+            />
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
@@ -129,15 +125,11 @@ export default function AuthLayout({
           
           {/* Mobile Top Header (hidden on desktop) */}
           <div className="flex lg:hidden items-center justify-between pb-6 border-b border-border-subtle">
-            <Link
+            <BrandLogo
               to="/"
-              className="flex items-center gap-2.5 no-underline text-primary font-bold text-base tracking-tight"
-            >
-              <div className="w-7 h-7 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-extrabold">
-                L
-              </div>
-              <span className="font-bold">LearnSpace</span>
-            </Link>
+              size="sm"
+              ariaLabel="LearnSpace Home"
+            />
 
             <div className="flex items-center gap-2">
               <ThemeToggle />

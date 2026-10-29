@@ -1,4 +1,5 @@
 import React from 'react';
+import BrandLogo from './ui/BrandLogo';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -24,11 +25,13 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8 md:gap-10 mb-12">
           {/* Brand Info */}
           <div className="sm:col-span-2 lg:col-span-1 flex flex-col gap-4 max-w-full lg:max-w-[320px]">
-            <div className="flex items-center gap-2 text-base font-bold text-primary">
-              <span className="w-7 h-7 bg-primary text-white rounded-lg flex items-center justify-center text-[13px] font-extrabold tracking-tighter shadow-xs" aria-hidden="true">
-                L
-              </span>
-              <span>{brandName}</span>
+            <div>
+              <BrandLogo
+                to="/"
+                size="sm"
+                brandName={brandName}
+                ariaLabel={`${brandName} Home`}
+              />
             </div>
             <p className="text-xs text-secondary leading-relaxed">
               A modern learning management system bringing students, instructors, structured courses, assignments, and certificates together in one thoughtfully designed platform.

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import BrandLogo from '../ui/BrandLogo';
 import {
   LayoutDashboard,
   BookOpen,
@@ -87,19 +88,12 @@ export default function DashboardSidebar({
       {/* Brand Header */}
       <div>
         <div className="h-16 px-6 border-b border-border-subtle flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 no-underline">
-            <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center font-extrabold text-sm tracking-tight">
-              L
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-sm tracking-tight text-primary">
-                LearnSpace
-              </span>
-              <span className="text-[10px] text-secondary font-medium tracking-wide">
-                Learning Platform
-              </span>
-            </div>
-          </Link>
+          <BrandLogo
+            to="/"
+            size="sm"
+            subtitle="Learning Platform"
+            ariaLabel="LearnSpace Learning Platform"
+          />
 
           <span
             className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${

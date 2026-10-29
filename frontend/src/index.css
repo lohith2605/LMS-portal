@@ -570,6 +570,13 @@ html, body, header, nav, aside, main, section, footer, article, button, input, t
   animation: compassWobble 0.6s var(--ease-out);
 }
 
+.logo-slide-name {
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.group:hover .logo-slide-name {
+  transform: translateX(8px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -585,7 +592,8 @@ html, body, header, nav, aside, main, section, footer, article, button, input, t
   .hover-lift:hover,
   .btn-press:active,
   .group:hover .group-hover-nudge-x,
-  .group:hover .group-hover-scale {
+  .group:hover .group-hover-scale,
+  .group:hover .logo-slide-name {
     animation: none !important;
     transform: none !important;
   }

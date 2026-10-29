@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Home, ArrowLeft } from 'lucide-react';
+import BrandLogo from '../components/ui/BrandLogo';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-[#F2F2F0] flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-12 h-12 bg-[#171717] text-white rounded-xl flex items-center justify-center font-bold text-lg mb-6 shadow-xs">
-        L
+    <div className="min-h-screen bg-page flex flex-col items-center justify-center p-6 text-center">
+      <div className="mb-6">
+        <BrandLogo to="/" size="lg" ariaLabel="LearnSpace Home" />
       </div>
 
       <div className="max-w-md bg-white border border-[#E4E4E1] rounded-2xl p-8 shadow-xs">

@@ -3,6 +3,7 @@ import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard, ShieldCheck } from 'luc
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import ThemeToggle from './ThemeToggle';
+import BrandLogo from './ui/BrandLogo';
 
 export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -62,11 +63,13 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
         {/* Brand */}
-        <Link to="/" className="flex items-center gap-3 no-underline text-primary font-bold text-lg tracking-tight" aria-label={`${brandName} Home`}>
-          <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-[15px] font-extrabold tracking-tighter shadow-xs" aria-hidden="true">L</div>
-          <span>{brandName}</span>
-          <span className="text-[11px] font-semibold uppercase tracking-wider px-[7px] py-[2px] rounded-full bg-accent-sage-pale text-accent-sage-dark">Platform</span>
-        </Link>
+        <BrandLogo
+          to="/"
+          size="md"
+          brandName={brandName}
+          badge="Platform"
+          ariaLabel={`${brandName} Home`}
+        />
 
         {/* Desktop Nav Items */}
         <nav aria-label="Main Navigation">
