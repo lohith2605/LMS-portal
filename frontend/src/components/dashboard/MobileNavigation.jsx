@@ -5,18 +5,18 @@ import {
   LayoutDashboard,
   BookOpen,
   Compass,
-  FileText,
-  Calendar,
-  Bell,
-  KeyRound,
+  ClipboardList,
+  CalendarDays,
+  Megaphone,
+  ShieldCheck,
   Users,
-  GraduationCap,
-  CheckCircle2,
-  LogOut,
-  FolderLock,
   Award,
-  FileCheck,
   BarChart3,
+  Library,
+  Inbox,
+  ListChecks,
+  ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 
 export default function MobileNavigation({
@@ -47,22 +47,22 @@ export default function MobileNavigation({
         return [
           { id: 'overview', label: 'Platform Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
-          { id: 'approvals', label: 'Instructor Approvals', icon: CheckCircle2 },
+          { id: 'approvals', label: 'Instructor Approvals', icon: ShieldAlert },
           { id: 'users', label: 'User Directory', icon: Users },
-          { id: 'moderation', label: 'Course Moderation', icon: FolderLock },
-          { id: 'security', label: 'Admin Security', icon: KeyRound },
+          { id: 'moderation', label: 'Course Moderation', icon: Library },
+          { id: 'security', label: 'Admin Security', icon: ShieldCheck },
         ];
       case 'instructor':
         return [
           { id: 'overview', label: 'Teaching Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Course Analytics', icon: BarChart3 },
-          { id: 'courses', label: 'My Courses', icon: BookOpen },
-          { id: 'assignments', label: 'Assignments & Projects', icon: FileCheck },
-          { id: 'reviews', label: 'Submissions & Grading', icon: FileText },
-          { id: 'assessments', label: 'Assessments & Quizzes', icon: Award },
-          { id: 'learners', label: 'Enrolled Learners', icon: GraduationCap },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'security', label: 'Account Security', icon: KeyRound },
+          { id: 'courses', label: 'My Courses', icon: Library },
+          { id: 'assignments', label: 'Assignments & Projects', icon: ClipboardList },
+          { id: 'reviews', label: 'Submissions & Grading', icon: Inbox },
+          { id: 'assessments', label: 'Assessments & Quizzes', icon: ListChecks },
+          { id: 'learners', label: 'Enrolled Learners', icon: Users },
+          { id: 'announcements', label: 'Announcements', icon: Megaphone },
+          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
       case 'student':
       default:
@@ -72,10 +72,10 @@ export default function MobileNavigation({
           { id: 'learning', label: 'My Learning', icon: BookOpen },
           { id: 'certificates', label: 'Earned Certificates', icon: Award },
           { id: 'explore', label: 'Explore Courses', icon: Compass },
-          { id: 'assignments', label: 'Assignments', icon: FileText },
-          { id: 'calendar', label: 'Schedule & Calendar', icon: Calendar },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'security', label: 'Account Security', icon: KeyRound },
+          { id: 'assignments', label: 'Assignments', icon: ClipboardList },
+          { id: 'calendar', label: 'Schedule & Calendar', icon: CalendarDays },
+          { id: 'announcements', label: 'Announcements', icon: Megaphone },
+          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
     }
   };

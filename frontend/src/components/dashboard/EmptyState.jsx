@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import IconChip from '../ui/IconChip';
 
 export default function EmptyState({
   icon: Icon,
@@ -18,8 +19,13 @@ export default function EmptyState({
       className={`bg-surface border border-border-subtle rounded-2xl p-8 sm:p-12 text-center flex flex-col items-center justify-center shadow-xs ${className}`}
     >
       {Icon && (
-        <div className="w-12 h-12 rounded-2xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-secondary mb-4">
-          <Icon size={22} />
+        <div className="mb-4 animate-float-slow">
+          <IconChip
+            icon={Icon}
+            tone="neutral"
+            size="lg"
+            className="w-14 h-14 rounded-2xl shadow-xs"
+          />
         </div>
       )}
 
@@ -39,7 +45,7 @@ export default function EmptyState({
             actionHref ? (
               <Link
                 to={actionHref}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 transition-all"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all"
               >
                 {actionLabel}
               </Link>
@@ -47,7 +53,7 @@ export default function EmptyState({
               <button
                 type="button"
                 onClick={onAction}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer"
               >
                 {actionLabel}
               </button>
@@ -58,7 +64,7 @@ export default function EmptyState({
             secondaryHref ? (
               <Link
                 to={secondaryHref}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all"
               >
                 {secondaryActionLabel}
               </Link>
@@ -66,7 +72,7 @@ export default function EmptyState({
               <button
                 type="button"
                 onClick={onSecondaryAction}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all cursor-pointer"
               >
                 {secondaryActionLabel}
               </button>
@@ -77,3 +83,4 @@ export default function EmptyState({
     </div>
   );
 }
+

@@ -1,4 +1,6 @@
 import React from 'react';
+import IconChip from '../ui/IconChip';
+import AnimatedNumber from '../ui/AnimatedNumber';
 
 export default function MetricCard({
   title,
@@ -18,13 +20,21 @@ export default function MetricCard({
     default: 'bg-surface-subtle text-secondary border-border-subtle',
   };
 
+  const toneMap = {
+    sage: 'success',
+    blue: 'accent',
+    amber: 'warning',
+    rose: 'danger',
+    default: 'neutral',
+  };
+
   const CardWrapper = onClick ? 'button' : 'div';
 
   return (
     <CardWrapper
       onClick={onClick}
-      className={`text-left bg-surface border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs hover:border-border-medium transition-all ${
-        onClick ? 'cursor-pointer hover:shadow-sm' : ''
+      className={`group text-left bg-surface border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs hover:border-border-medium hover-lift transition-all ${
+        onClick ? 'cursor-pointer hover:shadow-card' : ''
       } ${className}`}
     >
       <div className="flex items-center justify-between mb-3">
@@ -32,15 +42,23 @@ export default function MetricCard({
           {title}
         </span>
         {Icon && (
-          <div className="w-8 h-8 rounded-xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-primary">
-            <Icon size={16} />
-          </div>
+          <IconChip
+            icon={Icon}
+            tone={toneMap[badgeType] || 'neutral'}
+            size="md"
+            animate
+            className="group-hover:scale-105 group-hover:rotate-1"
+          />
         )}
       </div>
 
       <div className="flex items-baseline gap-2.5">
         <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-primary">
-          {value}
+          {typeof value === 'number' || (typeof value === 'string' && !isNaN(parseFloat(value))) ? (
+            <AnimatedNumber value={value} />
+          ) : (
+            value
+          )}
         </span>
         {badge && (
           <span
@@ -61,3 +79,4 @@ export default function MetricCard({
     </CardWrapper>
   );
 }
+

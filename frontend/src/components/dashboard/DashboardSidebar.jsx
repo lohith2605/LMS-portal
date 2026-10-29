@@ -4,18 +4,18 @@ import {
   LayoutDashboard,
   BookOpen,
   Compass,
-  FileText,
-  Calendar,
-  Bell,
-  KeyRound,
+  ClipboardList,
+  CalendarDays,
+  Megaphone,
+  ShieldCheck,
   Users,
-  GraduationCap,
-  CheckCircle2,
-  LogOut,
-  FolderLock,
   Award,
-  FileCheck,
   BarChart3,
+  Library,
+  Inbox,
+  ListChecks,
+  ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 
 export default function DashboardSidebar({
@@ -32,22 +32,22 @@ export default function DashboardSidebar({
         return [
           { id: 'overview', label: 'Platform Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
-          { id: 'approvals', label: 'Instructor Approvals', icon: CheckCircle2 },
+          { id: 'approvals', label: 'Instructor Approvals', icon: ShieldAlert },
           { id: 'users', label: 'User Directory', icon: Users },
-          { id: 'moderation', label: 'Course Moderation', icon: FolderLock },
-          { id: 'security', label: 'Admin Security', icon: KeyRound },
+          { id: 'moderation', label: 'Course Moderation', icon: Library },
+          { id: 'security', label: 'Admin Security', icon: ShieldCheck },
         ];
       case 'instructor':
         return [
           { id: 'overview', label: 'Teaching Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Course Analytics', icon: BarChart3 },
-          { id: 'courses', label: 'My Courses', icon: BookOpen },
-          { id: 'assignments', label: 'Assignments & Projects', icon: FileCheck },
-          { id: 'reviews', label: 'Submissions & Grading', icon: FileText },
-          { id: 'assessments', label: 'Assessments & Quizzes', icon: Award },
-          { id: 'learners', label: 'Enrolled Learners', icon: GraduationCap },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'security', label: 'Account Security', icon: KeyRound },
+          { id: 'courses', label: 'My Courses', icon: Library },
+          { id: 'assignments', label: 'Assignments & Projects', icon: ClipboardList },
+          { id: 'reviews', label: 'Submissions & Grading', icon: Inbox },
+          { id: 'assessments', label: 'Assessments & Quizzes', icon: ListChecks },
+          { id: 'learners', label: 'Enrolled Learners', icon: Users },
+          { id: 'announcements', label: 'Announcements', icon: Megaphone },
+          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
       case 'student':
       default:
@@ -57,10 +57,10 @@ export default function DashboardSidebar({
           { id: 'learning', label: 'My Learning', icon: BookOpen },
           { id: 'certificates', label: 'Earned Certificates', icon: Award },
           { id: 'explore', label: 'Explore Courses', icon: Compass },
-          { id: 'assignments', label: 'Assignments', icon: FileText },
-          { id: 'calendar', label: 'Schedule & Calendar', icon: Calendar },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'security', label: 'Account Security', icon: KeyRound },
+          { id: 'assignments', label: 'Assignments', icon: ClipboardList },
+          { id: 'calendar', label: 'Schedule & Calendar', icon: CalendarDays },
+          { id: 'announcements', label: 'Announcements', icon: Megaphone },
+          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
     }
   };
@@ -130,7 +130,7 @@ export default function DashboardSidebar({
                       onSelectTab(item.id);
                     }
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                  className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer text-left ${
                     isActive
                       ? 'bg-primary text-white shadow-xs'
                       : 'text-secondary hover:text-primary hover:bg-surface-subtle'
@@ -138,7 +138,11 @@ export default function DashboardSidebar({
                 >
                   <Icon
                     size={16}
-                    className={isActive ? 'text-white' : 'text-secondary'}
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                    className={`transition-transform duration-200 group-hover:translate-x-0.5 ${
+                      isActive ? 'text-white' : 'text-secondary group-hover:text-primary'
+                    }`}
                   />
                   <span>{item.label}</span>
                 </button>

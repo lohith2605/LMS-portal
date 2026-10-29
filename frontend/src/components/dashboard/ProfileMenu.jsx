@@ -51,9 +51,9 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal }) {
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className="flex items-center gap-2.5 p-1.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/30"
+        className="group flex items-center gap-2.5 p-1.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle hover-lift transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/30"
       >
-        <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold tracking-tight">
+        <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold tracking-tight ring-2 ring-border-subtle group-hover:ring-accent transition-all">
           {initials}
         </div>
         <div className="hidden md:flex flex-col text-left pr-1">
