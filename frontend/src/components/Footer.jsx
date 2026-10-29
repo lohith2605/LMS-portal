@@ -49,11 +49,16 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
               LearnSpace is a full-stack learning platform helping students and instructors access structured courses, interactive assignments, assessments, and verified completion credentials.
             </p>
 
-            {/* Social Media Channels */}
+            {/* Social Media Channels & Handles */}
             <div className="pt-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary block mb-2.5">
-                Connect With Us
-              </span>
+              <div className="flex items-center justify-between mb-2.5 max-w-xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+                  Connect With Us
+                </span>
+                <span className="text-[10px] font-mono font-medium text-secondary bg-surface-subtle px-2 py-0.5 rounded-full border border-border-subtle">
+                  @learnspace_lms
+                </span>
+              </div>
               <div className="flex items-center gap-2 flex-wrap" role="list" aria-label="Social media links">
                 {SOCIAL_LINKS.map((social) => {
                   const isConfigured = Boolean(social.url);
@@ -65,10 +70,16 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
                         href={social.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={social.ariaLabel}
-                        className="w-8 h-8 rounded-xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:border-primary/40 hover:bg-surface-elevated transition-all shadow-2xs hover-lift focus:outline-none focus:ring-2 focus:ring-accent"
+                        title={`${social.name}: ${social.handle || social.name}`}
+                        aria-label={`${social.ariaLabel}${social.handle ? ` (${social.handle})` : ''}`}
+                        className="group relative w-8 h-8 rounded-xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:border-primary/40 hover:bg-surface-elevated transition-all shadow-2xs hover-lift focus:outline-none focus:ring-2 focus:ring-accent"
                       >
                         <SocialIcon platform={social.id} size={15} />
+                        {social.handle && (
+                          <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-neutral-900 text-white text-[10px] font-medium py-0.5 px-2 rounded-md whitespace-nowrap shadow-md z-20">
+                            {social.handle}
+                          </span>
+                        )}
                       </a>
                     );
                   }
@@ -87,6 +98,37 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Visible Dummy Social Media Handles */}
+              <div className="mt-2.5 text-[11px] text-tertiary flex items-center gap-1.5 flex-wrap">
+                <span>Handles:</span>
+                <a
+                  href={SOCIAL_LINKS.find((s) => s.id === 'github')?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-secondary hover:text-primary transition-colors underline-offset-2 hover:underline"
+                >
+                  github/lohith2605
+                </a>
+                <span>&bull;</span>
+                <a
+                  href={SOCIAL_LINKS.find((s) => s.id === 'twitter')?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-secondary hover:text-primary transition-colors underline-offset-2 hover:underline"
+                >
+                  x/@learnspace_lms
+                </a>
+                <span>&bull;</span>
+                <a
+                  href={SOCIAL_LINKS.find((s) => s.id === 'linkedin')?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-secondary hover:text-primary transition-colors underline-offset-2 hover:underline"
+                >
+                  in/learnspace-lms
+                </a>
               </div>
             </div>
           </div>
