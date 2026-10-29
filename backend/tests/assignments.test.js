@@ -201,11 +201,15 @@ Assignment.findOne = function (query) {
 
 Assignment.find = function (query) {
   const filtered = mockAssignments.filter((a) => {
+    if (query.instructor && a.instructor.toString() !== query.instructor.toString()) {
+      return false;
+    }
     if (query.course) {
+      const aCourseId = a.course && a.course._id ? a.course._id.toString() : (a.course ? a.course.toString() : null);
       if (typeof query.course === 'object' && query.course.$in) {
         const cIds = query.course.$in.map((id) => id.toString());
-        if (!cIds.includes(a.course.toString())) return false;
-      } else if (a.course.toString() !== query.course.toString()) {
+        if (!cIds.includes(aCourseId)) return false;
+      } else if (aCourseId !== query.course.toString()) {
         return false;
       }
     }
@@ -213,21 +217,26 @@ Assignment.find = function (query) {
     return true;
   });
 
+  const mapPopulate = (items) =>
+    items.map((a) => {
+      const course = mockCourses.find((c) => c._id.toString() === a.course.toString());
+      return { ...a, course: course || a.course };
+    });
+
   return {
     populate: () => ({
       sort: () => ({
-        lean: () =>
-          Promise.resolve(
-            filtered.map((a) => {
-              const course = mockCourses.find((c) => c._id.toString() === a.course.toString());
-              return { ...a, course: course || a.course };
-            })
-          ),
+        lean: () => Promise.resolve(mapPopulate(filtered)),
       }),
+      lean: () => Promise.resolve(mapPopulate(filtered)),
     }),
     sort: () => ({
       lean: () => Promise.resolve(filtered),
+      populate: () => ({
+        lean: () => Promise.resolve(mapPopulate(filtered)),
+      }),
     }),
+    lean: () => Promise.resolve(filtered),
     then: (resolve) => resolve(filtered),
   };
 };
@@ -730,5 +739,74 @@ test('Phase 6 Assignments & Grading Suite', async (t) => {
 
     assert.strictEqual(res.status, 400);
     assert.ok(res.body.error.toLowerCase().includes('deadline has passed'));
+  });
+
+  await t.test('16. Instructor can retrieve all owned assignments across courses with populated course and stats', async () => {
+    // Instructor A calls GET /api/instructor/assignments
+    const resA = await request(app)
+      .get('/api/instructor/assignments')
+      .set('Authorization', `Bearer ${instructorAToken}`);
+
+    assert.strictEqual(resA.status, 200);
+    assert.ok(Array.isArray(resA.body.assignments));
+    assert.ok(resA.body.assignments.length >= 2);
+
+    // Verify course is populated and stats are aggregated
+    const foundAssignment = resA.body.assignments.find((a) => a._id.toString() === createdAssignmentId.toString());
+    assert.ok(foundAssignment, 'Created assignment should be returned for instructor A');
+    assert.ok(foundAssignment.course, 'Course must be populated');
+    assert.strictEqual(foundAssignment.course.title, 'Advanced Fullstack Engineering');
+    assert.ok(foundAssignment.stats, 'Submission stats must be included');
+    assert.ok(typeof foundAssignment.stats.totalSubmissions === 'number');
+
+    // Instructor B calling GET /api/instructor/assignments must not see Instructor A's assignments
+    const resB = await request(app)
+      .get('/api/instructor/assignments')
+      .set('Authorization', `Bearer ${instructorBToken}`);
+
+    assert.strictEqual(resB.status, 200);
+    assert.ok(Array.isArray(resB.body.assignments));
+    const unauthorizedAssignment = resB.body.assignments.find((a) => a._id.toString() === createdAssignmentId.toString());
+    assert.strictEqual(unauthorizedAssignment, undefined, 'Instructor B must not see assignments owned by Instructor A');
+  });
+
+  await t.test('17. Instructor can filter assignments by courseId and is forbidden from accessing other courses', async () => {
+    // Filter by Instructor A's owned course
+    const resFilter = await request(app)
+      .get(`/api/instructor/assignments?courseId=${courseA._id}`)
+      .set('Authorization', `Bearer ${instructorAToken}`);
+
+    assert.strictEqual(resFilter.status, 200);
+    assert.ok(Array.isArray(resFilter.body.assignments));
+    resFilter.body.assignments.forEach((a) => {
+      assert.strictEqual(a.course._id.toString(), courseA._id.toString());
+    });
+
+    // Instructor B attempting to filter by courseA (owned by Instructor A) must receive 403 Forbidden
+    const resForbidden = await request(app)
+      .get(`/api/instructor/assignments?courseId=${courseA._id}`)
+      .set('Authorization', `Bearer ${instructorBToken}`);
+
+    assert.strictEqual(resForbidden.status, 403);
+    assert.ok(resForbidden.body.error.toLowerCase().includes('permission'));
+  });
+
+  await t.test('18. GET /api/instructor/courses/:courseId/assignments verifies ownership and returns course info', async () => {
+    // Instructor A calls course assignments
+    const res = await request(app)
+      .get(`/api/instructor/courses/${courseA._id}/assignments`)
+      .set('Authorization', `Bearer ${instructorAToken}`);
+
+    assert.strictEqual(res.status, 200);
+    assert.ok(Array.isArray(res.body.assignments));
+    assert.ok(res.body.assignments.length >= 2);
+    assert.ok(res.body.assignments[0].course.title);
+
+    // Instructor B calls courseA assignments -> 403
+    const resForbidden = await request(app)
+      .get(`/api/instructor/courses/${courseA._id}/assignments`)
+      .set('Authorization', `Bearer ${instructorBToken}`);
+
+    assert.strictEqual(resForbidden.status, 403);
   });
 });

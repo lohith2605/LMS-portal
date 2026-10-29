@@ -466,7 +466,57 @@ export const quizService = {
 export const certificateService = {
   getCompletionStatus: async (courseIdOrSlug) => {
     const res = await api.get(`/courses/${courseIdOrSlug}/completion-status`);
-    return res.data;
+    const data = res.data;
+    if (!data) return data;
+
+    const criteria = data.criteria || {};
+    const totalMandatoryQuizzes = criteria.totalMandatoryQuizzes ?? 0;
+    const mandatoryQuizzesPassed = criteria.mandatoryQuizzesPassed ?? 0;
+    const allQuizzesPassed =
+      criteria.allQuizzesPassed ??
+      (totalMandatoryQuizzes === 0 || mandatoryQuizzesPassed >= totalMandatoryQuizzes);
+    const totalLessons = criteria.totalLessons ?? 0;
+    const lessonsCompleted = criteria.lessonsCompleted ?? 0;
+    const allLessonsCompleted =
+      criteria.allLessonsCompleted ??
+      (totalLessons > 0 && lessonsCompleted >= totalLessons);
+    const isEligible = Boolean(
+      data.isEligibleForCompletion ??
+        data.isEligible ??
+        (allLessonsCompleted && allQuizzesPassed)
+    );
+    const certificateIssued = Boolean(
+      data.certificateIssued || data.certificate || data.certificateId
+    );
+
+    return {
+      ...data,
+      isEligible,
+      isEligibleForCompletion: isEligible,
+      certificateIssued,
+      certificate: data.certificate || null,
+      criteria: {
+        ...criteria,
+        totalLessons,
+        lessonsCompleted,
+        allLessonsCompleted,
+        totalMandatoryQuizzes,
+        mandatoryQuizzesPassed,
+        allQuizzesPassed,
+      },
+      progress: {
+        lessons: {
+          completed: allLessonsCompleted,
+          completedCount: lessonsCompleted,
+          totalCount: totalLessons,
+        },
+        quizzes: {
+          completed: allQuizzesPassed,
+          passedCount: mandatoryQuizzesPassed,
+          requiredCount: totalMandatoryQuizzes,
+        },
+      },
+    };
   },
   claimCertificate: async (courseIdOrSlug) => {
     const res = await api.post(`/courses/${courseIdOrSlug}/claim-certificate`);
@@ -488,8 +538,22 @@ export const assignmentService = {
     const res = await api.post(`/instructor/courses/${courseId}/assignments`, data);
     return res.data;
   },
+  getInstructorAssignments: async (courseId) => {
+    const res = await api.get('/instructor/assignments', {
+      params: courseId && courseId !== 'all' ? { courseId } : {},
+    });
+    return res.data;
+  },
   getInstructorCourseAssignments: async (courseId) => {
     const res = await api.get(`/instructor/courses/${courseId}/assignments`);
+    return res.data;
+  },
+  getCourseAssignmentsForInstructor: async (courseId) => {
+    if (courseId && courseId !== 'all') {
+      const res = await api.get(`/instructor/courses/${courseId}/assignments`);
+      return res.data;
+    }
+    const res = await api.get('/instructor/assignments');
     return res.data;
   },
   getInstructorAssignmentById: async (assignmentId) => {

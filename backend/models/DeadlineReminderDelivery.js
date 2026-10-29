@@ -43,6 +43,34 @@ const deadlineReminderDeliverySchema = new mongoose.Schema(
       default: 'pending',
       index: true,
     },
+    emailStatus: {
+      type: String,
+      enum: ['pending', 'delivered', 'failed', 'skipped'],
+      default: 'pending',
+      index: true,
+    },
+    notificationStatus: {
+      type: String,
+      enum: ['pending', 'delivered', 'failed', 'skipped'],
+      default: 'pending',
+      index: true,
+    },
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+    emailError: {
+      type: String,
+      default: '',
+    },
+    notificationError: {
+      type: String,
+      default: '',
+    },
+    retryCount: {
+      type: Number,
+      default: 0,
+    },
     errorDetails: {
       type: String,
       default: '',

@@ -72,6 +72,7 @@ export default function InstructorDashboard() {
   const [courseAssignments, setCourseAssignments] = useState([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [assignmentFeedback, setAssignmentFeedback] = useState(null);
+  const [assignmentError, setAssignmentError] = useState(null);
 
   // Phase 6 Grading Review State
   const [gradingModalOpen, setGradingModalOpen] = useState(false);
@@ -131,43 +132,32 @@ export default function InstructorDashboard() {
     try {
       setAssignmentsLoading(true);
       setAssignmentFeedback(null);
-      if (courseIdToFetch && courseIdToFetch !== 'all') {
-        const res = await assignmentService.getCourseAssignmentsForInstructor(courseIdToFetch);
-        setCourseAssignments(res?.assignments || []);
-      } else {
-        const courses = data?.courses || [];
-        if (courses.length > 0) {
-          const promises = courses.map((c) =>
-            assignmentService.getCourseAssignmentsForInstructor(c._id).catch(() => ({ assignments: [] }))
-          );
-          const results = await Promise.all(promises);
-          const combined = results.flatMap((r) => r.assignments || []);
-          setCourseAssignments(combined);
-        } else {
-          setCourseAssignments([]);
-        }
-      }
+      setAssignmentError(null);
+      const res = await assignmentService.getCourseAssignmentsForInstructor(courseIdToFetch);
+      setCourseAssignments(res?.assignments || []);
     } catch (err) {
+      const errorMsg =
+        err.normalizedMessage ||
+        err.response?.data?.error ||
+        err.message ||
+        'Failed to load assignments.';
+      setAssignmentError(errorMsg);
       setAssignmentFeedback({
         type: 'error',
-        text: err.normalizedMessage || 'Failed to load assignments.',
+        text: errorMsg,
       });
     } finally {
       setAssignmentsLoading(false);
     }
-  }, [data?.courses]);
+  }, []);
 
   const fetchSubmissions = useCallback(async () => {
     try {
       setSubmissionsLoading(true);
-      const courses = data?.courses || [];
-      if (courses.length > 0) {
-        const promises = courses.map((c) =>
-          assignmentService.getCourseAssignmentsForInstructor(c._id).catch(() => ({ assignments: [] }))
-        );
-        const results = await Promise.all(promises);
-        const allAssignments = results.flatMap((r) => r.assignments || []);
+      const res = await assignmentService.getCourseAssignmentsForInstructor('all').catch(() => ({ assignments: [] }));
+      const allAssignments = res?.assignments || [];
 
+      if (allAssignments.length > 0) {
         const subPromises = allAssignments.map((a) =>
           assignmentService.getAssignmentSubmissions(a._id).catch(() => ({ submissions: [] }))
         );
@@ -182,7 +172,7 @@ export default function InstructorDashboard() {
     } finally {
       setSubmissionsLoading(false);
     }
-  }, [data?.courses]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -213,10 +203,10 @@ export default function InstructorDashboard() {
   }, [activeTab, selectedAssessmentCourse, data?.courses, fetchQuizzes]);
 
   useEffect(() => {
-    if (activeTab === 'assignments' && data?.courses) {
+    if (activeTab === 'assignments') {
       fetchAssignments(selectedAssignmentCourse);
     }
-  }, [activeTab, selectedAssignmentCourse, data?.courses, fetchAssignments]);
+  }, [activeTab, selectedAssignmentCourse, fetchAssignments]);
 
   useEffect(() => {
     if (activeTab === 'reviews' && data?.courses) {
@@ -1232,18 +1222,18 @@ export default function InstructorDashboard() {
 
                 <div className="flex items-center gap-2 text-xs text-secondary font-medium">
                   <span className="px-2.5 py-1 rounded-lg bg-surface-subtle border border-border-subtle">
-                    Total: <strong className="text-primary">{courseAssignments.length}</strong>
+                    Total: <strong className="text-primary">{assignmentError ? '—' : courseAssignments.length}</strong>
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
                     Published:{' '}
                     <strong className="text-emerald-900">
-                      {courseAssignments.filter((a) => a.status === 'published').length}
+                      {assignmentError ? '—' : courseAssignments.filter((a) => a.status === 'published').length}
                     </strong>
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
                     Draft:{' '}
                     <strong className="text-amber-900">
-                      {courseAssignments.filter((a) => a.status === 'draft').length}
+                      {assignmentError ? '—' : courseAssignments.filter((a) => a.status === 'draft').length}
                     </strong>
                   </span>
                 </div>
@@ -1252,6 +1242,12 @@ export default function InstructorDashboard() {
               {/* Assignments List */}
               {assignmentsLoading ? (
                 <LoadingState message="Loading course assignments..." cardsCount={2} />
+              ) : assignmentError ? (
+                <ErrorState
+                  title="Failed to Load Assignments"
+                  message={assignmentError}
+                  onRetry={() => fetchAssignments(selectedAssignmentCourse)}
+                />
               ) : courseAssignments.length === 0 ? (
                 <EmptyState
                   icon={FileCheck}

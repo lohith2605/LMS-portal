@@ -68,6 +68,8 @@ export default function CoursePlayerPage() {
 
   // Phase 5: Course Completion & Certificate State
   const [completionData, setCompletionData] = useState(null);
+  const [completionLoading, setCompletionLoading] = useState(false);
+  const [completionError, setCompletionError] = useState(null);
   const [claimingCert, setClaimingCert] = useState(false);
   const [certFeedback, setCertFeedback] = useState(null);
 
@@ -150,16 +152,29 @@ export default function CoursePlayerPage() {
   // Fetch quizzes, completion criteria, and assignments
   const fetchQuizzesAndCompletion = useCallback(async () => {
     try {
+      setCompletionLoading(true);
+      setCompletionError(null);
       const [quizRes, compRes, assignRes] = await Promise.all([
         quizService.getCourseQuizzes(idOrSlug).catch(() => ({ quizzes: [] })),
-        certificateService.getCompletionStatus(idOrSlug).catch(() => null),
+        certificateService.getCompletionStatus(idOrSlug).catch((err) => {
+          setCompletionError(
+            err?.normalizedMessage ||
+              err?.response?.data?.error ||
+              'Unable to load course completion status.'
+          );
+          return null;
+        }),
         assignmentService.getCourseAssignments(idOrSlug).catch(() => ({ assignments: [] })),
       ]);
       setCourseQuizzes(quizRes?.quizzes || []);
-      setCompletionData(compRes);
+      if (compRes) {
+        setCompletionData(compRes);
+      }
       setCourseAssignments(assignRes?.assignments || []);
-    } catch {
-      // Non-blocking assessment state
+    } catch (err) {
+      setCompletionError(err?.normalizedMessage || 'Failed to fetch course data.');
+    } finally {
+      setCompletionLoading(false);
     }
   }, [idOrSlug]);
 
@@ -408,16 +423,82 @@ export default function CoursePlayerPage() {
         type: 'success',
         text: res.message || 'Certificate successfully awarded!',
       });
-      fetchQuizzesAndCompletion();
+      if (res?.certificate) {
+        setCompletionData((prev) => ({
+          ...(prev || {}),
+          isCompleted: true,
+          certificateIssued: true,
+          certificateId: res.certificate.certificateId,
+          certificate: res.certificate,
+        }));
+      }
+      await fetchQuizzesAndCompletion();
     } catch (err) {
       setCertFeedback({
         type: 'error',
-        text: err.normalizedMessage || 'Could not claim certificate.',
+        text: err.normalizedMessage || err.message || 'Could not claim certificate.',
       });
     } finally {
       setClaimingCert(false);
     }
   };
+
+  // Derived completion and certificate variables
+  const isCertIssued = Boolean(
+    completionData?.certificateIssued ||
+    completionData?.certificate ||
+    completionData?.certificateId
+  );
+
+  const certificateObj =
+    completionData?.certificate ||
+    (completionData?.certificateId
+      ? {
+          certificateId: completionData.certificateId,
+          studentSnapshot: { name: user?.name || 'Verified Learner' },
+          courseSnapshot: { title: course?.title || 'Course of Study' },
+          issuedAt: completionData?.completedAt || null,
+        }
+      : null);
+
+  const lessonsTotalCount =
+    completionData?.criteria?.totalLessons ??
+    completionData?.progress?.lessons?.totalCount ??
+    totalLessons;
+
+  const lessonsDoneCount =
+    completionData?.criteria?.lessonsCompleted ??
+    completionData?.progress?.lessons?.completedCount ??
+    completedCount;
+
+  const allLessonsDone = Boolean(
+    completionData?.criteria?.allLessonsCompleted ??
+    completionData?.progress?.lessons?.completed ??
+    (lessonsTotalCount > 0 && lessonsDoneCount >= lessonsTotalCount)
+  );
+
+  const totalMandatoryQuizzes =
+    completionData?.criteria?.totalMandatoryQuizzes ??
+    completionData?.progress?.quizzes?.requiredCount ??
+    0;
+
+  const passedMandatoryQuizzes =
+    completionData?.criteria?.mandatoryQuizzesPassed ??
+    completionData?.progress?.quizzes?.passedCount ??
+    0;
+
+  const allQuizzesDone = Boolean(
+    completionData?.criteria?.allQuizzesPassed ??
+    completionData?.progress?.quizzes?.completed ??
+    (totalMandatoryQuizzes === 0 || passedMandatoryQuizzes >= totalMandatoryQuizzes)
+  );
+
+  const isEligibleToClaim = Boolean(
+    !isCertIssued &&
+    (completionData?.isEligibleForCompletion ??
+      completionData?.isEligible ??
+      (allLessonsDone && allQuizzesDone))
+  );
 
   // Loading Screen
   if (loading) {
@@ -509,14 +590,25 @@ export default function CoursePlayerPage() {
             type="button"
             onClick={() => setActiveView('completion')}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-              completionData?.isEligible || completionData?.certificate
+              isCertIssued || isEligibleToClaim
                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
                 : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
             }`}
           >
-            <Award size={14} className="text-accent-sage-dark" />
+            <Award
+              size={14}
+              className={
+                isCertIssued || isEligibleToClaim
+                  ? 'text-emerald-700'
+                  : 'text-accent-sage-dark'
+              }
+            />
             <span className="hidden sm:inline">
-              {completionData?.certificate ? 'Certificate Earned' : 'Completion Status'}
+              {isCertIssued
+                ? 'Certificate Earned'
+                : isEligibleToClaim
+                ? 'Ready to Claim'
+                : 'Completion Status'}
             </span>
           </button>
 
@@ -559,8 +651,8 @@ export default function CoursePlayerPage() {
               />
             </div>
             <p className="text-[11px] text-[#686868] flex items-center justify-between">
-              <span>{completedCount} of {totalLessons} lessons completed</span>
-              {completionData?.certificate && (
+              <span>{lessonsDoneCount} of {lessonsTotalCount} lessons completed</span>
+              {isCertIssued && (
                 <span className="font-semibold text-emerald-700 flex items-center gap-1">
                   <CheckCircle size={11} /> Certified
                 </span>
@@ -1436,199 +1528,245 @@ export default function CoursePlayerPage() {
                 )}
 
                 {/* Status Card */}
-                <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-subtle">
+                {completionLoading && !completionData ? (
+                  <div className="bg-white border border-border-subtle rounded-3xl p-10 text-center space-y-3">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-xs text-secondary">
+                      Auditing graduation criteria and verified course progress...
+                    </p>
+                  </div>
+                ) : completionError && !completionData ? (
+                  <div className="bg-white border border-rose-200 rounded-3xl p-8 text-center space-y-4">
+                    <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                      <AlertCircle size={20} />
+                    </div>
                     <div>
-                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-sage-dark uppercase tracking-wider mb-1">
-                        <ShieldCheck size={14} />
-                        <span>Graduation & Credentialing</span>
-                      </div>
-                      <h2 className="text-2xl font-extrabold text-primary">
-                        Course Completion & Verification
-                      </h2>
-                      <p className="text-xs text-secondary mt-1">
-                        Review academic requirements to unlock your tamper-evident LearnSpace
-                        Certificate of Completion.
+                      <h3 className="text-sm font-bold text-primary mb-1">
+                        Unable to Load Completion Status
+                      </h3>
+                      <p className="text-xs text-secondary leading-relaxed max-w-md mx-auto">
+                        {completionError}
                       </p>
                     </div>
-
-                    <div className="shrink-0">
-                      {completionData?.certificate ? (
-                        <span className="px-4 py-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5">
-                          <CheckCircle2 size={15} /> Certificate Issued
-                        </span>
-                      ) : completionData?.isEligible ? (
-                        <span className="px-4 py-2 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40 font-bold text-xs">
-                          Ready to Claim
-                        </span>
-                      ) : (
-                        <span className="px-4 py-2 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs">
-                          Requirements Pending
-                        </span>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={fetchQuizzesAndCompletion}
+                      className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-[#2e2e2e] transition cursor-pointer"
+                    >
+                      Retry Verification
+                    </button>
                   </div>
-
-                  {/* Criteria Checklist */}
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                      Mandatory Completion Criteria
-                    </h4>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Lesson Requirement */}
-                      <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle flex items-start gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            completionData?.progress?.lessons?.completed
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {completionData?.progress?.lessons?.completed ? (
-                            <CheckCircle2 size={16} />
-                          ) : (
-                            <Clock size={16} />
-                          )}
-                        </div>
-                        <div>
-                          <h5 className="text-xs font-bold text-primary">Curriculum Lectures</h5>
-                          <p className="text-[11px] text-secondary mt-0.5">
-                            {completionData?.progress?.lessons?.completedCount || completedCount} of{' '}
-                            {completionData?.progress?.lessons?.totalCount || totalLessons} lessons
-                            marked complete
-                          </p>
-                          <span className="text-[10px] font-semibold text-tertiary block mt-1">
-                            Requires 100% lecture engagement
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Quizzes Requirement */}
-                      <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle flex items-start gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            completionData?.progress?.quizzes?.completed
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {completionData?.progress?.quizzes?.completed ? (
-                            <CheckCircle2 size={16} />
-                          ) : (
-                            <Clock size={16} />
-                          )}
-                        </div>
-                        <div>
-                          <h5 className="text-xs font-bold text-primary">Required Assessments</h5>
-                          <p className="text-[11px] text-secondary mt-0.5">
-                            {completionData?.progress?.quizzes?.passedCount || 0} of{' '}
-                            {completionData?.progress?.quizzes?.requiredCount || 0} mandatory
-                            quizzes passed
-                          </p>
-                          <span className="text-[10px] font-semibold text-tertiary block mt-1">
-                            Requires passing score on all mandatory tests
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Certificate Claim Action or Preview Card */}
-                  {completionData?.certificate ? (
-                    <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-white to-surface-subtle border-2 border-accent-sage-dark/30 shadow-sm space-y-6">
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-border-subtle">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-accent-sage-pale text-accent-sage-dark flex items-center justify-center">
-                            <Award size={24} />
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent-sage-dark">
-                              Official Credential
-                            </span>
-                            <h3 className="text-base font-bold text-primary">
-                              {completionData.certificate.courseTitleSnapshot || course?.title}
-                            </h3>
-                            <span className="text-xs text-secondary font-mono">
-                              ID: {completionData.certificate.certificateId}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Link
-                            to={`/verify/${completionData.certificate.certificateId}`}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition"
-                          >
-                            <ExternalLink size={13} />
-                            <span>Verify Page</span>
-                          </Link>
-
-                          <button
-                            type="button"
-                            onClick={() => window.print()}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-border-subtle text-primary text-xs font-semibold hover:bg-surface-subtle transition"
-                          >
-                            <Printer size={13} />
-                            <span>Print</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs text-secondary">
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-tertiary block">
-                            Recipient
-                          </span>
-                          <span className="font-semibold text-primary">
-                            {completionData.certificate.studentNameSnapshot}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-tertiary block">
-                            Awarded Date
-                          </span>
-                          <span className="font-semibold text-primary">
-                            {new Date(completionData.certificate.issueDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-tertiary block">
-                            Verification Link
-                          </span>
-                          <span className="font-mono text-[11px] text-accent-blue-dark truncate block">
-                            learnspace.io/verify/{completionData.certificate.certificateId}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : completionData?.isEligible ? (
-                    <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                ) : (
+                  <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-subtle">
                       <div>
-                        <h4 className="text-sm font-bold text-emerald-950">
-                          All requirements completed!
-                        </h4>
-                        <p className="text-xs text-emerald-900/90 mt-0.5">
-                          Claim your unique verified certificate to showcase your achievement.
+                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-sage-dark uppercase tracking-wider mb-1">
+                          <ShieldCheck size={14} />
+                          <span>Graduation & Credentialing</span>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-primary">
+                          Course Completion & Verification
+                        </h2>
+                        <p className="text-xs text-secondary mt-1">
+                          Review academic requirements to unlock your tamper-evident LearnSpace
+                          Certificate of Completion.
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleClaimCertificate}
-                        disabled={claimingCert}
-                        className="px-6 py-3 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition cursor-pointer shadow-xs disabled:opacity-50"
-                      >
-                        {claimingCert ? 'Awarding Certificate...' : 'Claim Official Certificate'}
-                      </button>
+                      <div className="shrink-0">
+                        {isCertIssued ? (
+                          <span className="px-4 py-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5">
+                            <CheckCircle2 size={15} /> Certificate Issued
+                          </span>
+                        ) : isEligibleToClaim ? (
+                          <span className="px-4 py-2 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40 font-bold text-xs flex items-center gap-1.5">
+                            <CheckCircle2 size={15} /> Ready to Claim
+                          </span>
+                        ) : (
+                          <span className="px-4 py-2 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs flex items-center gap-1.5">
+                            <Clock size={15} /> Requirements Pending
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="p-6 bg-surface-subtle border border-border-subtle rounded-2xl text-xs text-secondary leading-relaxed">
-                      Please finish all outstanding lessons and achieve passing marks on all
-                      mandatory assessments to unlock your certificate.
+
+                    {/* Criteria Checklist */}
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                        Mandatory Completion Criteria
+                      </h4>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Lesson Requirement */}
+                        <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle flex items-start gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                              allLessonsDone
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {allLessonsDone ? (
+                              <CheckCircle2 size={16} />
+                            ) : (
+                              <Clock size={16} />
+                            )}
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-primary">Curriculum Lectures</h5>
+                            <p className="text-[11px] text-secondary mt-0.5">
+                              {lessonsDoneCount} of {lessonsTotalCount} lessons marked complete
+                            </p>
+                            <span className="text-[10px] font-semibold text-tertiary block mt-1">
+                              Requires 100% lecture engagement
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quizzes Requirement */}
+                        <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle flex items-start gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                              allQuizzesDone
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {allQuizzesDone ? (
+                              <CheckCircle2 size={16} />
+                            ) : (
+                              <Clock size={16} />
+                            )}
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-primary">Required Assessments</h5>
+                            <p className="text-[11px] text-secondary mt-0.5">
+                              {totalMandatoryQuizzes === 0
+                                ? '0 of 0 mandatory quizzes required'
+                                : `${passedMandatoryQuizzes} of ${totalMandatoryQuizzes} mandatory quizzes passed`}
+                            </p>
+                            <span className="text-[10px] font-semibold text-tertiary block mt-1">
+                              {totalMandatoryQuizzes === 0
+                                ? 'No mandatory quizzes required for this course'
+                                : 'Requires passing score on all mandatory tests'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Certificate Claim Action or Preview Card */}
+                    {isCertIssued && certificateObj ? (
+                      <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-white to-surface-subtle border-2 border-accent-sage-dark/30 shadow-sm space-y-6">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-border-subtle">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-accent-sage-pale text-accent-sage-dark flex items-center justify-center">
+                              <Award size={24} />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-accent-sage-dark">
+                                Official Credential
+                              </span>
+                              <h3 className="text-base font-bold text-primary">
+                                {certificateObj.courseSnapshot?.title ||
+                                  certificateObj.courseTitleSnapshot ||
+                                  course?.title}
+                              </h3>
+                              <span className="text-xs text-secondary font-mono">
+                                ID: {certificateObj.certificateId}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/verify/${certificateObj.certificateId}`}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition"
+                            >
+                              <ExternalLink size={13} />
+                              <span>Verify Page</span>
+                            </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => window.print()}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-border-subtle text-primary text-xs font-semibold hover:bg-surface-subtle transition cursor-pointer"
+                            >
+                              <Printer size={13} />
+                              <span>Print</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs text-secondary">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-tertiary block">
+                              Recipient
+                            </span>
+                            <span className="font-semibold text-primary">
+                              {certificateObj.studentSnapshot?.name ||
+                                certificateObj.studentNameSnapshot ||
+                                user?.name ||
+                                'Verified Learner'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-tertiary block">
+                              Awarded Date
+                            </span>
+                            <span className="font-semibold text-primary">
+                              {certificateObj.issuedAt ||
+                              certificateObj.issueDate ||
+                              completionData?.completedAt
+                                ? new Date(
+                                    certificateObj.issuedAt ||
+                                      certificateObj.issueDate ||
+                                      completionData?.completedAt
+                                  ).toLocaleDateString()
+                                : 'Issued'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-tertiary block">
+                              Verification Link
+                            </span>
+                            <span className="font-mono text-[11px] text-accent-blue-dark truncate block">
+                              learnspace.io/verify/{certificateObj.certificateId}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : isEligibleToClaim ? (
+                      <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-emerald-950">
+                            All requirements completed!
+                          </h4>
+                          <p className="text-xs text-emerald-900/90 mt-0.5">
+                            Claim your unique verified certificate to showcase your achievement.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleClaimCertificate}
+                          disabled={claimingCert}
+                          className="px-6 py-3 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition cursor-pointer shadow-xs disabled:opacity-50"
+                        >
+                          {claimingCert ? 'Awarding Certificate...' : 'Claim Official Certificate'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-6 bg-surface-subtle border border-border-subtle rounded-2xl text-xs text-secondary leading-relaxed">
+                        {!allLessonsDone && !allQuizzesDone
+                          ? 'Please finish all outstanding lessons and achieve passing marks on all mandatory assessments to unlock your certificate.'
+                          : !allLessonsDone
+                          ? 'Please complete all remaining lessons in the curriculum to unlock your certificate.'
+                          : 'Please achieve passing marks on all mandatory assessments to unlock your certificate.'}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

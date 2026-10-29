@@ -193,8 +193,114 @@ const sendInstructorApprovalEmail = async ({ to, name, loginUrl }) => {
   }
 };
 
+/**
+ * Escape HTML characters to prevent template injection
+ */
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
+ * Send assignment deadline reminder email (24-hour or 1-hour warning)
+ * @param {Object} options - { to, name, assignmentTitle, courseTitle, dueDate, reminderType, assignmentUrl }
+ * @returns {Promise<boolean>}
+ */
+const sendAssignmentDeadlineReminderEmail = async ({
+  to,
+  name,
+  assignmentTitle,
+  courseTitle,
+  dueDate,
+  reminderType = '24h',
+  assignmentUrl,
+}) => {
+  const mailTransporter = getTransporter();
+
+  const is1h = reminderType === '1h';
+  const subjectPrefix = is1h
+    ? 'Final Reminder: Assignment due in 1 hour — '
+    : 'Reminder: Assignment due tomorrow — ';
+  const subject = `${subjectPrefix}${assignmentTitle || 'Course Assignment'}`;
+
+  const safeName = escapeHtml(name || 'Learner');
+  const safeAssignmentTitle = escapeHtml(assignmentTitle || 'Course Assignment');
+  const safeCourseTitle = escapeHtml(courseTitle || 'Enrolled Course');
+
+  const formattedDueDate = dueDate
+    ? new Date(dueDate).toUTCString()
+    : 'Upcoming Deadline';
+
+  const timeRemainingText = is1h ? 'in less than 1 hour' : 'tomorrow (in 24 hours)';
+
+  const resolvedAssignmentUrl =
+    assignmentUrl ||
+    `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/dashboard?tab=assignments`;
+
+  const text = `Hello ${safeName},\n\nThis is a reminder that your assignment "${assignmentTitle}" for "${courseTitle}" is due ${timeRemainingText}.\n\nDeadline (UTC): ${formattedDueDate}\n\nPlease ensure your deliverables are submitted before the deadline.\n\nView Assignment:\n${resolvedAssignmentUrl}\n\n— The LearnSpace Team`;
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; background-color: #F8F8F6; border: 1px solid #E4E4E1; border-radius: 12px; color: #171717;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+        <span style="font-size: 18px; font-weight: 800; color: #171717;">LearnSpace</span>
+        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; background: ${is1h ? '#FDE8E8' : '#FEF3C7'}; color: ${is1h ? '#9B1C1C' : '#92400E'}; padding: 2px 8px; border-radius: 9999px;">
+          ${is1h ? 'Final 1-Hour Reminder' : '24-Hour Deadline Reminder'}
+        </span>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #171717;">
+        ${is1h ? 'Assignment Due in 1 Hour' : 'Assignment Due Tomorrow'}
+      </h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #686868; margin-bottom: 16px;">
+        Hello <strong>${safeName}</strong>,<br/>
+        This is an automated reminder that your assignment <strong>${safeAssignmentTitle}</strong> in <strong>${safeCourseTitle}</strong> is due <strong>${timeRemainingText}</strong>.
+      </p>
+      <div style="background-color: #FFFFFF; border: 1px solid #E4E4E1; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #8A8A86; margin-bottom: 4px;">Deadline (UTC)</div>
+        <div style="font-size: 16px; font-weight: 700; color: #171717;">${formattedDueDate}</div>
+      </div>
+      <div style="margin-bottom: 24px;">
+        <a href="${resolvedAssignmentUrl}" style="display: inline-block; background-color: #171717; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 24px; border-radius: 8px;">
+          Open Assignment in LearnSpace
+        </a>
+      </div>
+      <p style="font-size: 12px; color: #8A8A86; line-height: 1.5;">
+        Please make sure all required text responses and attached deliverables are submitted before the deadline.
+      </p>
+      <hr style="border: none; border-top: 1px solid #E4E4E1; margin: 24px 0;" />
+      <p style="font-size: 11px; color: #8A8A86;">LearnSpace LMS Platform • Automated Academic Reminders</p>
+    </div>
+  `;
+
+  if (!mailTransporter) {
+    logger.info(`[Email Service Simulation] Assignment deadline reminder prepared for ${to}. Email credentials not configured or operating in local test mode.`);
+    return false;
+  }
+
+  try {
+    const fromAddress = process.env.EMAIL_FROM || `"LearnSpace" <${process.env.EMAIL_USER}>`;
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+    });
+    logger.success(`Assignment deadline reminder email delivered to ${to}`);
+    return true;
+  } catch (error) {
+    logger.warn(`Failed to dispatch assignment deadline reminder email to ${to}: ${error.message}`);
+    return false;
+  }
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendInstructorApprovalEmail,
+  sendAssignmentDeadlineReminderEmail,
 };

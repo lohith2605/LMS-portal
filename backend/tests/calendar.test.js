@@ -285,6 +285,14 @@ DeadlineReminderDelivery.create = function (data) {
   return Promise.resolve(delivery);
 };
 
+DeadlineReminderDelivery.findOne = function (query = {}) {
+  const delivery = mockDeliveries.find((d) => {
+    if (query.idempotencyKey && d.idempotencyKey !== query.idempotencyKey) return false;
+    return true;
+  });
+  return Promise.resolve(delivery || null);
+};
+
 Notification.create = function (data) {
   const notif = {
     _id: makeObjectId(),

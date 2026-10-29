@@ -194,6 +194,87 @@ const createAssignment = async (req, res) => {
 };
 
 /**
+ * Get all assignments for the authenticated instructor (optionally filtered by ?courseId=...)
+ * GET /api/instructor/assignments
+ */
+const getInstructorAssignments = async (req, res) => {
+  try {
+    const { courseId } = req.query;
+    const query = {};
+
+    if (req.user.role !== 'admin') {
+      query.instructor = req.user.id;
+    }
+
+    if (courseId && courseId !== 'all') {
+      const { course, error, status } = await verifyInstructorCourse(courseId, req.user.id, req.user.role);
+      if (error) return res.status(status).json({ error });
+      query.course = course._id;
+    }
+
+    const assignments = await Assignment.find(query)
+      .populate('course', 'title slug status')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const assignmentIds = assignments.map((a) => a._id);
+
+    // Aggregate submission metrics per assignment
+    const submissionStats = await AssignmentSubmission.aggregate([
+      { $match: { assignment: { $in: assignmentIds } } },
+      {
+        $group: {
+          _id: '$assignment',
+          totalSubmissions: { $sum: 1 },
+          gradedCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'graded'] }, 1, 0] },
+          },
+          pendingCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $in: ['$status', ['submitted', 'late']] },
+                    { $eq: ['$isGradePublished', false] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    const statsMap = {};
+    submissionStats.forEach((s) => {
+      statsMap[s._id.toString()] = {
+        totalSubmissions: s.totalSubmissions,
+        gradedCount: s.gradedCount,
+        pendingCount: s.pendingCount,
+      };
+    });
+
+    const enrichedAssignments = assignments.map((a) => ({
+      ...a,
+      stats: statsMap[a._id.toString()] || {
+        totalSubmissions: 0,
+        gradedCount: 0,
+        pendingCount: 0,
+      },
+    }));
+
+    return res.status(200).json({
+      assignments: enrichedAssignments,
+    });
+  } catch (err) {
+    logger.error(`getInstructorAssignments error: ${err.message}`);
+    return res.status(500).json({ error: 'Failed to retrieve instructor assignments.' });
+  }
+};
+
+/**
  * Get assignments for an instructor course with submission statistics
  * GET /api/instructor/courses/:courseId/assignments
  */
@@ -204,6 +285,7 @@ const getInstructorCourseAssignments = async (req, res) => {
     if (error) return res.status(status).json({ error });
 
     const assignments = await Assignment.find({ course: course._id })
+      .populate('course', 'title slug status')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1552,6 +1634,7 @@ const getStudentGrades = async (req, res) => {
 
 module.exports = {
   createAssignment,
+  getInstructorAssignments,
   getInstructorCourseAssignments,
   getInstructorAssignmentById,
   updateAssignment,

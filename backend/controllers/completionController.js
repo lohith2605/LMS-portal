@@ -51,15 +51,20 @@ const resolveStudentEnrollment = async (courseIdOrSlug, userId) => {
 const getCourseCompletionStatus = async (req, res) => {
   try {
     const courseIdOrSlug = req.params.idOrSlug || req.params.courseIdOrSlug || req.params.courseId;
+    const userId = req.user.id || req.user._id;
     const { course, enrollment, error, status } = await resolveStudentEnrollment(
       courseIdOrSlug,
-      req.user.id
+      userId
     );
     if (error) return res.status(status).json({ error });
 
     // 1. Audit published lessons
     const validLessonIds = new Set(
-      (course.sections || []).flatMap((s) => (s.lessons || []).map((l) => l._id.toString()))
+      (course.sections || []).flatMap((s) =>
+        (s.lessons || [])
+          .filter((l) => l.isPublished !== false)
+          .map((l) => l._id.toString())
+      )
     );
     const totalLessons = validLessonIds.size;
     const completedLessonIds = (enrollment.completedLessons || []).filter((id) =>
@@ -82,7 +87,7 @@ const getCourseCompletionStatus = async (req, res) => {
     for (const quiz of mandatoryQuizzes) {
       const passedAttempt = await QuizAttempt.findOne({
         quiz: quiz._id,
-        student: req.user.id,
+        student: userId,
         passed: true,
       }).sort({ percentage: -1 });
 
@@ -104,19 +109,34 @@ const getCourseCompletionStatus = async (req, res) => {
     const isEligibleForCompletion = allLessonsCompleted && allQuizzesPassed;
 
     // Check if certificate was already claimed
-    const existingCertificate = await Certificate.findOne({
-      student: req.user.id,
+    let existingCertificate = await Certificate.findOne({
+      student: userId,
       course: course._id,
     });
+    if (!existingCertificate && enrollment.certificateId) {
+      existingCertificate = await Certificate.findOne({
+        certificateId: enrollment.certificateId,
+      });
+    }
+
+    const isCompleted = Boolean(enrollment.isCompleted || existingCertificate);
+    const certificateIssued = Boolean(existingCertificate || enrollment.certificateIssued);
+    const certificateId = existingCertificate
+      ? existingCertificate.certificateId
+      : enrollment.certificateId || null;
 
     return res.status(200).json({
       courseId: course._id.toString(),
       courseTitle: course.title,
       isEligibleForCompletion,
-      isCompleted: Boolean(enrollment.isCompleted || existingCertificate),
-      completedAt: enrollment.completedAt || (existingCertificate ? existingCertificate.completedAt : null),
-      certificateIssued: Boolean(existingCertificate),
-      certificateId: existingCertificate ? existingCertificate.certificateId : null,
+      isEligible: isEligibleForCompletion,
+      isCompleted,
+      completedAt:
+        enrollment.completedAt ||
+        (existingCertificate ? existingCertificate.completedAt : null),
+      certificateIssued,
+      certificateId,
+      certificate: existingCertificate || null,
       criteria: {
         allLessonsCompleted,
         lessonsCompleted,
@@ -140,19 +160,27 @@ const getCourseCompletionStatus = async (req, res) => {
  * POST /api/courses/:courseIdOrSlug/claim-certificate
  */
 const claimCertificate = async (req, res) => {
+  let resolvedCourse = null;
   try {
     const courseIdOrSlug = req.params.idOrSlug || req.params.courseIdOrSlug || req.params.courseId;
+    const userId = req.user.id || req.user._id;
     const { course, enrollment, error, status } = await resolveStudentEnrollment(
       courseIdOrSlug,
-      req.user.id
+      userId
     );
     if (error) return res.status(status).json({ error });
+    resolvedCourse = course;
 
     // Check if certificate already exists (Idempotent response)
-    const existingCertificate = await Certificate.findOne({
-      student: req.user.id,
+    let existingCertificate = await Certificate.findOne({
+      student: userId,
       course: course._id,
     });
+    if (!existingCertificate && enrollment.certificateId) {
+      existingCertificate = await Certificate.findOne({
+        certificateId: enrollment.certificateId,
+      });
+    }
 
     if (existingCertificate) {
       return res.status(200).json({
@@ -163,7 +191,11 @@ const claimCertificate = async (req, res) => {
 
     // 1. Verify all lessons are completed
     const validLessonIds = new Set(
-      (course.sections || []).flatMap((s) => (s.lessons || []).map((l) => l._id.toString()))
+      (course.sections || []).flatMap((s) =>
+        (s.lessons || [])
+          .filter((l) => l.isPublished !== false)
+          .map((l) => l._id.toString())
+      )
     );
     const totalLessons = validLessonIds.size;
     const completedLessonIds = (enrollment.completedLessons || []).filter((id) =>
@@ -186,7 +218,7 @@ const claimCertificate = async (req, res) => {
     for (const quiz of mandatoryQuizzes) {
       const hasPassed = await QuizAttempt.exists({
         quiz: quiz._id,
-        student: req.user.id,
+        student: userId,
         passed: true,
       });
 
@@ -204,7 +236,7 @@ const claimCertificate = async (req, res) => {
       for (const quiz of mandatoryQuizzes) {
         const bestAttempt = await QuizAttempt.findOne({
           quiz: quiz._id,
-          student: req.user.id,
+          student: userId,
           passed: true,
         }).sort({ percentage: -1 });
 
@@ -214,14 +246,14 @@ const claimCertificate = async (req, res) => {
     }
 
     // 4. Fetch student info for historical snapshot
-    const studentUser = await User.findById(req.user.id);
+    const studentUser = await User.findById(userId);
     const completionTimestamp = new Date();
 
     const certificateId = Certificate.generateCertificateId();
 
     const newCertificate = await Certificate.create({
       certificateId,
-      student: req.user.id,
+      student: userId,
       course: course._id,
       enrollment: enrollment._id,
       issuedAt: completionTimestamp,
@@ -253,7 +285,7 @@ const claimCertificate = async (req, res) => {
     // Dispatch in-app notification for earned certificate
     try {
       await notificationService.createNotification({
-        recipient: req.user.id,
+        recipient: userId,
         type: 'certificate_issued',
         title: 'Certificate of Completion Issued!',
         message: `Congratulations! Your certificate for "${course.title}" is ready to view.`,
@@ -274,10 +306,14 @@ const claimCertificate = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 11000) {
-      const existing = await Certificate.findOne({
-        student: req.user.id,
-        course: req.params.courseIdOrSlug,
-      });
+      const userId = req.user?.id || req.user?._id;
+      let existing = null;
+      if (userId && resolvedCourse?._id) {
+        existing = await Certificate.findOne({
+          student: userId,
+          course: resolvedCourse._id,
+        });
+      }
       return res.status(200).json({
         message: 'Certificate already issued.',
         certificate: existing,
@@ -295,8 +331,9 @@ const claimCertificate = async (req, res) => {
  */
 const getStudentCertificates = async (req, res) => {
   try {
+    const userId = req.user.id || req.user._id;
     const certificates = await Certificate.find({
-      student: req.user.id,
+      student: userId,
       status: 'valid',
     }).sort({ issuedAt: -1 });
 

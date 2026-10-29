@@ -178,6 +178,7 @@ const gracefulShutdown = (signal) => {
   isShuttingDown = true;
 
   logger.warn(`Received ${signal}. Initiating graceful shutdown...`);
+  stopDeadlineReminderScheduler();
 
   const forceExitTimer = setTimeout(() => {
     logger.error('Graceful shutdown timed out (5s). Forcing process exit.');

@@ -28,6 +28,7 @@ const {
 } = require('../controllers/quizController');
 const {
   createAssignment,
+  getInstructorAssignments,
   getInstructorCourseAssignments,
   getInstructorAssignmentById,
   updateAssignment,
@@ -83,6 +84,7 @@ router.get('/quizzes/:quizId/analytics', getQuizAnalytics);
 // Phase 6: Assignment authoring, submissions, and grading endpoints
 router.post('/courses/:courseId/assignments', createAssignment);
 router.get('/courses/:courseId/assignments', getInstructorCourseAssignments);
+router.get('/assignments', getInstructorAssignments);
 router.get('/assignments/:assignmentId', getInstructorAssignmentById);
 router.patch('/assignments/:assignmentId', updateAssignment);
 router.post('/assignments/:assignmentId/publish', publishAssignment);
