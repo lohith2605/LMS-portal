@@ -18,11 +18,39 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     return '/student/dashboard';
   };
 
+  const [activeSection, setActiveSection] = useState('');
+
+  const navItems = [
+    { id: 'courses', label: 'Explore Courses' },
+    { id: 'categories', label: 'Categories' },
+    { id: 'journey', label: 'How It Works' },
+    { id: 'instructors', label: 'For Instructors' },
+  ];
+
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setIsScrolled(window.scrollY > 15);
+
+      // Determine active section based on scroll offset
+      const scrollPos = window.scrollY + 140;
+      let current = '';
+
+      for (const item of navItems) {
+        const element = document.getElementById(item.id);
+        if (element) {
+          const top = element.offsetTop;
+          const height = element.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            current = item.id;
+            break;
+          }
+        }
+      }
+      setActiveSection(current);
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -40,9 +68,10 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
+    setActiveSection(targetId);
     const element = document.getElementById(targetId);
     if (element) {
-      const navOffset = 80;
+      const navOffset = 76;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - navOffset;
 
@@ -55,7 +84,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-150 border-b ${
+      className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-200 border-b ${
         isScrolled
           ? 'bg-surface/95 border-border-medium shadow-xs backdrop-blur-md'
           : 'bg-page/90 border-border-subtle backdrop-blur-md'
@@ -71,45 +100,34 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           ariaLabel={`${brandName} Home`}
         />
 
-        {/* Desktop Nav Items */}
+        {/* Desktop Nav Items with Active + Theme Hover Highlights */}
         <nav aria-label="Main Navigation">
-          <ul className="hidden md:flex items-center gap-8 list-none">
-            <li>
-              <a
-                href="#courses"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'courses')}
-              >
-                Explore Courses
-              </a>
-            </li>
-            <li>
-              <a
-                href="#categories"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'categories')}
-              >
-                Categories
-              </a>
-            </li>
-            <li>
-              <a
-                href="#journey"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'journey')}
-              >
-                How It Works
-              </a>
-            </li>
-            <li>
-              <a
-                href="#instructors"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'instructors')}
-              >
-                For Instructors
-              </a>
-            </li>
+          <ul className="hidden md:flex items-center gap-1.5 list-none p-1 rounded-full bg-surface-subtle/70 border border-border-subtle/60 backdrop-blur-xs">
+            {navItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <li key={item.id}>
+                  <a
+                    href={`#${item.id}`}
+                    onClick={(e) => handleNavClick(e, item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? 'bg-accent-subtle text-accent border border-accent/30 shadow-2xs'
+                        : 'text-secondary hover:text-primary hover:bg-surface-subtle hover:border-border-subtle/60 border border-transparent'
+                    }`}
+                  >
+                    {isActive && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-accent animate-live-pulse shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>{item.label}</span>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -196,43 +214,28 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
               <ThemeToggle showLabel />
             </div>
 
-            <ul className="flex flex-col gap-4 list-none mb-6">
-              <li>
-                <a
-                  href="#courses"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'courses')}
-                >
-                  Explore Courses
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#categories"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'categories')}
-                >
-                  Categories
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#journey"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'journey')}
-                >
-                  How It Works
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#instructors"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'instructors')}
-                >
-                  For Instructors
-                </a>
-              </li>
+            <ul className="flex flex-col gap-2 list-none mb-6">
+              {navItems.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      onClick={(e) => handleNavClick(e, item.id)}
+                      className={`flex items-center justify-between text-sm font-semibold px-3.5 py-2.5 rounded-xl border transition-all ${
+                        isActive
+                          ? 'bg-accent-subtle text-accent border-accent/30'
+                          : 'text-primary hover:text-primary hover:bg-surface-subtle border-transparent'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {isActive && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-live-pulse" />
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="flex flex-col gap-3">

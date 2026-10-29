@@ -129,7 +129,7 @@ export default function LearningJourney() {
   const IconComponent = currentStage.icon;
 
   return (
-    <section id="journey" className="pt-16 md:pt-20 pb-20 md:pb-24 bg-page relative" aria-label="The Learning Journey">
+    <section id="journey" className="pt-16 md:pt-20 pb-20 md:pb-24 bg-page relative scroll-mt-20" aria-label="The Learning Journey">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 w-full">
         {/* Editorial Section Header */}
         <div className="text-center max-w-[680px] mx-auto mb-10 md:mb-12">

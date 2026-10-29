@@ -84,7 +84,7 @@ export default function CourseDiscovery({ onSelectCourse }) {
   return (
     <section
       id="courses"
-      className="pt-14 md:pt-16 pb-16 md:pb-20 bg-surface border-y border-border-subtle"
+      className="pt-14 md:pt-16 pb-16 md:pb-20 bg-surface border-y border-border-subtle scroll-mt-20"
       aria-label="Course Discovery and Exploration"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 w-full">
@@ -103,7 +103,7 @@ export default function CourseDiscovery({ onSelectCourse }) {
         </div>
 
         {/* Discovery Search and Filter Bar */}
-        <div id="categories" className="flex flex-col gap-4 mb-8">
+        <div id="categories" className="flex flex-col gap-4 mb-8 scroll-mt-24">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative w-full max-w-[580px]">
               <Search

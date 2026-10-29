@@ -42,22 +42,14 @@ export default function HeroSection({ onExploreCourses, onHowItWorks }) {
 
           {/* Action CTAs */}
           <Reveal triggerOnMount delayMs={240}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto mt-7 sm:mt-8">
+            <div className="flex items-center justify-center w-full mt-7 sm:mt-8">
               <button
                 type="button"
-                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.25 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-neutral-800 hover-lift btn-press shadow-xs transition-all cursor-pointer"
+                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-neutral-800 hover-lift btn-press shadow-xs transition-all cursor-pointer"
                 onClick={onExploreCourses}
               >
                 <span>Explore Courses</span>
                 <ArrowRight size={15} strokeWidth={1.75} className="group-hover-nudge-x" aria-hidden="true" />
-              </button>
-
-              <button
-                type="button"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.25 text-sm font-semibold rounded-xl bg-surface text-primary border border-border-subtle hover:bg-surface-subtle hover-lift btn-press shadow-2xs transition-all cursor-pointer"
-                onClick={onHowItWorks}
-              >
-                <span>How It Works</span>
               </button>
             </div>
           </Reveal>

@@ -51,7 +51,7 @@ export default function InstructorSection({ onInstructorInquiry }) {
   return (
     <section
       id="instructors"
-      className="py-16 sm:py-20 lg:py-24 border-t border-border-subtle bg-surface-subtle relative"
+      className="py-16 sm:py-20 lg:py-24 border-t border-border-subtle bg-surface-subtle relative scroll-mt-20"
       aria-label="For Instructors"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 w-full">

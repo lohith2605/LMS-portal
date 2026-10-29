@@ -63,7 +63,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-page text-primary font-sans antialiased overflow-x-hidden selection:bg-accent-sage-pale selection:text-primary">
+    <div className="min-h-screen bg-page text-primary font-sans antialiased overflow-x-clip selection:bg-accent-sage-pale selection:text-primary">
       {/* Navigation */}
       <Navbar
         brandName="LearnSpace"
@@ -71,7 +71,7 @@ export default function LandingPage() {
       />
 
       {/* Main Page Content */}
-      <main id="main-content">
+      <main id="main-content" className="pt-[72px]">
         {/* Hero Section with Product Window Preview */}
         <HeroSection
           onExploreCourses={() => scrollToSection('courses')}
