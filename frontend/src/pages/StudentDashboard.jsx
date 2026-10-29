@@ -26,7 +26,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
+  Sparkles,
+  GraduationCap,
+  Send,
+  Timer,
+  BadgeCheck,
+  FileClock,
+  Library,
+  BookOpenCheck,
 } from 'lucide-react';
+import IconChip from '../components/ui/IconChip';
+import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
 import { useAuth } from '../context/useAuth';
 import { useNotifications } from '../context/useNotifications';
 import {
@@ -363,11 +373,11 @@ export default function StudentDashboard() {
       ) : (
         <div className="space-y-8">
           {/* Welcome Banner */}
-          <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
+          <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-blue-dark mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-blue-dark" />
+                  <IconChip icon={Sparkles} tone="accent" size="sm" animate />
                   <span>Personalized Learning Workspace</span>
                 </div>
 
@@ -383,12 +393,22 @@ export default function StudentDashboard() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('explore')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
+                    className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer shadow-xs"
                   >
-                    <Compass size={14} />
+                    <Compass size={14} strokeWidth={1.75} className="group-hover-wobble" />
                     <span>Explore Courses</span>
                   </button>
                 </div>
+              </div>
+
+              <div className="hidden lg:flex items-center gap-3">
+                <IconChip
+                  icon={GraduationCap}
+                  tone="accent"
+                  size="lg"
+                  animate
+                  className="w-16 h-16 rounded-2xl shadow-card"
+                />
               </div>
             </div>
           </div>
@@ -398,9 +418,7 @@ export default function StudentDashboard() {
             <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-4 sm:p-5 text-amber-950 shadow-xs relative">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-2.5 bg-amber-100/80 rounded-xl text-amber-700 shrink-0 mt-0.5">
-                    <Mail size={18} />
-                  </div>
+                  <IconChip icon={MailCheck} tone="warning" size="md" animate className="mt-0.5" />
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-amber-950">Verify your email address</h3>
@@ -420,7 +438,7 @@ export default function StudentDashboard() {
                             : 'bg-rose-100 text-rose-800 border border-rose-200'
                         }`}
                       >
-                        {resendNotice.type === 'success' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                        {resendNotice.type === 'success' ? <CheckCircle2 size={12} strokeWidth={1.75} /> : <AlertTriangle size={12} strokeWidth={1.75} />}
                         <span>{resendNotice.text}</span>
                       </div>
                     )}
@@ -431,18 +449,18 @@ export default function StudentDashboard() {
                     type="button"
                     onClick={handleResendVerification}
                     disabled={resendLoading || resendCooldown > 0}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-semibold shadow-xs hover-lift btn-press transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     {resendLoading ? (
                       <>
-                        <RefreshCw size={13} className="animate-spin" />
+                        <RefreshCw size={13} strokeWidth={1.75} className="animate-spin" />
                         <span>Sending...</span>
                       </>
                     ) : resendCooldown > 0 ? (
                       <span>Resend in {resendCooldown}s</span>
                     ) : (
                       <>
-                        <MailCheck size={13} />
+                        <Send size={13} strokeWidth={1.75} />
                         <span>Resend Verification Email</span>
                       </>
                     )}
@@ -454,7 +472,7 @@ export default function StudentDashboard() {
                     title="Dismiss notice"
                     aria-label="Dismiss notice"
                   >
-                    ✕
+                    <X size={14} strokeWidth={1.75} />
                   </button>
                 </div>
               </div>
@@ -483,7 +501,7 @@ export default function StudentDashboard() {
                     title="Courses In Progress"
                     value={data?.overview?.inProgressCount ?? 0}
                     subtitle="Pacing toward completion"
-                    icon={Clock}
+                    icon={Timer}
                     badge="Pacing"
                     badgeType="blue"
                     onClick={() => setActiveTab('learning')}
@@ -492,7 +510,7 @@ export default function StudentDashboard() {
                     title="Completed Courses"
                     value={data?.overview?.completedCount ?? 0}
                     subtitle="Certificates & verified skills"
-                    icon={CheckCircle2}
+                    icon={BadgeCheck}
                     badge="Verified"
                     badgeType="default"
                     onClick={() => setActiveTab('learning')}
@@ -501,7 +519,7 @@ export default function StudentDashboard() {
                     title="Upcoming Assignments"
                     value={data?.overview?.upcomingDeadlinesCount ?? 0}
                     subtitle="Due in the next 14 days"
-                    icon={FileText}
+                    icon={FileClock}
                     badge={data?.overview?.upcomingDeadlinesCount > 0 ? 'Action Req' : 'Clear'}
                     badgeType={data?.overview?.upcomingDeadlinesCount > 0 ? 'amber' : 'sage'}
                     onClick={() => setActiveTab('assignments')}
@@ -518,10 +536,10 @@ export default function StudentDashboard() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('explore')}
-                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                    className="group text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>Browse All Courses</span>
-                    <ArrowRight size={13} />
+                    <ArrowRight size={13} strokeWidth={1.75} className="group-hover-nudge-x" />
                   </button>
                 </div>
 
@@ -532,7 +550,7 @@ export default function StudentDashboard() {
                       return (
                         <div
                           key={enr.id}
-                          className="bg-white border border-border-subtle rounded-2xl overflow-hidden shadow-xs flex flex-col justify-between hover:shadow-card transition"
+                          className="bg-surface border border-border-subtle rounded-2xl overflow-hidden shadow-xs flex flex-col justify-between hover:border-border-medium hover-lift transition-all"
                         >
                           <div className="p-5">
                             <div className="flex items-center justify-between gap-2 mb-2">
@@ -551,13 +569,15 @@ export default function StudentDashboard() {
                               Instructor: {c.instructor?.name || 'Educator'}
                             </p>
 
-                            {/* Progress bar */}
-                            <div className="w-full h-1.5 bg-surface-subtle border border-border-subtle rounded-full overflow-hidden mb-2">
-                              <div
-                                className="h-full bg-emerald-600 rounded-full transition-all duration-300"
-                                style={{ width: `${enr.progressPercentage}%` }}
-                              />
-                            </div>
+                            {/* Animated Progress bar */}
+                            <AnimatedProgressBar
+                              progress={enr.progressPercentage || 0}
+                              inProgress={enr.progressPercentage > 0 && enr.progressPercentage < 100}
+                              height="h-1.5"
+                              colorClass="bg-accent"
+                              ariaLabel={`${c.title} completion progress`}
+                              className="mb-2"
+                            />
                             <div className="flex items-center justify-between text-[10px] text-tertiary">
                               <span>
                                 {enr.completedCount} of {enr.totalLessons} lessons finished
@@ -575,10 +595,10 @@ export default function StudentDashboard() {
                             </Link>
                             <Link
                               to={`/courses/${c.slug}/learn`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition shadow-xs"
+                              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition shadow-xs"
                             >
                               <span>Continue Learning</span>
-                              <ArrowRight size={13} />
+                              <ArrowRight size={13} strokeWidth={1.75} className="group-hover-nudge-x" />
                             </Link>
                           </div>
                         </div>
@@ -587,7 +607,7 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   <EmptyState
-                    icon={BookOpen}
+                    icon={BookOpenCheck}
                     title="Your learning journey starts here."
                     description="You are not currently enrolled in any active courses. Explore our curated course tracks to find topics that match your career goals."
                     actionLabel="Explore Course Catalog"
