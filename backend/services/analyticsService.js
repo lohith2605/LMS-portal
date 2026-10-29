@@ -25,19 +25,31 @@ function calculateCourseProgress(enrollment, course) {
   if (!course) return { totalLessons: 0, completedCount: 0, progressPercent: 0 };
 
   const sections = Array.isArray(course.sections) ? course.sections : [];
-  let totalLessons = 0;
+  const validLessonIds = new Set();
   for (const s of sections) {
     const lessons = Array.isArray(s.lessons) ? s.lessons : [];
-    totalLessons += lessons.filter((l) => l.isPublished !== false).length;
+    lessons.forEach((l) => {
+      if (l && l.isPublished !== false) {
+        const lid = l._id ? l._id.toString() : (l.id ? l.id.toString() : '');
+        if (lid) validLessonIds.add(lid);
+      }
+    });
   }
+  const totalLessons = validLessonIds.size;
 
-  const completedLessons = Array.isArray(enrollment.completedLessons) ? enrollment.completedLessons : [];
-  const completedCount = completedLessons.length;
+  const rawCompleted = Array.isArray(enrollment?.completedLessons) ? enrollment.completedLessons : [];
+  // Filter for unique completed lessons that exist in published curriculum
+  const uniqueCompletedValid = new Set(
+    rawCompleted
+      .map((id) => (id ? id.toString() : ''))
+      .filter((idStr) => idStr && (totalLessons === 0 || validLessonIds.has(idStr)))
+  );
+  const completedCount = totalLessons > 0 ? uniqueCompletedValid.size : rawCompleted.length;
 
   let progressPercent = 0;
   if (totalLessons > 0) {
     progressPercent = safePercentage(completedCount, totalLessons);
-  } else if (enrollment.isCompleted || enrollment.status === 'completed') {
+  } else if (enrollment?.isCompleted || enrollment?.status === 'completed' || enrollment?.certificateIssued) {
     progressPercent = 100;
   }
 
@@ -49,6 +61,41 @@ function calculateCourseProgress(enrollment, course) {
  * @param {string|ObjectId} studentId
  */
 async function getStudentAnalytics(studentId) {
+  if (!studentId) {
+    return {
+      overview: {
+        totalEnrolled: 0,
+        activeCourses: 0,
+        completedCourses: 0,
+        averageCourseProgress: 0,
+        certificatesEarned: 0,
+      },
+      courses: {
+        summary: { total: 0, active: 0, completed: 0, averageProgress: 0 },
+        breakdown: [],
+      },
+      assignments: {
+        totalAssigned: 0,
+        submittedCount: 0,
+        pendingGradingCount: 0,
+        gradedCount: 0,
+        submissionRate: 0,
+        averageGrade: 0,
+      },
+      quizzes: {
+        totalAttempts: 0,
+        quizzesAttempted: 0,
+        quizzesPassed: 0,
+        bestScore: 0,
+        latestScore: 0,
+        averageScore: 0,
+        attemptsSummary: [],
+      },
+      certificates: { total: 0, list: [] },
+      recentActivities: [],
+    };
+  }
+
   // 1. Enrollments: active and completed only (exclude dropped)
   const enrollments = await Enrollment.find({
     student: studentId,
@@ -304,6 +351,51 @@ async function getStudentAnalytics(studentId) {
  * @param {string|ObjectId} instructorId
  */
 async function getInstructorAnalytics(instructorId) {
+  if (!instructorId) {
+    return {
+      overview: {
+        totalCourses: 0,
+        publishedCourses: 0,
+        totalLearners: 0,
+        totalEnrollments: 0,
+        activeEnrollments: 0,
+        completedEnrollments: 0,
+        completionRate: 0,
+        pendingGrading: 0,
+      },
+      courseStatusBreakdown: {
+        total: 0,
+        published: 0,
+        draft: 0,
+        pending_review: 0,
+        rejected: 0,
+        archived: 0,
+      },
+      progressDistribution: {
+        tier0To25: 0,
+        tier26To50: 0,
+        tier51To75: 0,
+        tier76To100: 0,
+        total: 0,
+      },
+      assignmentStats: {
+        totalAssignments: 0,
+        totalSubmissions: 0,
+        pendingGrading: 0,
+        gradedSubmissions: 0,
+        averageGrade: 0,
+      },
+      quizStats: {
+        totalQuizzes: 0,
+        totalAttempts: 0,
+        passedAttempts: 0,
+        passRate: 0,
+        averageScore: 0,
+      },
+      coursesPerformance: [],
+    };
+  }
+
   // 1. Instructor Owned Courses
   const courses = await Course.find({ instructor: instructorId })
     .select('title slug status category thumbnail sections')
@@ -351,7 +443,7 @@ async function getInstructorAnalytics(instructorId) {
       course: { $in: ownedCourseIds },
       status: { $in: ['active', 'completed'] },
     })
-      .select('course student status completedLessons isCompleted')
+      .select('course student status completedLessons isCompleted certificateIssued')
       .lean();
 
     totalEnrollmentsCount = enrollments.length;
@@ -363,7 +455,8 @@ async function getInstructorAnalytics(instructorId) {
     enrollments.forEach((enr) => {
       if (enr.student) totalLearnersSet.add(enr.student.toString());
 
-      if (enr.status === 'completed' || enr.isCompleted) {
+      const isCompleted = enr.status === 'completed' || enr.isCompleted === true || Boolean(enr.certificateIssued);
+      if (isCompleted) {
         completedEnrollmentsCount += 1;
       } else {
         activeEnrollmentsCount += 1;
@@ -385,7 +478,7 @@ async function getInstructorAnalytics(instructorId) {
 
       const list = courseEnrollmentMap.get(enr.course.toString());
       if (list) {
-        list.push({ ...enr, progressPercent });
+        list.push({ ...enr, progressPercent, isCompleted });
       }
     });
   }
@@ -396,7 +489,7 @@ async function getInstructorAnalytics(instructorId) {
   const coursePerformance = courses.map((course) => {
     const courseEnrs = courseEnrollmentMap.get(course._id.toString()) || [];
     const totalEnrs = courseEnrs.length;
-    const completed = courseEnrs.filter((e) => e.status === 'completed' || e.isCompleted).length;
+    const completed = courseEnrs.filter((e) => e.isCompleted || e.status === 'completed' || e.certificateIssued).length;
     const active = totalEnrs - completed;
     const courseCompletionRate = safePercentage(completed, totalEnrs);
 

@@ -73,11 +73,11 @@ export default function InstructorAnalyticsView() {
     coursesPerformance,
   } = analytics;
 
-  const totalCohort = progressDistribution.total || 1;
-  const p0To25 = Math.round((progressDistribution.tier0To25 / totalCohort) * 100);
-  const p26To50 = Math.round((progressDistribution.tier26To50 / totalCohort) * 100);
-  const p51To75 = Math.round((progressDistribution.tier51To75 / totalCohort) * 100);
-  const p76To100 = Math.round((progressDistribution.tier76To100 / totalCohort) * 100);
+  const totalCohort = progressDistribution.total || 0;
+  const p0To25 = totalCohort > 0 ? Math.round((progressDistribution.tier0To25 / totalCohort) * 100) : 0;
+  const p26To50 = totalCohort > 0 ? Math.round((progressDistribution.tier26To50 / totalCohort) * 100) : 0;
+  const p51To75 = totalCohort > 0 ? Math.round((progressDistribution.tier51To75 / totalCohort) * 100) : 0;
+  const p76To100 = totalCohort > 0 ? Math.round((progressDistribution.tier76To100 / totalCohort) * 100) : 0;
 
   return (
     <div className="space-y-8">
@@ -156,22 +156,22 @@ export default function InstructorAnalyticsView() {
         <div className="h-4 w-full bg-slate-100 rounded-full flex overflow-hidden mb-6">
           <div
             title={`0-25%: ${progressDistribution.tier0To25} students`}
-            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier0To25 / progressDistribution.total) * 100 : 25}%` }}
+            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier0To25 / progressDistribution.total) * 100 : 0}%` }}
             className="bg-rose-400 h-full transition-all duration-500"
           />
           <div
             title={`26-50%: ${progressDistribution.tier26To50} students`}
-            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier26To50 / progressDistribution.total) * 100 : 25}%` }}
+            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier26To50 / progressDistribution.total) * 100 : 0}%` }}
             className="bg-amber-400 h-full transition-all duration-500"
           />
           <div
             title={`51-75%: ${progressDistribution.tier51To75} students`}
-            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier51To75 / progressDistribution.total) * 100 : 25}%` }}
+            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier51To75 / progressDistribution.total) * 100 : 0}%` }}
             className="bg-sky-400 h-full transition-all duration-500"
           />
           <div
             title={`76-100%: ${progressDistribution.tier76To100} students`}
-            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier76To100 / progressDistribution.total) * 100 : 25}%` }}
+            style={{ width: `${progressDistribution.total > 0 ? (progressDistribution.tier76To100 / progressDistribution.total) * 100 : 0}%` }}
             className="bg-emerald-500 h-full transition-all duration-500"
           />
         </div>

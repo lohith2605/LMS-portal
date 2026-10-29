@@ -182,7 +182,7 @@ const getCourseByIdOrSlug = async (req, res) => {
       enrollment = await Enrollment.findOne({
         student: userId,
         course: course._id,
-        status: 'active',
+        status: { $in: ['active', 'completed'] },
       }).lean();
       isEnrolled = Boolean(enrollment);
     }
@@ -261,7 +261,7 @@ const getCourseByIdOrSlug = async (req, res) => {
 const getLessonContent = async (req, res) => {
   try {
     const { idOrSlug, lessonId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.id || req.user._id;
     const userRole = req.user.role;
 
     let query;
@@ -284,7 +284,7 @@ const getLessonContent = async (req, res) => {
       enrollment = await Enrollment.findOne({
         student: userId,
         course: course._id,
-        status: 'active',
+        status: { $in: ['active', 'completed'] },
       });
 
       if (!enrollment) {
@@ -361,7 +361,7 @@ const getLessonContent = async (req, res) => {
 const toggleLessonComplete = async (req, res) => {
   try {
     const { courseId, lessonId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.id || req.user._id;
 
     if (!mongoose.Types.ObjectId.isValid(courseId) || !mongoose.Types.ObjectId.isValid(lessonId)) {
       return res.status(400).json({ error: 'Invalid ID format.' });
@@ -383,7 +383,7 @@ const toggleLessonComplete = async (req, res) => {
     const enrollment = await Enrollment.findOne({
       student: userId,
       course: courseId,
-      status: 'active',
+      status: { $in: ['active', 'completed'] },
     });
 
     if (!enrollment) {

@@ -12,7 +12,6 @@ import {
   Users,
   GraduationCap,
   CheckCircle2,
-  Activity,
   LogOut,
   FolderLock,
   Award,
@@ -51,7 +50,6 @@ export default function MobileNavigation({
           { id: 'approvals', label: 'Instructor Approvals', icon: CheckCircle2 },
           { id: 'users', label: 'User Directory', icon: Users },
           { id: 'moderation', label: 'Course Moderation', icon: FolderLock },
-          { id: 'health', label: 'System Health', icon: Activity },
           { id: 'security', label: 'Admin Security', icon: KeyRound },
         ];
       case 'instructor':

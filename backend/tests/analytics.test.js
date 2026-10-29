@@ -515,4 +515,409 @@ test.describe('Phase 13: Learning Analytics Suite', () => {
       analyticsService.getStudentAnalytics = originalGetStudentAnalytics;
     }
   });
+
+  // Test 7: Case 1 & 2 - Instructor with one published course and one active enrollment reports 1 learner, 1 enrollment, and accurate lesson progress
+  test('7. Instructor Analytics: One published course with one active enrollment reports 1 learner, 1 enrollment, and lesson progress', async () => {
+    const instructorId = new mongoose.Types.ObjectId();
+    const courseId = new mongoose.Types.ObjectId();
+    const studentId = new mongoose.Types.ObjectId();
+    const lesson1Id = new mongoose.Types.ObjectId();
+    const lesson2Id = new mongoose.Types.ObjectId();
+
+    const origCourseFind = Course.find;
+    const origEnrollmentFind = Enrollment.find;
+    const origAssignmentFind = Assignment.find;
+    const origQuizFind = Quiz.find;
+
+    try {
+      Course.find = (query) => {
+        assert.strictEqual(query.instructor.toString(), instructorId.toString());
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              {
+                _id: courseId,
+                title: 'HTML & CSS Foundations',
+                slug: 'html-css',
+                status: 'published',
+                category: 'Development',
+                sections: [
+                  {
+                    lessons: [
+                      { _id: lesson1Id, isPublished: true },
+                      { _id: lesson2Id, isPublished: true },
+                    ],
+                  },
+                ],
+              },
+            ]),
+          }),
+        };
+      };
+
+      Enrollment.find = (query) => {
+        assert.deepStrictEqual(query.course, { $in: [courseId] });
+        assert.deepStrictEqual(query.status, { $in: ['active', 'completed'] });
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              {
+                _id: new mongoose.Types.ObjectId(),
+                course: courseId,
+                student: studentId,
+                status: 'active',
+                isCompleted: false,
+                completedLessons: [lesson1Id],
+              },
+            ]),
+          }),
+        };
+      };
+
+      Assignment.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([]),
+        }),
+      });
+
+      Quiz.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([]),
+        }),
+      });
+
+      const res = await analyticsService.getInstructorAnalytics(instructorId);
+
+      assert.strictEqual(res.overview.totalCourses, 1);
+      assert.strictEqual(res.overview.publishedCourses, 1);
+      assert.strictEqual(res.overview.totalLearners, 1);
+      assert.strictEqual(res.overview.totalEnrollments, 1);
+      assert.strictEqual(res.overview.activeEnrollments, 1);
+      assert.strictEqual(res.overview.completedEnrollments, 0);
+      assert.strictEqual(res.overview.completionRate, 0);
+
+      // Lesson progress tier: 1 / 2 = 50% -> tier26To50
+      assert.strictEqual(res.progressDistribution.tier26To50, 1);
+      assert.strictEqual(res.progressDistribution.tier0To25, 0);
+      assert.strictEqual(res.progressDistribution.total, 1);
+      assert.strictEqual(res.coursesPerformance[0].averageProgress, 50);
+    } finally {
+      Course.find = origCourseFind;
+      Enrollment.find = origEnrollmentFind;
+      Assignment.find = origAssignmentFind;
+      Quiz.find = origQuizFind;
+    }
+  });
+
+  // Test 8: Case 3 & 4 - 100% lesson progress without completion criteria is NOT marked completed; fully completed enrollment is counted
+  test('8. Instructor Analytics: 100% lesson progress remains active unless formally completed', async () => {
+    const instructorId = new mongoose.Types.ObjectId();
+    const courseId = new mongoose.Types.ObjectId();
+    const student1Id = new mongoose.Types.ObjectId();
+    const student2Id = new mongoose.Types.ObjectId();
+    const lessonId = new mongoose.Types.ObjectId();
+
+    const origCourseFind = Course.find;
+    const origEnrollmentFind = Enrollment.find;
+    const origAssignmentFind = Assignment.find;
+    const origQuizFind = Quiz.find;
+
+    try {
+      Course.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([
+            {
+              _id: courseId,
+              title: 'JavaScript Essentials',
+              status: 'published',
+              sections: [{ lessons: [{ _id: lessonId, isPublished: true }] }],
+            },
+          ]),
+        }),
+      });
+
+      Enrollment.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([
+            // Student 1: 100% progress (1/1 lesson) but has not claimed certificate / satisfied mandatory quizzes
+            {
+              _id: new mongoose.Types.ObjectId(),
+              course: courseId,
+              student: student1Id,
+              status: 'active',
+              isCompleted: false,
+              completedLessons: [lessonId],
+            },
+            // Student 2: Formal course completion with certificate issued
+            {
+              _id: new mongoose.Types.ObjectId(),
+              course: courseId,
+              student: student2Id,
+              status: 'completed',
+              isCompleted: true,
+              certificateIssued: true,
+              completedLessons: [lessonId],
+            },
+          ]),
+        }),
+      });
+
+      Assignment.find = () => ({ select: () => ({ lean: () => Promise.resolve([]) }) });
+      Quiz.find = () => ({ select: () => ({ lean: () => Promise.resolve([]) }) });
+
+      const res = await analyticsService.getInstructorAnalytics(instructorId);
+
+      assert.strictEqual(res.overview.totalLearners, 2);
+      assert.strictEqual(res.overview.totalEnrollments, 2);
+      assert.strictEqual(res.overview.activeEnrollments, 1, 'Uncompleted student with 100% lessons must remain active');
+      assert.strictEqual(res.overview.completedEnrollments, 1, 'Only formally completed enrollment counts as completed');
+      assert.strictEqual(res.overview.completionRate, 50); // 1 / 2 = 50%
+
+      // Both students fall into Tier 76-100%
+      assert.strictEqual(res.progressDistribution.tier76To100, 2);
+      assert.strictEqual(res.coursesPerformance[0].activeStudents, 1);
+      assert.strictEqual(res.coursesPerformance[0].completedStudents, 1);
+    } finally {
+      Course.find = origCourseFind;
+      Enrollment.find = origEnrollmentFind;
+      Assignment.find = origAssignmentFind;
+      Quiz.find = origQuizFind;
+    }
+  });
+
+  // Test 9: Case 5 & 6 & 7 - Unique learner counting, exclusion of other instructors' courses, and exclusion of dropped enrollments
+  test('9. Instructor Analytics: Unique student counting across multiple courses & exclusion of dropped / external courses', async () => {
+    const instructor1Id = new mongoose.Types.ObjectId();
+    const c1Id = new mongoose.Types.ObjectId();
+    const c2Id = new mongoose.Types.ObjectId();
+    const cExternalId = new mongoose.Types.ObjectId();
+    const sameStudentId = new mongoose.Types.ObjectId();
+
+    const origCourseFind = Course.find;
+    const origEnrollmentFind = Enrollment.find;
+    const origAssignmentFind = Assignment.find;
+    const origQuizFind = Quiz.find;
+
+    try {
+      Course.find = (query) => {
+        // Only return courses owned by instructor1Id
+        if (query.instructor.toString() === instructor1Id.toString()) {
+          return {
+            select: () => ({
+              lean: () => Promise.resolve([
+                { _id: c1Id, title: 'Course 1', status: 'published', sections: [] },
+                { _id: c2Id, title: 'Course 2', status: 'published', sections: [] },
+              ]),
+            }),
+          };
+        }
+        return { select: () => ({ lean: () => Promise.resolve([]) }) };
+      };
+
+      Enrollment.find = (query) => {
+        // Must exclude dropped enrollments
+        assert.deepStrictEqual(query.status, { $in: ['active', 'completed'] });
+        // Must query only instructor1's courses
+        const targetIds = query.course.$in.map((id) => id.toString());
+        assert.ok(targetIds.includes(c1Id.toString()));
+        assert.ok(targetIds.includes(c2Id.toString()));
+        assert.ok(!targetIds.includes(cExternalId.toString()));
+
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              // Same student enrolled in Course 1
+              { _id: 'e1', course: c1Id, student: sameStudentId, status: 'active', isCompleted: false, completedLessons: [] },
+              // Same student enrolled in Course 2
+              { _id: 'e2', course: c2Id, student: sameStudentId, status: 'active', isCompleted: false, completedLessons: [] },
+            ]),
+          }),
+        };
+      };
+
+      Assignment.find = () => ({ select: () => ({ lean: () => Promise.resolve([]) }) });
+      Quiz.find = () => ({ select: () => ({ lean: () => Promise.resolve([]) }) });
+
+      const res = await analyticsService.getInstructorAnalytics(instructor1Id);
+
+      // Student enrolled in 2 courses counts as 1 Total Learner, but 2 Total Enrollments
+      assert.strictEqual(res.overview.totalLearners, 1, 'Duplicate student across courses must be deduplicated in totalLearners');
+      assert.strictEqual(res.overview.totalEnrollments, 2, 'Total enrollments must count each course enrollment');
+      assert.strictEqual(res.overview.activeEnrollments, 2);
+    } finally {
+      Course.find = origCourseFind;
+      Enrollment.find = origEnrollmentFind;
+      Assignment.find = origAssignmentFind;
+      Quiz.find = origQuizFind;
+    }
+  });
+
+  // Test 10: Case 8 - Empty course / enrollment portfolio returns safe zero structure
+  test('10. Instructor Analytics: Empty course portfolio returns safe zero-valued structure without error', async () => {
+    const emptyInstructorId = new mongoose.Types.ObjectId();
+    const origCourseFind = Course.find;
+
+    try {
+      Course.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([]),
+        }),
+      });
+
+      const res = await analyticsService.getInstructorAnalytics(emptyInstructorId);
+
+      assert.strictEqual(res.overview.totalCourses, 0);
+      assert.strictEqual(res.overview.publishedCourses, 0);
+      assert.strictEqual(res.overview.totalLearners, 0);
+      assert.strictEqual(res.overview.totalEnrollments, 0);
+      assert.strictEqual(res.overview.activeEnrollments, 0);
+      assert.strictEqual(res.overview.completedEnrollments, 0);
+      assert.strictEqual(res.overview.completionRate, 0);
+      assert.strictEqual(res.progressDistribution.total, 0);
+      assert.strictEqual(res.coursesPerformance.length, 0);
+    } finally {
+      Course.find = origCourseFind;
+    }
+  });
+
+  // Test 11: Case 9 - Analytics Controller correctly extracts req.user.id and returns HTTP 200 with success & data
+  test('11. Analytics Controller: Successfully extracts req.user.id (from sanitizeUser) and returns 200 shape', async () => {
+    const instructorId = new mongoose.Types.ObjectId().toString();
+    // Simulate real sanitizeUser output: contains 'id', but may omit '_id'
+    const mockReq = {
+      user: {
+        id: instructorId,
+        name: 'Professor Turing',
+        role: 'instructor',
+      },
+    };
+
+    let capturedStatus = null;
+    let capturedJson = null;
+
+    const mockRes = {
+      status(code) {
+        capturedStatus = code;
+        return this;
+      },
+      json(data) {
+        capturedJson = data;
+        return this;
+      },
+    };
+
+    const origGetInstructorAnalytics = analyticsService.getInstructorAnalytics;
+    try {
+      let passedId = null;
+      analyticsService.getInstructorAnalytics = async (id) => {
+        passedId = id;
+        return {
+          overview: { totalCourses: 2, totalLearners: 5 },
+          coursesPerformance: [],
+        };
+      };
+
+      await analyticsController.getInstructorAnalytics(mockReq, mockRes);
+
+      assert.strictEqual(capturedStatus, 200);
+      assert.strictEqual(capturedJson.success, true);
+      assert.strictEqual(capturedJson.data.overview.totalCourses, 2);
+      assert.strictEqual(passedId, instructorId, 'Controller must pass req.user.id to analytics service');
+    } finally {
+      analyticsService.getInstructorAnalytics = origGetInstructorAnalytics;
+    }
+  });
+
+  // Test 12: Case 10 - Assignment and Quiz counts are accurately scoped to owned courses
+  test('12. Instructor Analytics: Assignment & quiz counts are isolated strictly to owned courses', async () => {
+    const instructorId = new mongoose.Types.ObjectId();
+    const ownedCourseId = new mongoose.Types.ObjectId();
+
+    const origCourseFind = Course.find;
+    const origEnrollmentFind = Enrollment.find;
+    const origAssignmentFind = Assignment.find;
+    const origSubmissionFind = AssignmentSubmission.find;
+    const origQuizFind = Quiz.find;
+    const origQuizAttemptFind = QuizAttempt.find;
+
+    try {
+      Course.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([
+            { _id: ownedCourseId, title: 'Database Design', status: 'published', sections: [] },
+          ]),
+        }),
+      });
+
+      Enrollment.find = () => ({
+        select: () => ({
+          lean: () => Promise.resolve([]),
+        }),
+      });
+
+      const assign1Id = new mongoose.Types.ObjectId();
+      Assignment.find = (query) => {
+        // Verify only owned course IDs are queried
+        assert.deepStrictEqual(query.course, { $in: [ownedCourseId] });
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              { _id: assign1Id, title: 'SQL Schema', maxMarks: 50, course: ownedCourseId },
+            ]),
+          }),
+        };
+      };
+
+      AssignmentSubmission.find = (query) => {
+        assert.deepStrictEqual(query.assignment, { $in: [assign1Id] });
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              { _id: 'sub_1', assignment: assign1Id, status: 'submitted', grade: null },
+            ]),
+          }),
+        };
+      };
+
+      const quiz1Id = new mongoose.Types.ObjectId();
+      Quiz.find = (query) => {
+        assert.deepStrictEqual(query.course, { $in: [ownedCourseId] });
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              { _id: quiz1Id, title: 'Normalization Quiz', passingPercentage: 80 },
+            ]),
+          }),
+        };
+      };
+
+      QuizAttempt.find = (query) => {
+        assert.deepStrictEqual(query.quiz, { $in: [quiz1Id] });
+        return {
+          select: () => ({
+            lean: () => Promise.resolve([
+              { _id: 'att_1', quiz: quiz1Id, percentage: 90, passed: true },
+            ]),
+          }),
+        };
+      };
+
+      const res = await analyticsService.getInstructorAnalytics(instructorId);
+
+      assert.strictEqual(res.assignmentStats.totalAssignments, 1);
+      assert.strictEqual(res.assignmentStats.totalSubmissions, 1);
+      assert.strictEqual(res.assignmentStats.pendingGrading, 1);
+      assert.strictEqual(res.quizStats.totalQuizzes, 1);
+      assert.strictEqual(res.quizStats.totalAttempts, 1);
+      assert.strictEqual(res.quizStats.passedAttempts, 1);
+      assert.strictEqual(res.quizStats.passRate, 100);
+    } finally {
+      Course.find = origCourseFind;
+      Enrollment.find = origEnrollmentFind;
+      Assignment.find = origAssignmentFind;
+      AssignmentSubmission.find = origSubmissionFind;
+      Quiz.find = origQuizFind;
+      QuizAttempt.find = origQuizAttemptFind;
+    }
+  });
 });

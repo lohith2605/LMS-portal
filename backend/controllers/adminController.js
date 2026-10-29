@@ -2,6 +2,9 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const { sanitizeUser } = require('../utils/authUtils');
 const { logger } = require('../utils/logger');
+const { sendInstructorApprovalEmail } = require('../services/emailService');
+
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 /**
  * Get platform overview metrics for Administrator console
@@ -106,10 +109,25 @@ const approveInstructor = async (req, res) => {
       });
     }
 
+    const wasAlreadyActive = user.accountStatus === 'active';
     user.accountStatus = 'active';
     await user.save();
 
     logger.success(`Instructor approved by ${req.user.email}: ${user.email} (ID: ${user._id})`);
+
+    // Dispatch approval email notification if this is a fresh approval
+    if (!wasAlreadyActive) {
+      try {
+        const loginUrl = `${CLIENT_URL}/login`;
+        await sendInstructorApprovalEmail({
+          to: user.email,
+          name: user.name,
+          loginUrl,
+        });
+      } catch (emailErr) {
+        logger.warn(`Failed to dispatch instructor approval email to ${user.email}: ${emailErr.message}`);
+      }
+    }
 
     return res.status(200).json({
       message: `Instructor application for ${user.name} has been approved.`,

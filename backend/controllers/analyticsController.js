@@ -7,7 +7,14 @@ const { logger } = require('../utils/logger');
  */
 async function getStudentAnalytics(req, res) {
   try {
-    const studentId = req.user._id;
+    const studentId = req.user?.id || req.user?._id;
+    if (!studentId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required. Missing student identifier.',
+      });
+    }
+
     const analytics = await analyticsService.getStudentAnalytics(studentId);
     return res.status(200).json({
       success: true,
@@ -29,7 +36,14 @@ async function getStudentAnalytics(req, res) {
  */
 async function getInstructorAnalytics(req, res) {
   try {
-    const instructorId = req.user._id;
+    const instructorId = req.user?.id || req.user?._id;
+    if (!instructorId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required. Missing instructor identifier.',
+      });
+    }
+
     const analytics = await analyticsService.getInstructorAnalytics(instructorId);
     return res.status(200).json({
       success: true,

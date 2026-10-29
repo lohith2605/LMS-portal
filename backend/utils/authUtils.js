@@ -77,9 +77,11 @@ const hashToken = (token) => {
 const sanitizeUser = (user) => {
   if (!user) return null;
   const raw = user.toObject ? user.toObject() : user;
+  const id = raw._id ? raw._id.toString() : (raw.id ? raw.id.toString() : '');
 
   return {
-    id: raw._id ? raw._id.toString() : raw.id,
+    id,
+    _id: id,
     name: raw.name,
     email: raw.email,
     role: raw.role,

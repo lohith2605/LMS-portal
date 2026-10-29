@@ -265,6 +265,12 @@ export default function InstructorDashboard() {
     setSelectedCourseId(null);
   };
 
+  const handleViewCourses = () => {
+    setCourseStudioModalOpen(false);
+    setSelectedCourseId(null);
+    setActiveTab('courses');
+  };
+
   const handleCourseSaved = () => {
     fetchInstructorData();
   };
@@ -490,42 +496,44 @@ export default function InstructorDashboard() {
           )}
 
           {/* Welcome Banner */}
-          <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-sage-dark" />
-                <span>Instructor Teaching Workspace</span>
-              </div>
+          {activeTab === 'overview' && (
+            <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-sage-dark" />
+                  <span>Instructor Teaching Workspace</span>
+                </div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-                Welcome back, {firstName}
-              </h1>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                  Welcome back, {firstName}
+                </h1>
 
-              <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
-                Manage your courses, support your learners, and review their progress.
-              </p>
+                <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
+                  Manage your courses, support your learners, and review their progress.
+                </p>
 
-              <div className="flex flex-wrap items-center gap-3 mt-5">
-                <button
-                  type="button"
-                  onClick={() => setCourseStudioModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
-                >
-                  <PlusCircle size={14} />
-                  <span>Create Course</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-3 mt-5">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenStudio()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
+                  >
+                    <PlusCircle size={14} />
+                    <span>Create Course</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('courses')}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
-                >
-                  <BookOpen size={13} />
-                  <span>View My Courses</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleViewCourses}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    <BookOpen size={13} />
+                    <span>View My Courses</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* TAB: OVERVIEW */}
           {activeTab === 'overview' && (
@@ -543,7 +551,7 @@ export default function InstructorDashboard() {
                     icon={BookOpen}
                     badge={isApproved ? 'Studio Ready' : 'Restricted'}
                     badgeType={isApproved ? 'sage' : 'amber'}
-                    onClick={() => setActiveTab('courses')}
+                    onClick={handleViewCourses}
                   />
                   <MetricCard
                     title="Published Courses"
@@ -552,7 +560,7 @@ export default function InstructorDashboard() {
                     icon={Layers}
                     badge="Public"
                     badgeType="default"
-                    onClick={() => setActiveTab('courses')}
+                    onClick={handleViewCourses}
                   />
                   <MetricCard
                     title="Total Learners"
@@ -619,7 +627,7 @@ export default function InstructorDashboard() {
                         {data.courses.length > 3 && (
                           <button
                             type="button"
-                            onClick={() => setActiveTab('courses')}
+                            onClick={handleViewCourses}
                             className="text-xs text-secondary hover:text-primary font-medium w-full text-center mt-2 cursor-pointer"
                           >
                             View all {data.courses.length} courses &rarr;
