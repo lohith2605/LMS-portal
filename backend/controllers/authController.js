@@ -10,6 +10,10 @@ const {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } = require('../services/emailService');
+const {
+  uploadProfilePicture,
+  deleteAsset,
+} = require('../services/cloudinaryStorageService');
 const { logger } = require('../utils/logger');
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -392,6 +396,118 @@ const resendVerification = async (req, res) => {
   }
 };
 
+/**
+ * Update authenticated user's profile picture
+ * PATCH /api/auth/profile-picture
+ */
+const updateProfilePicture = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        error: 'Please select an image file to upload as your profile picture.',
+      });
+    }
+
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    // If an existing custom avatar is stored with a Cloudinary publicId, remove it
+    if (user.avatar && user.avatar.publicId) {
+      try {
+        await deleteAsset(user.avatar.publicId, {
+          resourceType: 'image',
+          deliveryType: 'upload',
+        });
+      } catch (cleanupErr) {
+        logger.warn(`Could not delete previous avatar ${user.avatar.publicId}: ${cleanupErr.message}`);
+      }
+    }
+
+    // Upload new profile picture to Cloudinary
+    const uploadResult = await uploadProfilePicture(req.file.buffer, {
+      userId: user._id,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+    });
+
+    user.avatar = {
+      url: uploadResult.url,
+      publicId: uploadResult.publicId,
+    };
+
+    await user.save({ validateBeforeSave: false });
+
+    logger.info(`Profile picture updated for user ${user.email}`);
+
+    return res.status(200).json({
+      message: 'Profile picture updated successfully.',
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    logger.error(`Profile picture upload error: ${error.message}`);
+    return res.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to upload profile picture. Please try again.',
+    });
+  }
+};
+
+/**
+ * Remove authenticated user's profile picture and restore default avatar
+ * DELETE /api/auth/profile-picture
+ */
+const deleteProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    if (!user.avatar || !user.avatar.url) {
+      return res.status(200).json({
+        message: 'Default avatar already in use.',
+        user: sanitizeUser(user),
+      });
+    }
+
+    // Delete image from Cloudinary if stored
+    if (user.avatar.publicId) {
+      try {
+        await deleteAsset(user.avatar.publicId, {
+          resourceType: 'image',
+          deliveryType: 'upload',
+        });
+      } catch (cleanupErr) {
+        logger.warn(`Could not delete avatar ${user.avatar.publicId}: ${cleanupErr.message}`);
+      }
+    }
+
+    user.avatar = {
+      url: null,
+      publicId: null,
+    };
+
+    await user.save({ validateBeforeSave: false });
+
+    logger.info(`Profile picture removed for user ${user.email}`);
+
+    return res.status(200).json({
+      message: 'Profile picture removed. Default avatar restored.',
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    logger.error(`Profile picture delete error: ${error.message}`);
+    return res.status(500).json({
+      error: 'Failed to remove profile picture. Please try again.',
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -402,4 +518,7 @@ module.exports = {
   changePassword,
   verifyEmail,
   resendVerification,
+  updateProfilePicture,
+  deleteProfilePicture,
 };
+

@@ -43,7 +43,44 @@ const uploadSingle = (fieldName = 'file') => (req, res, next) => {
   });
 };
 
+// Profile picture image formats
+const ALLOWED_AVATAR_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
+const ALLOWED_AVATAR_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+const avatarFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname || '').toLowerCase().replace(/^\./, '');
+  if (!ALLOWED_AVATAR_EXTENSIONS.has(ext) || (file.mimetype && !ALLOWED_AVATAR_MIMES.has(file.mimetype))) {
+    const error = new Error('Invalid image format. Profile pictures must be JPG, JPEG, PNG, or WebP.');
+    error.statusCode = 400;
+    return cb(error, false);
+  }
+  cb(null, true);
+};
+
+const avatarUpload = multer({
+  storage,
+  fileFilter: avatarFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB max
+    files: 1,
+  },
+});
+
+const uploadAvatar = (req, res, next) => {
+  avatarUpload.single('avatar')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Image file size exceeds the 5 MB limit. Please select a smaller photo.' });
+      }
+      return res.status(err.statusCode || 400).json({ error: err.message });
+    }
+    next();
+  });
+};
+
 module.exports = {
   upload,
   uploadSingle,
+  uploadAvatar,
 };
+
