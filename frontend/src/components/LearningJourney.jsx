@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { Compass, BookOpen, PenTool, BarChart3, Award, CheckCircle2 } from 'lucide-react';
+import {
+  Search,
+  PlayCircle,
+  ClipboardList,
+  TrendingUp,
+  Award,
+  CheckCircle2,
+} from 'lucide-react';
+import IconChip from './ui/IconChip';
+import Reveal from './ui/Reveal';
 
 const JOURNEY_STAGES = [
   {
     id: 'discover',
     number: '01',
     label: 'Discover',
-    icon: Compass,
+    icon: Search,
     shortDesc: 'Find courses aligned with your interests and goals.',
     title: 'Precision course matching & previewable syllabi',
     body: 'Explore comprehensive course pathways with clear outcomes, prerequisites, and transparent module breakdowns before you ever commit.',
@@ -28,7 +37,7 @@ const JOURNEY_STAGES = [
     id: 'learn',
     number: '02',
     label: 'Learn',
-    icon: BookOpen,
+    icon: PlayCircle,
     shortDesc: 'Access structured lessons and resources.',
     title: 'Focused, distraction-free modular learning',
     body: 'Consume high-signal lesson content structured into digestable modules, paired with code snippets, reading materials, and architectural blueprints.',
@@ -50,7 +59,7 @@ const JOURNEY_STAGES = [
     id: 'practise',
     number: '03',
     label: 'Practise',
-    icon: PenTool,
+    icon: ClipboardList,
     shortDesc: 'Complete assignments and assessments.',
     title: 'Hands-on projects with rubric-backed feedback',
     body: 'Solidify your understanding by completing realistic project assignments, submitting code or designs, and receiving structured instructor feedback.',
@@ -72,7 +81,7 @@ const JOURNEY_STAGES = [
     id: 'track',
     number: '04',
     label: 'Track',
-    icon: BarChart3,
+    icon: TrendingUp,
     shortDesc: 'Understand your progress and next steps.',
     title: 'Real-time visibility over your learning journey',
     body: 'Never wonder what to work on next. Monitor your module completion percentage, track upcoming assignment deadlines, and observe skill mastery.',
@@ -154,14 +163,14 @@ export default function LearningJourney() {
                 onClick={() => setActiveStageIndex(idx)}
               >
                 <div
-                  className={`w-12.5 h-12.5 rounded-full border-2 flex items-center justify-center font-bold text-xs shrink-0 md:mb-3 shadow-xs transition-all ${
+                  className={`w-12.5 h-12.5 rounded-full border-2 flex items-center justify-center font-bold text-xs shrink-0 md:mb-3 shadow-xs transition-all duration-200 ${
                     isActive
-                      ? 'bg-primary border-primary text-white shadow-sm'
-                      : 'bg-white border-border-medium text-secondary group-hover:border-primary group-hover:text-primary group-hover:-translate-y-0.5'
+                      ? 'bg-primary border-primary text-white shadow-sm scale-105'
+                      : 'bg-surface border-border-medium text-secondary group-hover:border-primary group-hover:text-primary group-hover:-translate-y-0.5'
                   }`}
                   aria-hidden="true"
                 >
-                  <StageIcon size={20} />
+                  <StageIcon size={20} strokeWidth={1.75} className="transition-transform group-hover:scale-110" />
                 </div>
                 <div className="flex flex-col items-start md:items-center">
                   <div className="text-[11px] font-bold tracking-wider uppercase text-accent-blue-dark mb-0.5">Stage {stage.number}</div>
@@ -174,54 +183,52 @@ export default function LearningJourney() {
         </div>
 
         {/* Detailed Interactive Showcase Panel */}
-        <div
-          id={`stage-panel-${currentStage.id}`}
-          className="bg-white border border-border-subtle rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-card grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 items-center"
-          role="tabpanel"
-          aria-label={`${currentStage.label} stage details`}
-        >
-          {/* Left Description Column */}
-          <div className="flex flex-col gap-3">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent-blue-dark">
-              <IconComponent size={16} aria-hidden="true" />
-              <span>Stage {currentStage.number} • {currentStage.label}</span>
-            </div>
-            <h3 className="text-xl font-bold text-primary">{currentStage.title}</h3>
-            <p className="text-sm text-secondary leading-relaxed">{currentStage.body}</p>
+        <Reveal key={currentStage.id} triggerOnMount delayMs={0}>
+          <div
+            id={`stage-panel-${currentStage.id}`}
+            className="bg-surface border border-border-subtle rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-card grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 items-center"
+            role="tabpanel"
+            aria-label={`${currentStage.label} stage details`}
+          >
+            {/* Left Description Column */}
+            <div className="flex flex-col gap-3">
+              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-blue-dark">
+                <IconChip icon={IconComponent} tone="accent" size="sm" animate />
+                <span>Stage {currentStage.number} • {currentStage.label}</span>
+              </div>
+              <h3 className="text-xl font-bold text-primary">{currentStage.title}</h3>
+              <p className="text-sm text-secondary leading-relaxed">{currentStage.body}</p>
 
-            <div className="flex flex-col gap-2 mt-2">
-              {currentStage.highlights.map((point, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs text-primary font-medium">
-                  <CheckCircle2 size={15} className="text-accent-sage-dark shrink-0" aria-hidden="true" />
-                  <span>{point}</span>
+              <div className="flex flex-col gap-2 mt-2">
+                {currentStage.highlights.map((point, index) => (
+                  <div key={index} className="flex items-center gap-2 text-xs text-primary font-medium">
+                    <CheckCircle2 size={15} strokeWidth={1.75} className="text-accent-sage-dark shrink-0" aria-hidden="true" />
+                    <span>{point}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Visual/Structural Snippet */}
+            <div className="bg-surface-subtle border border-border-subtle rounded-2xl p-5 md:p-6 flex flex-col gap-3">
+              <div className="group bg-surface border border-border-subtle rounded-xl p-4 flex items-center gap-3 hover-lift transition-all">
+                <IconChip icon={IconComponent} tone="success" size="md" animate />
+                <div>
+                  <div className="text-xs font-semibold text-primary">{currentStage.previewCard1.title}</div>
+                  <div className="text-[11px] text-secondary">{currentStage.previewCard1.sub}</div>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Right Visual/Structural Snippet */}
-          <div className="bg-surface-subtle border border-border-subtle rounded-2xl p-5 md:p-6 flex flex-col gap-3">
-            <div className="bg-white border border-border-subtle rounded-xl p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-accent-sage-pale text-accent-sage-dark flex items-center justify-center shrink-0">
-                <IconComponent size={18} />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-primary">{currentStage.previewCard1.title}</div>
-                <div className="text-[11px] text-secondary">{currentStage.previewCard1.sub}</div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-border-subtle rounded-xl p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-accent-blue-pale text-accent-blue-dark flex items-center justify-center shrink-0">
-                <CheckCircle2 size={18} />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-primary">{currentStage.previewCard2.title}</div>
-                <div className="text-[11px] text-secondary">{currentStage.previewCard2.sub}</div>
+              <div className="group bg-surface border border-border-subtle rounded-xl p-4 flex items-center gap-3 hover-lift transition-all">
+                <IconChip icon={CheckCircle2} tone="accent" size="md" animate />
+                <div>
+                  <div className="text-xs font-semibold text-primary">{currentStage.previewCard2.title}</div>
+                  <div className="text-[11px] text-secondary">{currentStage.previewCard2.sub}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
