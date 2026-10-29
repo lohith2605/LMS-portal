@@ -36,7 +36,7 @@ export default function CourseCard({ course, onSelectCourse }) {
 
   return (
     <article
-      className="bg-white border border-border-subtle rounded-2xl overflow-hidden flex flex-col transition-all duration-200 shadow-card hover:border-border-medium hover:-translate-y-0.5 hover:shadow-elevated"
+      className="bg-surface border border-border-subtle rounded-2xl overflow-hidden flex flex-col transition-all duration-200 shadow-card hover:border-border-medium hover:-translate-y-0.5 hover:shadow-elevated"
       aria-label={course.title}
     >
       {/* Visual Thumbnail Header */}
@@ -51,14 +51,14 @@ export default function CourseCard({ course, onSelectCourse }) {
           <div
             className={`w-full h-full flex items-center justify-between p-4 ${
               course.category === 'Design'
-                ? 'bg-gradient-to-br from-[#EDF0E9] to-[#Dfe5da]'
-                : 'bg-gradient-to-br from-[#E9EFF2] to-[#D8E3E8]'
+                ? 'bg-gradient-to-br from-[#EDF0E9] to-[#Dfe5da] dark:from-[#1F242A] dark:to-[#15181C]'
+                : 'bg-gradient-to-br from-[#E9EFF2] to-[#D8E3E8] dark:from-[#1F242A] dark:to-[#15181C]'
             }`}
           >
-            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/85 text-primary backdrop-blur-xs shadow-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-surface/85 text-primary backdrop-blur-xs shadow-xs">
               {course.highlightTag || course.category}
             </span>
-            <div className="w-11 h-11 rounded-xl bg-white/85 flex items-center justify-center text-primary shadow-xs">
+            <div className="w-11 h-11 rounded-xl bg-surface/85 flex items-center justify-center text-primary shadow-xs">
               {getCategoryIcon(course.category)}
             </div>
           </div>
@@ -66,7 +66,7 @@ export default function CourseCard({ course, onSelectCourse }) {
 
         {course.thumbnail && (
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end justify-between p-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/90 text-primary backdrop-blur-xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-surface/90 text-primary backdrop-blur-xs">
               {course.category}
             </span>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-xs">

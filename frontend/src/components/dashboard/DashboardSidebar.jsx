@@ -83,7 +83,7 @@ export default function DashboardSidebar({
     : 'U';
 
   return (
-    <aside className="w-64 bg-white border-r border-border-subtle flex flex-col justify-between shrink-0 h-screen sticky top-0 hidden lg:flex">
+    <aside className="w-64 bg-surface border-r border-border-subtle flex flex-col justify-between shrink-0 h-screen sticky top-0 hidden lg:flex">
       {/* Brand Header */}
       <div>
         <div className="h-16 px-6 border-b border-border-subtle flex items-center justify-between">
@@ -150,7 +150,7 @@ export default function DashboardSidebar({
 
       {/* User & Session Footer */}
       <div className="p-4 border-t border-border-subtle bg-surface-subtle/50">
-        <div className="p-3 bg-white border border-border-subtle rounded-2xl shadow-xs mb-3">
+        <div className="p-3 bg-surface border border-border-subtle rounded-2xl shadow-xs mb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold">
               {initials}
@@ -169,7 +169,7 @@ export default function DashboardSidebar({
         <button
           type="button"
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border-subtle bg-white text-xs font-semibold text-secondary hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border-subtle bg-surface text-xs font-semibold text-secondary hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all cursor-pointer"
         >
           <LogOut size={13} />
           <span>Sign Out</span>

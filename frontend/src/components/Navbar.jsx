@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -55,8 +56,8 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-150 border-b ${
         isScrolled
-          ? 'bg-white/95 border-border-medium shadow-xs backdrop-blur-md'
-          : 'bg-[#F2F2F0]/90 border-border-subtle backdrop-blur-md'
+          ? 'bg-surface/95 border-border-medium shadow-xs backdrop-blur-md'
+          : 'bg-page/90 border-border-subtle backdrop-blur-md'
       }`}
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
@@ -110,7 +111,9 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
         </nav>
 
         {/* Action CTAs */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <Link
@@ -124,7 +127,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                 type="button"
                 onClick={logout}
                 title="Log Out"
-                className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:text-primary border border-border-subtle bg-white px-2.5 py-2 rounded-xl transition-all cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:text-primary border border-border-subtle bg-surface px-2.5 py-2 rounded-xl transition-all cursor-pointer"
               >
                 <LogOut size={13} />
                 <span>Logout</span>
@@ -161,7 +164,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           {/* Mobile hamburger button */}
           <button
             type="button"
-            className="flex md:hidden w-10 h-10 items-center justify-center rounded-xl text-primary border border-border-subtle bg-white hover:bg-surface-subtle transition-colors cursor-pointer"
+            className="flex md:hidden w-10 h-10 items-center justify-center rounded-xl text-primary border border-border-subtle bg-surface hover:bg-surface-subtle transition-colors cursor-pointer"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
@@ -179,12 +182,17 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           role="presentation"
         >
           <div
-            className="absolute top-0 inset-x-0 bg-white border-b border-border-subtle px-6 pt-6 pb-8 shadow-elevated animate-[drawerSlide_220ms_cubic-bezier(0.16,1,0.3,1)]"
+            className="absolute top-0 inset-x-0 bg-surface border-b border-border-subtle px-6 pt-6 pb-8 shadow-elevated animate-[drawerSlide_220ms_cubic-bezier(0.16,1,0.3,1)]"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Mobile Navigation"
           >
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-border-subtle">
+              <span className="text-xs font-bold uppercase tracking-wider text-secondary">Appearance</span>
+              <ThemeToggle showLabel />
+            </div>
+
             <ul className="flex flex-col gap-4 list-none mb-6">
               <li>
                 <a
@@ -241,7 +249,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                       setMobileMenuOpen(false);
                       logout();
                     }}
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-white text-rose-700 border border-rose-200 hover:bg-rose-50 shadow-xs transition-all text-center cursor-pointer"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-surface text-rose-700 border border-rose-200 hover:bg-rose-50 shadow-xs transition-all text-center cursor-pointer"
                   >
                     Log Out
                   </button>
@@ -261,7 +269,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                   </button>
                   <button
                     type="button"
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-white text-primary border border-border-subtle hover:bg-surface-subtle shadow-xs transition-all text-center cursor-pointer"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-surface text-primary border border-border-subtle hover:bg-surface-subtle shadow-xs transition-all text-center cursor-pointer"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       if (onOpenAuth) onOpenAuth('login');

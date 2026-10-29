@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, Bell } from 'lucide-react';
 import ProfileMenu from './ProfileMenu';
+import ThemeToggle from '../ThemeToggle';
 
 export default function DashboardHeader({
   title,
@@ -20,14 +21,14 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-border-subtle h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border-subtle h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8">
       {/* Left: Mobile Toggle & Page Title */}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onOpenMobileNav}
           aria-label="Open navigation drawer"
-          className="lg:hidden p-2 rounded-xl border border-border-subtle bg-white text-secondary hover:text-primary transition-colors cursor-pointer"
+          className="lg:hidden p-2 rounded-xl border border-border-subtle bg-surface text-secondary hover:text-primary transition-colors cursor-pointer"
         >
           <Menu size={18} />
         </button>
@@ -56,13 +57,16 @@ export default function DashboardHeader({
       </div>
 
       {/* Right: Actions & Profile */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Theme Toggle (left of notification bell) */}
+        <ThemeToggle />
+
         {/* Notification Trigger with Badge */}
         <button
           type="button"
           onClick={onOpenNotifications}
           aria-label={unreadCount > 0 ? `View notifications (${unreadCount} unread)` : 'View notifications'}
-          className="relative p-2 rounded-xl border border-border-subtle bg-white text-secondary hover:text-primary transition-colors cursor-pointer"
+          className="relative p-2 rounded-xl border border-border-subtle bg-surface text-secondary hover:text-primary transition-colors cursor-pointer"
         >
           <Bell size={16} />
           {unreadCount > 0 && (

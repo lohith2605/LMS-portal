@@ -31,6 +31,7 @@ import {
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
 import { useAuth } from '../context/useAuth';
 import CourseDiscussionForum from '../components/dashboard/CourseDiscussionForum';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function CoursePlayerPage() {
   const { idOrSlug } = useParams();
@@ -532,23 +533,23 @@ export default function CoursePlayerPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F2F2F0] text-[#171717]">
+    <div className="min-h-screen flex flex-col bg-page text-primary">
       {/* Top Learning Bar */}
-      <header className="h-14 bg-[#FFFFFF] border-b border-[#E4E4E1] px-4 flex items-center justify-between shrink-0 z-30">
+      <header className="h-14 bg-surface border-b border-border-subtle px-4 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-3">
           <Link
             to={`/courses/${course?.slug || idOrSlug}`}
-            className="p-1.5 text-[#686868] hover:text-[#171717] rounded-lg hover:bg-[#F2F2F0] transition"
+            className="p-1.5 text-secondary hover:text-primary rounded-lg hover:bg-surface-subtle transition"
             title="Return to Course Details"
           >
             <ArrowLeft size={16} />
           </Link>
 
-          <div className="border-l border-[#E4E4E1] pl-3">
-            <h1 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-1">
+          <div className="border-l border-border-subtle pl-3">
+            <h1 className="text-xs sm:text-sm font-bold text-primary line-clamp-1">
               {course?.title}
             </h1>
-            <p className="text-[10px] text-[#686868] hidden sm:block">
+            <p className="text-[10px] text-secondary hidden sm:block">
               {activeView === 'lesson' &&
                 (activeSection ? `${activeSection.title} • ` : '') +
                   (activeLesson?.title || 'Lesson Player')}
@@ -560,15 +561,15 @@ export default function CoursePlayerPage() {
         </div>
 
         {/* Header Progress & Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden md:flex items-center gap-2">
-            <div className="w-28 h-1.5 bg-[#E4E4E1] rounded-full overflow-hidden">
+            <div className="w-28 h-1.5 bg-border-subtle rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-600 transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <span className="text-[11px] font-semibold text-[#686868]">
+            <span className="text-[11px] font-semibold text-secondary">
               {progressPercent}% completed
             </span>
           </div>
@@ -612,10 +613,12 @@ export default function CoursePlayerPage() {
             </span>
           </button>
 
+          <ThemeToggle />
+
           <button
             type="button"
             onClick={() => setSidebarOpen((prev) => !prev)}
-            className="p-2 text-[#686868] hover:text-[#171717] rounded-lg hover:bg-[#F2F2F0] transition"
+            className="p-2 text-secondary hover:text-primary rounded-lg hover:bg-surface-subtle transition cursor-pointer"
             title={sidebarOpen ? 'Collapse playlist' : 'Expand playlist'}
           >
             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}

@@ -114,7 +114,7 @@ export default function MobileNavigation({
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 left-0 w-72 max-w-full bg-white border-r border-border-subtle shadow-elevated flex flex-col justify-between z-10 animate-[modalSlideUp_0.15s_ease-out]">
+      <div className="fixed inset-y-0 left-0 w-72 max-w-full bg-surface border-r border-border-subtle shadow-elevated flex flex-col justify-between z-10 animate-[modalSlideUp_0.15s_ease-out]">
         <div>
           {/* Header */}
           <div className="h-16 px-5 border-b border-border-subtle flex items-center justify-between">
@@ -168,7 +168,7 @@ export default function MobileNavigation({
 
         {/* Footer */}
         <div className="p-4 border-t border-border-subtle bg-surface-subtle/60">
-          <div className="p-3 bg-white border border-border-subtle rounded-2xl shadow-xs mb-3 flex items-center gap-2.5">
+          <div className="p-3 bg-surface border border-border-subtle rounded-2xl shadow-xs mb-3 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold">
               {initials}
             </div>
@@ -188,7 +188,7 @@ export default function MobileNavigation({
               onClose();
               logout();
             }}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border-subtle bg-white text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border-subtle bg-surface text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
           >
             <LogOut size={13} />
             <span>Sign Out</span>

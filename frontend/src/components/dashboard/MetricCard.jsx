@@ -23,7 +23,7 @@ export default function MetricCard({
   return (
     <CardWrapper
       onClick={onClick}
-      className={`text-left bg-white border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs hover:border-border-medium transition-all ${
+      className={`text-left bg-surface border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs hover:border-border-medium transition-all ${
         onClick ? 'cursor-pointer hover:shadow-sm' : ''
       } ${className}`}
     >
