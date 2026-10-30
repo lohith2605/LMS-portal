@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -97,6 +97,29 @@ export const authService = {
   },
   resendVerification: async () => {
     const res = await api.post('/auth/resend-verification');
+    return res.data;
+  },
+
+  /**
+   * Upload or update user profile picture
+   * @param {File} file - Image file (JPG, PNG, WebP)
+   */
+  updateProfilePicture: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const res = await api.patch('/auth/profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  },
+
+  /**
+   * Remove profile picture and restore default avatar
+   */
+  deleteProfilePicture: async () => {
+    const res = await api.delete('/auth/profile-picture');
     return res.data;
   },
 };
@@ -786,6 +809,17 @@ export const analyticsService = {
    */
   getAdminAnalytics: async () => {
     const res = await api.get('/admin/analytics');
+    return res.data;
+  },
+};
+
+export const contactService = {
+  /**
+   * Submit support message or general inquiry
+   * @param {{ name: string, email: string, subject: string, message: string }} payload
+   */
+  submitMessage: async (payload) => {
+    const res = await api.post('/contact', payload);
     return res.data;
   },
 };

@@ -7,7 +7,7 @@ export default function ErrorState({
   onRetry,
 }) {
   return (
-    <div className="bg-white border border-red-200 rounded-2xl p-8 sm:p-10 text-center shadow-xs">
+    <div className="bg-surface border border-red-200/80 rounded-2xl p-8 sm:p-10 text-center shadow-xs">
       <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center mx-auto mb-4">
         <AlertCircle size={22} />
       </div>
@@ -24,7 +24,7 @@ export default function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 transition-all cursor-pointer"
         >
           <RefreshCw size={14} />
           <span>Retry Request</span>

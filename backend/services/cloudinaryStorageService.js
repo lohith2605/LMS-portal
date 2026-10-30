@@ -217,13 +217,92 @@ const deleteAsset = async (publicIdOrOptions, options = {}) => {
     logger.info(`Cloudinary asset destroyed: ${cloudinaryPublicId} (status: ${res.result})`);
     return res;
   } catch (err) {
-    logger.error(`Failed to delete Cloudinary asset ${cloudinaryPublicId}: ${err.message}`);
-    return { result: 'error', error: err.message };
+    logger.warn(`Could not delete Cloudinary asset ${cloudinaryPublicId}: ${err.message}`);
+    return { result: 'failed', error: err.message };
   }
+};
+
+/**
+ * Upload a profile picture to Cloudinary with facial gravity & smart square cropping
+ * @param {Buffer} buffer - Raw image bytes
+ * @param {Object} options - { userId, originalName, mimeType }
+ * @returns {Promise<{ url: string, publicId: string, bytes: number, format: string }>}
+ */
+const uploadProfilePicture = async (buffer, options = {}) => {
+  if (!buffer || buffer.length === 0) {
+    throw new Error('Upload payload contains empty file buffer.');
+  }
+
+  const originalName = options.originalName || 'avatar.jpg';
+  const ext = path.extname(originalName).toLowerCase().replace(/^\./, '') || 'jpg';
+
+  if (!IMAGE_FORMATS.has(ext)) {
+    throw new Error('Invalid image format. Allowed formats: JPG, JPEG, PNG, WebP.');
+  }
+
+  // Validate magic signature where available
+  const sigCheck = validateFileSignature(buffer, ext);
+  if (!sigCheck.valid) {
+    throw new Error(sigCheck.error);
+  }
+
+  if (!isCloudinaryConfigured()) {
+    if (process.env.NODE_ENV === 'test') {
+      const mockPublicId = `learnspace/avatars/mock_${Date.now()}`;
+      return {
+        url: `https://res.cloudinary.com/demo/image/upload/v1/${mockPublicId}.jpg`,
+        publicId: mockPublicId,
+        bytes: buffer.length,
+        format: ext,
+      };
+    }
+    throw new Error('Cloudinary storage service is not configured on the server.');
+  }
+
+  const userId = options.userId || 'user';
+  const cleanUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '');
+  const randomSuffix = crypto.randomBytes(6).toString('hex');
+  const publicId = `learnspace/avatars/user_${cleanUserId}_${Date.now()}_${randomSuffix}`;
+
+  const uploadOptions = {
+    public_id: publicId,
+    resource_type: 'image',
+    type: 'upload', // Public delivery for profile avatars
+    overwrite: true,
+    transformation: [
+      { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+      { quality: 'auto', fetch_format: 'auto' },
+    ],
+    tags: ['learnspace', 'avatar', `user_${cleanUserId}`],
+  };
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+      if (error) {
+        logger.error(`Cloudinary avatar upload failed: ${error.message}`);
+        return reject(new Error(`Failed to upload profile picture to cloud storage: ${error.message}`));
+      }
+
+      logger.info(`Profile picture uploaded to Cloudinary: ${result.public_id} (${result.bytes} bytes)`);
+      resolve({
+        url: result.secure_url,
+        publicId: result.public_id,
+        bytes: result.bytes,
+        format: result.format,
+      });
+    });
+
+    const readable = new Readable();
+    readable._read = () => {};
+    readable.push(buffer);
+    readable.push(null);
+    readable.pipe(uploadStream);
+  });
 };
 
 module.exports = {
   uploadAssignmentFile,
+  uploadProfilePicture,
   generateAuthorizedDownloadUrl,
   deleteAsset,
   validateFileSignature,

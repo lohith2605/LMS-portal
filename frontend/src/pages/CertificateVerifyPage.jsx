@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { certificateService } from '../services/api';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function CertificateVerifyPage() {
   const { certificateId } = useParams();
@@ -102,23 +103,25 @@ export default function CertificateVerifyPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F2F2F0] py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-page py-12 px-4 sm:px-6 text-primary">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Navigation & Verification Status Bar */}
         <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="text-xs text-[#686868] hover:text-[#171717] flex items-center gap-1.5 font-medium transition"
+            className="text-xs text-secondary hover:text-primary flex items-center gap-1.5 font-medium transition"
           >
             <ArrowLeft size={14} />
             <span>LearnSpace Academy</span>
           </Link>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
+
             <button
               type="button"
               onClick={handleCopyLink}
-              className="px-3 py-1.5 bg-white border border-[#E4E4E1] text-xs font-medium text-[#171717] rounded-xl hover:bg-[#F2F2F0] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3 py-1.5 bg-surface border border-border-subtle text-xs font-medium text-primary rounded-xl hover:bg-surface-subtle transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               {copied ? (
                 <>
@@ -127,7 +130,7 @@ export default function CertificateVerifyPage() {
                 </>
               ) : (
                 <>
-                  <Copy size={13} className="text-[#686868]" />
+                  <Copy size={13} className="text-secondary" />
                   <span>Copy Link</span>
                 </>
               )}
@@ -136,7 +139,7 @@ export default function CertificateVerifyPage() {
             <button
               type="button"
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-[#171717] text-white text-xs font-medium rounded-xl hover:bg-[#2b2b2b] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-xl hover:bg-neutral-800 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <Printer size={13} />
               <span>Print Credential</span>

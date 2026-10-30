@@ -89,6 +89,7 @@ const sanitizeUser = (user) => {
     emailVerified: Boolean(raw.emailVerified),
     createdAt: raw.createdAt,
     lastLoginAt: raw.lastLoginAt,
+    avatar: (raw.avatar && raw.avatar.url) ? { url: raw.avatar.url, publicId: raw.avatar.publicId || null } : null,
   };
 };
 

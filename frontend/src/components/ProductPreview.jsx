@@ -1,28 +1,167 @@
-import React from 'react';
-import { PlayCircle, Clock, Calendar, Award, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  TrendingUp,
+  PlayCircle,
+  Clock,
+  CalendarClock,
+  Medal,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
+  Radio,
+  ListChecks,
+  Terminal,
+} from 'lucide-react';
+import IconChip from './ui/IconChip';
+import AnimatedProgressBar from './ui/AnimatedProgressBar';
 
 export default function ProductPreview() {
-  return (
-    <div className="w-full relative" aria-label="LearnSpace Horizontal Product Showcase">
-      {/* Subtle architectural ambient glow behind showcase */}
-      <div className="absolute -inset-2 bg-gradient-to-b from-[#E9EFF2]/50 via-transparent to-[#EDF0E9]/50 rounded-3xl blur-xl -z-10 pointer-events-none" />
+  const containerRef = useRef(null);
+  const cardRef = useRef(null);
 
-      {/* Main Integrated Showcase Canvas */}
-      <div className="bg-white rounded-2xl border border-[#E4E4E1] shadow-card overflow-hidden">
-        
+  // Normalized scroll animation progress (0 when at bottom, 1 when scrolled into prime view)
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Mouse hover tilt offsets for 3D tactile interaction
+  const [mouseTilt, setMouseTilt] = useState({ rotateX: 0, rotateY: 0, isHovered: false });
+
+  useEffect(() => {
+    // Respect reduced motion settings
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      setScrollProgress(1);
+      return;
+    }
+
+    let rafId = null;
+
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      // Card starts animating when top enters bottom of window
+      // Card reaches 100% full elevation when it is centered in viewport
+      const enterThreshold = windowHeight;
+      const targetThreshold = windowHeight * 0.28;
+
+      const rawProgress = (enterThreshold - rect.top) / (enterThreshold - targetThreshold);
+      const clamped = Math.min(Math.max(rawProgress, 0), 1);
+
+      setScrollProgress(clamped);
+    };
+
+    const onScroll = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(handleScroll);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // Mouse move 3D tilt calculation
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const rotateX = ((centerY - y) / centerY) * 3.5; // Max 3.5 deg
+    const rotateY = ((x - centerX) / centerX) * 4.5; // Max 4.5 deg
+
+    setMouseTilt({ rotateX, rotateY, isHovered: true });
+  };
+
+  const handleMouseLeave = () => {
+    setMouseTilt({ rotateX: 0, rotateY: 0, isHovered: false });
+  };
+
+  // Derive smooth down-to-up transforms from scrollProgress (0 -> 1)
+  // Starts pushed down 75px, tilted 7deg back, scaled down to 0.94, opacity 0.45
+  // Finishes at 0px translateY, 0deg rotateX, 1.0 scale, 1.0 opacity
+  const translateY = (1 - scrollProgress) * 75;
+  const scrollRotateX = (1 - scrollProgress) * 7;
+  const scale = 0.94 + scrollProgress * 0.06;
+  const opacity = 0.45 + scrollProgress * 0.55;
+
+  // Combine scroll tilt with mouse hover tilt
+  const finalRotateX = mouseTilt.isHovered ? mouseTilt.rotateX : scrollRotateX;
+  const finalRotateY = mouseTilt.isHovered ? mouseTilt.rotateY : 0;
+
+  // Staggered child rising offsets
+  const p1 = Math.min(scrollProgress * 1.25, 1);
+  const p2 = Math.min(Math.max((scrollProgress - 0.08) * 1.35, 0), 1);
+  const p3 = Math.min(Math.max((scrollProgress - 0.16) * 1.45, 0), 1);
+  const p4 = Math.min(Math.max((scrollProgress - 0.22) * 1.5, 0), 1);
+
+  const card1TranslateY = (1 - p1) * 35;
+  const card2TranslateY = (1 - p2) * 50;
+  const card3TranslateY = (1 - p3) * 65;
+  const ribbonTranslateY = (1 - p4) * 28;
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full relative [perspective:1400px] py-4"
+      aria-label="LearnSpace Interactive Product Showcase"
+    >
+      {/* Dynamic ambient architectural glow behind canvas */}
+      <div
+        className="absolute -inset-4 bg-gradient-to-b from-accent-blue-pale/50 via-accent/10 to-accent-sage-pale/50 rounded-3xl blur-2xl -z-10 pointer-events-none transition-all duration-500 ease-out"
+        style={{
+          opacity: 0.3 + scrollProgress * 0.7,
+          transform: `scale(${0.92 + scrollProgress * 0.1})`,
+        }}
+      />
+
+      {/* Main 3D Rising Showcase Canvas */}
+      <div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className="bg-surface rounded-2xl sm:rounded-3xl border border-border-subtle shadow-elevated overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] [transform-style:preserve-3d] will-change-transform"
+        style={{
+          transform: `translateY(${translateY}px) scale(${scale}) rotateX(${finalRotateX}deg) rotateY(${finalRotateY}deg)`,
+          opacity: opacity,
+          boxShadow: `0 ${20 + scrollProgress * 30}px ${40 + scrollProgress * 30}px -15px rgba(17, 17, 17, ${
+            0.06 + scrollProgress * 0.14
+          })`,
+        }}
+      >
+        {/* Subtle Specular Top Sheen Highlight */}
+        <div
+          className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none transition-opacity duration-500"
+          style={{ opacity: 0.2 + scrollProgress * 0.8 }}
+        />
+
         {/* Top Workspace Context Header */}
-        <div className="bg-[#F8F8F6] border-b border-[#E4E4E1] px-5 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-surface-subtle border-b border-border-subtle px-5 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Active Course Identity */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#171717] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
               DS
             </div>
             <div>
-              <div className="text-xs font-bold text-[#171717] leading-tight">
+              <div className="text-xs font-bold text-primary leading-tight">
                 Design Systems from Figma to Production Code
               </div>
-              <div className="text-[11px] text-[#686868]">
-                Module 3 of 4: Component Architecture & Token Sync
+              <div className="text-[11px] text-secondary">
+                Module 3 of 4: Component Architecture &amp; Token Sync
               </div>
             </div>
           </div>
@@ -30,14 +169,18 @@ export default function ProductPreview() {
           {/* Active Learner & Session Status */}
           <div className="flex items-center gap-3 self-start sm:self-center">
             <div className="hidden md:flex items-center gap-2 text-xs">
-              <span className="w-6 h-6 rounded-full bg-[#E9EFF2] text-[#4A6376] flex items-center justify-center font-bold text-[10px]">
+              <span className="w-6 h-6 rounded-full bg-accent-blue-pale text-accent-blue-dark flex items-center justify-center font-bold text-[10px]">
                 AR
               </span>
-              <span className="text-[#686868] text-[11px]">Alex Rivera (Student Track)</span>
+              <span className="text-secondary text-[11px]">Alex Rivera (Student Track)</span>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EDF0E9] border border-[#A8B5A0]/40 text-[11px] font-semibold text-[#5F7158]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#8E9F86] animate-pulse" aria-hidden="true" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-sage-pale border border-accent-sage-soft/40 text-[11px] font-semibold text-accent-sage-dark shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-live-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+              </span>
+              <Radio size={12} strokeWidth={1.75} aria-hidden="true" />
               <span>Live Progress Synced</span>
             </div>
           </div>
@@ -46,43 +189,43 @@ export default function ProductPreview() {
         {/* Horizontal 3-Column Product Showcase Body */}
         <div className="p-5 sm:p-6 lg:p-7">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-stretch">
-            
             {/* Column 1: Overall Progress & Competency Gauge (4 cols) */}
-            <div className="md:col-span-4 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] p-4 sm:p-5 flex flex-col justify-between gap-4">
+            <div
+              className="group md:col-span-4 rounded-xl border border-border-subtle bg-surface-subtle p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
+              style={{
+                transform: `translateY(${card1TranslateY}px)`,
+                opacity: 0.4 + p1 * 0.6,
+              }}
+            >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#637D91]">
-                    Track Velocity
-                  </span>
-                  <span className="text-xs font-bold text-[#4A6376] bg-[#E9EFF2] px-2 py-0.5 rounded-full">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-blue">
+                    <IconChip icon={TrendingUp} tone="accent" size="sm" animate />
+                    <span>Track Velocity</span>
+                  </div>
+                  <span className="text-xs font-bold text-accent-blue-dark bg-accent-blue-pale px-2 py-0.5 rounded-full">
                     70% Complete
                   </span>
                 </div>
 
-                <div className="text-base sm:text-lg font-extrabold text-[#171717]">
+                <div className="text-base sm:text-lg font-extrabold text-primary">
                   14 of 20 Lessons Finished
                 </div>
-                <p className="text-xs text-[#686868] mt-1 leading-normal">
+                <p className="text-xs text-secondary mt-1 leading-normal">
                   Paced for graduation in 3 weeks with verified repository commits.
                 </p>
               </div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar with Shimmer Animation */}
               <div>
-                <div
-                  className="w-full h-2 bg-[#E4E4E1] rounded-full overflow-hidden"
-                  role="progressbar"
-                  aria-valuenow={70}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Course completion progress"
-                >
-                  <div
-                    className="h-full bg-[#637D91] rounded-full transition-all duration-500"
-                    style={{ width: '70%' }}
-                  />
-                </div>
-                <div className="flex justify-between text-[11px] text-[#8A8A86] mt-1.5">
+                <AnimatedProgressBar
+                  progress={70}
+                  inProgress={true}
+                  height="h-2"
+                  colorClass="bg-accent"
+                  ariaLabel="Course completion progress"
+                />
+                <div className="flex justify-between text-[11px] text-tertiary mt-2">
                   <span>Foundations: Done</span>
                   <span>Capstones: In Progress</span>
                 </div>
@@ -90,83 +233,101 @@ export default function ProductPreview() {
             </div>
 
             {/* Column 2: Next Interactive Lesson (4 cols) */}
-            <div className="md:col-span-4 rounded-xl border border-[#E4E4E1] bg-white p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-[#D5D5D0] transition-colors">
+            <div
+              className="group md:col-span-4 rounded-xl border border-border-subtle bg-surface p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
+              style={{
+                transform: `translateY(${card2TranslateY}px)`,
+                opacity: 0.4 + p2 * 0.6,
+              }}
+            >
               <div>
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#637D91] mb-2">
-                  <PlayCircle size={13} className="text-[#637D91]" />
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-accent-blue mb-2">
+                  <IconChip icon={PlayCircle} tone="accent" size="sm" animate className="group-hover:scale-110" />
                   <span>Next Active Lesson</span>
                 </div>
 
-                <h4 className="text-sm sm:text-base font-bold text-[#171717] leading-snug">
-                  Token Hierarchies & Semantic Sync
+                <h4 className="text-sm sm:text-base font-bold text-primary leading-snug">
+                  Token Hierarchies &amp; Semantic Sync
                 </h4>
 
-                <div className="flex items-center gap-2 mt-2 text-xs text-[#686868]">
-                  <span className="inline-flex items-center gap-1 bg-[#F8F8F6] border border-[#E4E4E1] px-2 py-0.5 rounded-md text-[11px]">
-                    <Clock size={11} className="text-[#8A8A86]" />
+                <div className="flex items-center gap-2 mt-2.5 text-xs text-secondary">
+                  <span className="inline-flex items-center gap-1.5 bg-surface-subtle border border-border-subtle px-2 py-0.5 rounded-md text-[11px]">
+                    <Clock size={12} strokeWidth={1.75} className="text-tertiary" aria-hidden="true" />
                     18 min lab
                   </span>
-                  <span className="text-[11px]">Hands-on Sandbox</span>
+                  <span className="inline-flex items-center gap-1 bg-surface-subtle border border-border-subtle px-2 py-0.5 rounded-md text-[11px]">
+                    <Terminal size={12} strokeWidth={1.75} className="text-tertiary" aria-hidden="true" />
+                    Hands-on Sandbox
+                  </span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#E4E4E1]/80 flex items-center justify-between">
-                <span className="text-xs text-[#686868]">Interactive Exercise</span>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#171717] hover:underline cursor-pointer">
+              <div className="pt-2 border-t border-border-subtle flex items-center justify-between">
+                <span className="text-xs text-secondary">Interactive Exercise</span>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:underline cursor-pointer">
                   <span>Resume Lesson</span>
-                  <ArrowRight size={13} />
+                  <ArrowRight size={13} strokeWidth={1.75} className="group-hover-nudge-x" aria-hidden="true" />
                 </span>
               </div>
             </div>
 
             {/* Column 3: Upcoming Checkpoint & Rubric Status (4 cols) */}
-            <div className="md:col-span-4 rounded-xl border border-[#E4E4E1] bg-white p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-[#D5D5D0] transition-colors">
+            <div
+              className="group md:col-span-4 rounded-xl border border-border-subtle bg-surface p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
+              style={{
+                transform: `translateY(${card3TranslateY}px)`,
+                opacity: 0.4 + p3 * 0.6,
+              }}
+            >
               <div>
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#5F7158] mb-2">
-                  <Calendar size={13} className="text-[#5F7158]" />
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
+                  <IconChip icon={CalendarClock} tone="success" size="sm" animate />
                   <span>Upcoming Due Date</span>
                 </div>
 
-                <h4 className="text-sm sm:text-base font-bold text-[#171717] leading-snug">
+                <h4 className="text-sm sm:text-base font-bold text-primary leading-snug">
                   Assignment 03: Accessible Token Set
                 </h4>
 
-                <div className="flex items-center gap-2 mt-2 text-xs text-[#686868]">
-                  <span className="text-[11px]">Due Thursday • 11:59 PM</span>
+                <div className="flex items-center gap-2 mt-2 text-xs text-secondary">
+                  <span className="text-[11px]">Due Thursday &bull; 11:59 PM</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#E4E4E1]/80 flex items-center justify-between">
-                <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5F7158]">
-                  <CheckCircle2 size={13} />
+              <div className="pt-2 border-t border-border-subtle flex items-center justify-between">
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent-sage-dark">
+                  <CheckCircle2 size={13} strokeWidth={1.75} aria-hidden="true" />
                   <span>2 of 3 tasks verified</span>
                 </div>
-                <span className="text-[11px] font-semibold text-[#637D91] bg-[#E9EFF2] px-2 py-0.5 rounded-md">
-                  Rubric Ready
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-blue-dark bg-accent-blue-pale px-2 py-0.5 rounded-md">
+                  <ListChecks size={12} strokeWidth={1.75} aria-hidden="true" />
+                  <span>Rubric Ready</span>
                 </span>
               </div>
             </div>
-
           </div>
 
           {/* Bottom Milestone Ribbon */}
-          <div className="mt-5 pt-4 border-t border-[#E4E4E1] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div
+            className="mt-5 pt-4 border-t border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs transition-all duration-300 will-change-transform"
+            style={{
+              transform: `translateY(${ribbonTranslateY}px)`,
+              opacity: 0.4 + p4 * 0.6,
+            }}
+          >
             <div className="flex items-center gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-[#5F7158] text-white flex items-center justify-center shrink-0">
-                <Award size={12} />
-              </div>
-              <div className="text-[#171717]">
+              <IconChip icon={Medal} tone="success" size="sm" animate />
+              <div className="text-primary">
                 <span className="font-semibold">Recent Milestone: </span>
-                <span className="text-[#5F7158]">Foundational Color & Spacing Tokens Mastered</span>
+                <span className="text-accent-sage-dark font-medium">Foundational Color &amp; Spacing Tokens Mastered</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-[11px] text-[#8A8A86]">
-              <Sparkles size={12} className="text-[#637D91]" />
-              <span>Real-time mentor checkpoints & code repository synchronization</span>
+            <div className="flex items-center gap-2 text-[11px] text-tertiary">
+              <Sparkles size={13} strokeWidth={1.75} className="text-accent-blue animate-sparkle" aria-hidden="true" />
+              <span>Real-time mentor checkpoints &amp; code repository synchronization</span>
             </div>
           </div>
-
         </div>
       </div>
     </div>

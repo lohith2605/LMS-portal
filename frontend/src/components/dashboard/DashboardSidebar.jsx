@@ -1,21 +1,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import BrandLogo from '../ui/BrandLogo';
 import {
   LayoutDashboard,
   BookOpen,
   Compass,
-  FileText,
-  Calendar,
-  Bell,
-  KeyRound,
+  ClipboardList,
+  CalendarDays,
+  Megaphone,
+  ShieldCheck,
   Users,
-  GraduationCap,
-  CheckCircle2,
-  LogOut,
-  FolderLock,
   Award,
-  FileCheck,
   BarChart3,
+  Library,
+  Inbox,
+  ListChecks,
+  ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 
 export default function DashboardSidebar({
@@ -25,6 +26,7 @@ export default function DashboardSidebar({
   onSelectTab,
   logout,
   onOpenPasswordModal,
+  onOpenAvatarModal,
 }) {
   const getNavItems = () => {
     switch (role) {
@@ -32,22 +34,22 @@ export default function DashboardSidebar({
         return [
           { id: 'overview', label: 'Platform Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
-          { id: 'approvals', label: 'Instructor Approvals', icon: CheckCircle2 },
+          { id: 'approvals', label: 'Instructor Approvals', icon: ShieldAlert },
           { id: 'users', label: 'User Directory', icon: Users },
-          { id: 'moderation', label: 'Course Moderation', icon: FolderLock },
-          { id: 'security', label: 'Admin Security', icon: KeyRound },
+          { id: 'moderation', label: 'Course Moderation', icon: Library },
+          { id: 'security', label: 'Admin Security', icon: ShieldCheck },
         ];
       case 'instructor':
         return [
           { id: 'overview', label: 'Teaching Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Course Analytics', icon: BarChart3 },
-          { id: 'courses', label: 'My Courses', icon: BookOpen },
-          { id: 'assignments', label: 'Assignments & Projects', icon: FileCheck },
-          { id: 'reviews', label: 'Submissions & Grading', icon: FileText },
-          { id: 'assessments', label: 'Assessments & Quizzes', icon: Award },
-          { id: 'learners', label: 'Enrolled Learners', icon: GraduationCap },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'security', label: 'Account Security', icon: KeyRound },
+          { id: 'courses', label: 'My Courses', icon: Library },
+          { id: 'assignments', label: 'Assignments & Projects', icon: ClipboardList },
+          { id: 'reviews', label: 'Submissions & Grading', icon: Inbox },
+          { id: 'assessments', label: 'Assessments & Quizzes', icon: ListChecks },
+          { id: 'learners', label: 'Enrolled Learners', icon: Users },
+          { id: 'announcements', label: 'Announcements', icon: Megaphone },
+          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
       case 'student':
       default:
@@ -57,10 +59,10 @@ export default function DashboardSidebar({
           { id: 'learning', label: 'My Learning', icon: BookOpen },
           { id: 'certificates', label: 'Earned Certificates', icon: Award },
           { id: 'explore', label: 'Explore Courses', icon: Compass },
-          { id: 'assignments', label: 'Assignments', icon: FileText },
-          { id: 'calendar', label: 'Schedule & Calendar', icon: Calendar },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'security', label: 'Account Security', icon: KeyRound },
+          { id: 'assignments', label: 'Assignments', icon: ClipboardList },
+          { id: 'calendar', label: 'Schedule & Calendar', icon: CalendarDays },
+          { id: 'announcements', label: 'Announcements', icon: Megaphone },
+          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
     }
   };
@@ -83,23 +85,16 @@ export default function DashboardSidebar({
     : 'U';
 
   return (
-    <aside className="w-64 bg-white border-r border-border-subtle flex flex-col justify-between shrink-0 h-screen sticky top-0 hidden lg:flex">
+    <aside className="w-64 bg-surface border-r border-border-subtle flex flex-col justify-between shrink-0 h-screen sticky top-0 hidden lg:flex">
       {/* Brand Header */}
       <div>
         <div className="h-16 px-6 border-b border-border-subtle flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 no-underline">
-            <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center font-extrabold text-sm tracking-tight">
-              L
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-sm tracking-tight text-primary">
-                LearnSpace
-              </span>
-              <span className="text-[10px] text-secondary font-medium tracking-wide">
-                Learning Platform
-              </span>
-            </div>
-          </Link>
+          <BrandLogo
+            to="/"
+            size="sm"
+            subtitle="Learning Platform"
+            ariaLabel="LearnSpace Learning Platform"
+          />
 
           <span
             className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
@@ -130,7 +125,7 @@ export default function DashboardSidebar({
                       onSelectTab(item.id);
                     }
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                  className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer text-left ${
                     isActive
                       ? 'bg-primary text-white shadow-xs'
                       : 'text-secondary hover:text-primary hover:bg-surface-subtle'
@@ -138,7 +133,11 @@ export default function DashboardSidebar({
                 >
                   <Icon
                     size={16}
-                    className={isActive ? 'text-white' : 'text-secondary'}
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                    className={`transition-transform duration-200 group-hover:translate-x-0.5 ${
+                      isActive ? 'text-white' : 'text-secondary group-hover:text-primary'
+                    }`}
                   />
                   <span>{item.label}</span>
                 </button>
@@ -150,11 +149,24 @@ export default function DashboardSidebar({
 
       {/* User & Session Footer */}
       <div className="p-4 border-t border-border-subtle bg-surface-subtle/50">
-        <div className="p-3 bg-white border border-border-subtle rounded-2xl shadow-xs mb-3">
+        <div className="p-3 bg-surface border border-border-subtle rounded-2xl shadow-xs mb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold">
-              {initials}
-            </div>
+            <button
+              type="button"
+              onClick={onOpenAvatarModal}
+              title="Click to edit profile picture"
+              className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold overflow-hidden ring-1 ring-border-subtle hover:ring-2 hover:ring-accent transition-all cursor-pointer shrink-0"
+            >
+              {user?.avatar?.url ? (
+                <img
+                  src={user.avatar.url}
+                  alt={user?.name || 'User avatar'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+            </button>
             <div className="overflow-hidden flex-1">
               <span className="text-xs font-bold text-primary block truncate">
                 {user?.name}
@@ -169,7 +181,7 @@ export default function DashboardSidebar({
         <button
           type="button"
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border-subtle bg-white text-xs font-semibold text-secondary hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border-subtle bg-surface text-xs font-semibold text-secondary hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all cursor-pointer"
         >
           <LogOut size={13} />
           <span>Sign Out</span>

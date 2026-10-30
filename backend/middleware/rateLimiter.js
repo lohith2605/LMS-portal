@@ -32,7 +32,23 @@ const passwordResetLimiter = rateLimit({
   skip: () => isTest,
 });
 
+/**
+ * Rate limiter for contact form submissions to prevent spam abuse
+ * Max 5 messages per 15 minutes per IP
+ */
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isTest ? 1000 : 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many messages submitted from this network. Please wait a few minutes before trying again.',
+  },
+  skip: () => isTest,
+});
+
 module.exports = {
   authLimiter,
   passwordResetLimiter,
+  contactLimiter,
 };

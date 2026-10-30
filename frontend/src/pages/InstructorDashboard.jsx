@@ -20,7 +20,16 @@ import {
   Eye,
   Check,
   ArrowRight,
+  Library,
+  Inbox,
+  FileClock,
+  Star,
+  TrendingUp,
+  ListChecks,
+  MessageSquareText,
+  Camera,
 } from 'lucide-react';
+import IconChip from '../components/ui/IconChip';
 import { useAuth } from '../context/useAuth';
 import {
   dashboardService,
@@ -39,6 +48,7 @@ import QuizStudioModal from '../components/dashboard/QuizStudioModal';
 import AssignmentStudioModal from '../components/dashboard/AssignmentStudioModal';
 import SubmissionGradingModal from '../components/dashboard/SubmissionGradingModal';
 import InstructorAnalyticsView from '../components/analytics/InstructorAnalyticsView';
+import ProfilePictureModal from '../components/profile/ProfilePictureModal';
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
@@ -46,6 +56,7 @@ export default function InstructorDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   // Phase 4 Course Creation Studio State
   const [courseStudioModalOpen, setCourseStudioModalOpen] = useState(false);
@@ -487,7 +498,7 @@ export default function InstructorDashboard() {
 
           {/* Welcome Banner */}
           {activeTab === 'overview' && (
-            <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
+            <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent-sage-dark" />
@@ -506,21 +517,52 @@ export default function InstructorDashboard() {
                   <button
                     type="button"
                     onClick={() => handleOpenStudio()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer shadow-xs"
                   >
-                    <PlusCircle size={14} />
+                    <PlusCircle size={14} strokeWidth={1.75} />
                     <span>Create Course</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleViewCourses}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all cursor-pointer"
                   >
-                    <BookOpen size={13} />
+                    <Library size={13} strokeWidth={1.75} />
                     <span>View My Courses</span>
                   </button>
                 </div>
+              </div>
+
+              <div className="hidden lg:flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  title="Click to edit profile picture"
+                  className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent rounded-2xl"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-accent transition-all">
+                    {user?.avatar?.url ? (
+                      <img
+                        src={user.avatar.url}
+                        alt={user?.name || 'Instructor profile'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.name
+                        ? user.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase()
+                        : 'U'
+                    )}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
+                    <Camera size={12} />
+                  </div>
+                </button>
               </div>
             </div>
           )}
@@ -538,7 +580,7 @@ export default function InstructorDashboard() {
                     title="Created Courses"
                     value={data?.overview?.createdCoursesCount ?? 0}
                     subtitle="Drafted & active modules"
-                    icon={BookOpen}
+                    icon={Library}
                     badge={isApproved ? 'Studio Ready' : 'Restricted'}
                     badgeType={isApproved ? 'sage' : 'amber'}
                     onClick={handleViewCourses}
@@ -547,7 +589,7 @@ export default function InstructorDashboard() {
                     title="Published Courses"
                     value={data?.overview?.publishedCoursesCount ?? 0}
                     subtitle="Publicly accessible to learners"
-                    icon={Layers}
+                    icon={BookOpen}
                     badge="Public"
                     badgeType="default"
                     onClick={handleViewCourses}
@@ -565,7 +607,7 @@ export default function InstructorDashboard() {
                     title="Pending Reviews"
                     value={data?.overview?.pendingReviewsCount ?? 0}
                     subtitle="Submissions awaiting feedback"
-                    icon={FileCheck}
+                    icon={FileClock}
                     badge={data?.overview?.pendingReviewsCount > 0 ? 'Action Req' : 'Zero Backlog'}
                     badgeType={data?.overview?.pendingReviewsCount > 0 ? 'amber' : 'sage'}
                     onClick={() => setActiveTab('reviews')}
@@ -576,11 +618,11 @@ export default function InstructorDashboard() {
               {/* My Courses & Submissions Preview */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* My Courses Summary */}
-                <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                <div className="bg-surface border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
                       <div className="flex items-center gap-2">
-                        <BookOpen size={16} className="text-accent-sage-dark" />
+                        <Library size={16} strokeWidth={1.75} className="text-accent-sage-dark" />
                         <h3 className="text-sm font-bold text-primary">My Courses</h3>
                       </div>
                       <span className="text-[11px] font-semibold text-secondary">
@@ -593,7 +635,7 @@ export default function InstructorDashboard() {
                         {data.courses.slice(0, 3).map((c) => (
                           <div
                             key={c._id}
-                            className="p-3 bg-surface-subtle border border-border-subtle rounded-xl flex items-center justify-between"
+                            className="p-3 bg-surface-subtle border border-border-subtle rounded-xl flex items-center justify-between hover:border-border-medium hover-lift transition-all"
                           >
                             <div className="min-w-0 flex-1 pr-3">
                               <h5 className="text-xs font-bold text-primary truncate">{c.title}</h5>
@@ -626,9 +668,7 @@ export default function InstructorDashboard() {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="w-10 h-10 rounded-xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-secondary mx-auto mb-3">
-                          <BookOpen size={18} />
-                        </div>
+                        <IconChip icon={Library} tone="neutral" size="lg" className="w-12 h-12 rounded-2xl mx-auto mb-3" />
                         <h4 className="text-xs font-bold text-primary mb-1">
                           Your teaching workspace is ready.
                         </h4>
@@ -638,9 +678,9 @@ export default function InstructorDashboard() {
                         <button
                           type="button"
                           onClick={() => handleOpenStudio()}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer"
                         >
-                          <PlusCircle size={13} />
+                          <PlusCircle size={13} strokeWidth={1.75} />
                           <span>Create Course</span>
                         </button>
                       </div>
@@ -649,11 +689,11 @@ export default function InstructorDashboard() {
                 </div>
 
                 {/* Pending Submissions */}
-                <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                <div className="bg-surface border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
                       <div className="flex items-center gap-2">
-                        <FileCheck size={16} className="text-accent-blue-dark" />
+                        <Inbox size={16} strokeWidth={1.75} className="text-accent-blue-dark" />
                         <h3 className="text-sm font-bold text-primary">Pending Submissions</h3>
                       </div>
                       <span className="text-[11px] font-semibold text-secondary">
@@ -662,9 +702,7 @@ export default function InstructorDashboard() {
                     </div>
 
                     <div className="text-center py-8">
-                      <div className="w-10 h-10 rounded-xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-secondary mx-auto mb-3">
-                        <FileCheck size={18} />
-                      </div>
+                      <IconChip icon={Inbox} tone="neutral" size="lg" className="w-12 h-12 rounded-2xl mx-auto mb-3" />
                       <h4 className="text-xs font-bold text-primary mb-1">
                         No submissions awaiting review.
                       </h4>
@@ -1654,6 +1692,62 @@ export default function InstructorDashboard() {
           {/* TAB: SECURITY & PROFILE */}
           {activeTab === 'security' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Profile Picture Management Card */}
+              <div className="lg:col-span-2 bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                  <div className="relative group">
+                    <div className="w-20 h-20 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-xl overflow-hidden shadow-xs ring-4 ring-border-subtle">
+                      {user?.avatar?.url ? (
+                        <img
+                          src={user.avatar.url}
+                          alt={user?.name || 'Instructor avatar'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        user?.name
+                          ? user.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join('')
+                              .toUpperCase()
+                          : 'U'
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarModalOpen(true)}
+                      className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-xl bg-surface border border-border-subtle text-primary shadow-xs hover:bg-surface-subtle transition-transform hover:scale-110 cursor-pointer"
+                      aria-label="Edit Profile Picture"
+                    >
+                      <Camera size={14} />
+                    </button>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                      <h3 className="text-base font-bold text-primary">{user?.name}</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark">
+                        {user?.role}
+                      </span>
+                    </div>
+                    <p className="text-xs text-secondary mb-2">{user?.email}</p>
+                    <p className="text-[11px] text-tertiary">
+                      {user?.avatar?.url
+                        ? 'Custom profile picture active across course cards and student views'
+                        : 'Default system initials in use'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle text-xs font-semibold text-primary transition-all shadow-xs cursor-pointer hover-lift shrink-0"
+                >
+                  <Camera size={15} />
+                  <span>Edit Profile Picture</span>
+                </button>
+              </div>
+
               {/* Password update form */}
               <div className="bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
                 <div className="flex items-center gap-2.5 mb-2">
@@ -1834,6 +1928,12 @@ export default function InstructorDashboard() {
           }}
         />
       )}
+
+      {/* Profile Picture Modal */}
+      <ProfilePictureModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+      />
     </DashboardLayout>
   );
 }

@@ -19,13 +19,14 @@ const certificateRoutes = require('./routes/certificateRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 const { startDeadlineReminderScheduler, stopDeadlineReminderScheduler } = require('./services/deadlineReminderScheduler');
 const http = require('http');
 const { initSocket } = require('./services/socketService');
 const { logger } = require('./utils/logger');
 
 const app = express();
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = Number(process.env.PORT) || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const rawClientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : [];
@@ -80,6 +81,7 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/contact', contactRoutes);
 
 
 // Root route
