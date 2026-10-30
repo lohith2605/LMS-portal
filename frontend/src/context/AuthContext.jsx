@@ -129,6 +129,13 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /**
+   * Directly update user in context (e.g. after avatar upload or profile change)
+   */
+  const updateUser = (updatedUser) => {
+    setUser((prev) => (typeof updatedUser === 'function' ? updatedUser(prev) : { ...prev, ...updatedUser }));
+  };
+
   const value = {
     user,
     isAuthenticated: Boolean(user),
@@ -140,6 +147,7 @@ export function AuthProvider({ children }) {
     logout,
     checkAuth,
     refreshUser,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

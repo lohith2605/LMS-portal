@@ -309,7 +309,13 @@ test.beforeEach(() => {
     const found = mockEnrollments.find((e) => {
       if (query.student && e.student.toString() !== query.student.toString()) return false;
       if (query.course && e.course.toString() !== query.course.toString()) return false;
-      if (query.status && e.status !== query.status) return false;
+      if (query.status) {
+        if (typeof query.status === 'object' && Array.isArray(query.status.$in)) {
+          if (!query.status.$in.includes(e.status)) return false;
+        } else if (e.status !== query.status) {
+          return false;
+        }
+      }
       return true;
     });
 

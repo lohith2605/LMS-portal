@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import ThemeToggle from './ThemeToggle';
+import BrandLogo from './ui/BrandLogo';
 
 export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -16,12 +18,82 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     return '/student/dashboard';
   };
 
+  const [activeSection, setActiveSection] = useState('courses');
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+  const navItemRefs = useRef({});
+  const isManualScrollRef = useRef(false);
+  const scrollTimerRef = useRef(null);
+
+  const navItems = [
+    { id: 'courses', label: 'Explore Courses' },
+    { id: 'categories', label: 'Categories' },
+    { id: 'journey', label: 'How It Works' },
+    { id: 'instructors', label: 'For Instructors' },
+  ];
+
+  // Update sliding indicator position based on active item DOM bounding box
+  const updateIndicator = useCallback(() => {
+    const activeEl = navItemRefs.current[activeSection];
+    if (activeEl) {
+      setIndicatorStyle({
+        left: activeEl.offsetLeft,
+        top: activeEl.offsetTop,
+        width: activeEl.offsetWidth,
+        height: activeEl.offsetHeight,
+        opacity: 1,
+      });
+    } else {
+      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }));
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    // Initial mount and section updates
+    updateIndicator();
+  }, [updateIndicator]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [updateIndicator]);
+
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setIsScrolled(window.scrollY > 15);
+
+      // Avoid intermediate scroll updates during smooth programmatic scrolling
+      if (isManualScrollRef.current) return;
+
+      const scrollPos = window.scrollY + 140;
+      let current = '';
+
+      for (const item of navItems) {
+        const element = document.getElementById(item.id);
+        if (element) {
+          const top = element.offsetTop;
+          const height = element.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            current = item.id;
+            break;
+          }
+        }
+      }
+
+      if (current && current !== activeSection) {
+        setActiveSection(current);
+      }
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeSection]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
   }, []);
 
   // Close mobile drawer on Escape key
@@ -38,9 +110,18 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
+    setActiveSection(targetId);
+
+    // Lock scrollspy detection to prevent bouncing/flickering across sections during smooth scrolling
+    isManualScrollRef.current = true;
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      isManualScrollRef.current = false;
+    }, 850);
+
     const element = document.getElementById(targetId);
     if (element) {
-      const navOffset = 80;
+      const navOffset = 76;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - navOffset;
 
@@ -53,64 +134,70 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-150 border-b ${
+      className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-200 border-b ${
         isScrolled
-          ? 'bg-white/95 border-border-medium shadow-xs backdrop-blur-md'
-          : 'bg-[#F2F2F0]/90 border-border-subtle backdrop-blur-md'
+          ? 'bg-surface/95 border-border-medium shadow-xs backdrop-blur-md'
+          : 'bg-page/90 border-border-subtle backdrop-blur-md'
       }`}
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
         {/* Brand */}
-        <Link to="/" className="flex items-center gap-3 no-underline text-primary font-bold text-lg tracking-tight" aria-label={`${brandName} Home`}>
-          <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-[15px] font-extrabold tracking-tighter shadow-xs" aria-hidden="true">L</div>
-          <span>{brandName}</span>
-          <span className="text-[11px] font-semibold uppercase tracking-wider px-[7px] py-[2px] rounded-full bg-accent-sage-pale text-accent-sage-dark">Platform</span>
-        </Link>
+        <BrandLogo
+          to="/"
+          size="md"
+          brandName={brandName}
+          badge="Platform"
+          ariaLabel={`${brandName} Home`}
+        />
 
-        {/* Desktop Nav Items */}
+        {/* Desktop Nav Items with Silky-Smooth Gliding Indicator */}
         <nav aria-label="Main Navigation">
-          <ul className="hidden md:flex items-center gap-8 list-none">
-            <li>
-              <a
-                href="#courses"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'courses')}
-              >
-                Explore Courses
-              </a>
-            </li>
-            <li>
-              <a
-                href="#categories"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'categories')}
-              >
-                Categories
-              </a>
-            </li>
-            <li>
-              <a
-                href="#journey"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'journey')}
-              >
-                How It Works
-              </a>
-            </li>
-            <li>
-              <a
-                href="#instructors"
-                className="text-sm font-medium text-secondary hover:text-primary transition-colors py-1.5 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xs"
-                onClick={(e) => handleNavClick(e, 'instructors')}
-              >
-                For Instructors
-              </a>
-            </li>
+          <ul className="hidden md:flex items-center list-none p-1 rounded-full bg-surface-subtle/80 border border-border-subtle/70 backdrop-blur-xs relative select-none">
+            {/* Smooth Gliding Active Pill Indicator */}
+            <div
+              className="absolute rounded-full bg-accent-subtle border border-accent/35 shadow-2xs pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+              style={{
+                left: `${indicatorStyle.left}px`,
+                top: `${indicatorStyle.top}px`,
+                width: `${indicatorStyle.width}px`,
+                height: `${indicatorStyle.height}px`,
+                opacity: indicatorStyle.opacity,
+              }}
+              aria-hidden="true"
+            />
+
+            {navItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <li
+                  key={item.id}
+                  ref={(el) => {
+                    navItemRefs.current[item.id] = el;
+                  }}
+                  className="relative z-10"
+                >
+                  <a
+                    href={`#${item.id}`}
+                    onClick={(e) => handleNavClick(e, item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`inline-flex items-center justify-center text-xs font-semibold px-4 py-1.5 rounded-full transition-colors duration-250 cursor-pointer ${
+                      isActive
+                        ? 'text-accent'
+                        : 'text-secondary hover:text-primary hover:bg-surface-subtle/50'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
         {/* Action CTAs */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <Link
@@ -124,7 +211,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                 type="button"
                 onClick={logout}
                 title="Log Out"
-                className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:text-primary border border-border-subtle bg-white px-2.5 py-2 rounded-xl transition-all cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:text-primary border border-border-subtle bg-surface px-2.5 py-2 rounded-xl transition-all cursor-pointer"
               >
                 <LogOut size={13} />
                 <span>Logout</span>
@@ -161,7 +248,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           {/* Mobile hamburger button */}
           <button
             type="button"
-            className="flex md:hidden w-10 h-10 items-center justify-center rounded-xl text-primary border border-border-subtle bg-white hover:bg-surface-subtle transition-colors cursor-pointer"
+            className="flex md:hidden w-10 h-10 items-center justify-center rounded-xl text-primary border border-border-subtle bg-surface hover:bg-surface-subtle transition-colors cursor-pointer"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
@@ -179,49 +266,39 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           role="presentation"
         >
           <div
-            className="absolute top-0 inset-x-0 bg-white border-b border-border-subtle px-6 pt-6 pb-8 shadow-elevated animate-[drawerSlide_220ms_cubic-bezier(0.16,1,0.3,1)]"
+            className="absolute top-0 inset-x-0 bg-surface border-b border-border-subtle px-6 pt-6 pb-8 shadow-elevated animate-[drawerSlide_220ms_cubic-bezier(0.16,1,0.3,1)]"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Mobile Navigation"
           >
-            <ul className="flex flex-col gap-4 list-none mb-6">
-              <li>
-                <a
-                  href="#courses"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'courses')}
-                >
-                  Explore Courses
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#categories"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'categories')}
-                >
-                  Categories
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#journey"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'journey')}
-                >
-                  How It Works
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#instructors"
-                  className="text-base font-medium text-primary block py-2 border-b border-border-subtle"
-                  onClick={(e) => handleNavClick(e, 'instructors')}
-                >
-                  For Instructors
-                </a>
-              </li>
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-border-subtle">
+              <span className="text-xs font-bold uppercase tracking-wider text-secondary">Appearance</span>
+              <ThemeToggle showLabel />
+            </div>
+
+            <ul className="flex flex-col gap-2 list-none mb-6">
+              {navItems.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      onClick={(e) => handleNavClick(e, item.id)}
+                      className={`flex items-center justify-between text-sm font-semibold px-3.5 py-2.5 rounded-xl border transition-all ${
+                        isActive
+                          ? 'bg-accent-subtle text-accent border-accent/30'
+                          : 'text-primary hover:text-primary hover:bg-surface-subtle border-transparent'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {isActive && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-live-pulse" />
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="flex flex-col gap-3">
@@ -241,7 +318,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                       setMobileMenuOpen(false);
                       logout();
                     }}
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-white text-rose-700 border border-rose-200 hover:bg-rose-50 shadow-xs transition-all text-center cursor-pointer"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-surface text-rose-700 border border-rose-200 hover:bg-rose-50 shadow-xs transition-all text-center cursor-pointer"
                   >
                     Log Out
                   </button>
@@ -261,7 +338,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                   </button>
                   <button
                     type="button"
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-white text-primary border border-border-subtle hover:bg-surface-subtle shadow-xs transition-all text-center cursor-pointer"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-surface text-primary border border-border-subtle hover:bg-surface-subtle shadow-xs transition-all text-center cursor-pointer"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       if (onOpenAuth) onOpenAuth('login');

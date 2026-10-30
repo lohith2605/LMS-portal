@@ -17,7 +17,15 @@ import {
   BookOpen,
   Star,
   MessageSquare,
+  Presentation,
+  Library,
+  Hourglass,
+  FileBarChart,
+  Settings2,
+  ShieldCheck,
+  GraduationCap,
 } from 'lucide-react';
+import IconChip from '../components/ui/IconChip';
 import { useAuth } from '../context/useAuth';
 import { adminService, authService } from '../services/api';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -410,34 +418,51 @@ export default function AdminDashboard() {
       ) : (
         <div className="space-y-8">
           {/* Welcome Banner */}
-          <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
-            <div className="max-w-2xl">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-                Platform Overview
-              </h1>
+          <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-blue-dark mb-2">
+                  <IconChip icon={ShieldCheck} tone="accent" size="sm" animate />
+                  <span>Platform Governance & Verification</span>
+                </div>
 
-              <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
-                Manage users, review instructor applications, and oversee the learning platform.
-              </p>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                  Platform Overview
+                </h1>
 
-              <div className="flex flex-wrap items-center gap-3 mt-5">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('approvals')}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer shadow-xs"
-                >
-                  <CheckCircle2 size={14} />
-                  <span>Review Instructor Queue ({pendingInstructors.length})</span>
-                </button>
+                <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
+                  Manage users, review instructor applications, and oversee the learning platform.
+                </p>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('users')}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
-                >
-                  <Users size={14} />
-                  <span>View All Users</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-3 mt-5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('approvals')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer shadow-xs"
+                  >
+                    <ShieldAlert size={14} strokeWidth={1.75} />
+                    <span>Review Instructor Queue ({pendingInstructors.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('users')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all cursor-pointer"
+                  >
+                    <Users size={14} strokeWidth={1.75} />
+                    <span>View All Users</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="hidden lg:flex items-center gap-3">
+                <IconChip
+                  icon={ShieldAlert}
+                  tone="accent"
+                  size="lg"
+                  animate
+                  className="w-16 h-16 rounded-2xl shadow-card"
+                />
               </div>
             </div>
           </div>
@@ -453,9 +478,9 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center gap-2">
                 {actionFeedback.type === 'success' ? (
-                  <CheckCircle2 size={16} />
+                  <CheckCircle2 size={16} strokeWidth={1.75} />
                 ) : (
-                  <AlertTriangle size={16} />
+                  <AlertTriangle size={16} strokeWidth={1.75} />
                 )}
                 <span>{actionFeedback.text}</span>
               </div>
@@ -491,7 +516,7 @@ export default function AdminDashboard() {
                     title="Student Learners"
                     value={metrics?.totalStudents ?? 0}
                     subtitle="Standard learner permissions"
-                    icon={Users}
+                    icon={GraduationCap}
                     badge="Students"
                     badgeType="blue"
                     onClick={() => {
@@ -503,7 +528,7 @@ export default function AdminDashboard() {
                     title="Active Instructors"
                     value={metrics?.activeInstructors ?? 0}
                     subtitle="Approved teaching faculty"
-                    icon={UserCheck}
+                    icon={Presentation}
                     badge="Verified"
                     badgeType="sage"
                     onClick={() => {
@@ -515,7 +540,7 @@ export default function AdminDashboard() {
                     title="Pending Approvals"
                     value={metrics?.pendingInstructors ?? 0}
                     subtitle="Awaiting administrative verification"
-                    icon={Clock}
+                    icon={ShieldAlert}
                     badge={metrics?.pendingInstructors > 0 ? 'Action Req' : 'Zero Queue'}
                     badgeType={metrics?.pendingInstructors > 0 ? 'amber' : 'sage'}
                     onClick={() => setActiveTab('approvals')}
@@ -524,11 +549,11 @@ export default function AdminDashboard() {
               </div>
 
               {/* Priority Section: Instructor Approval Queue Preview */}
-              <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-xs">
+              <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-subtle mb-6">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-amber-600" />
+                      <ShieldAlert size={16} strokeWidth={1.75} className="text-amber-600" />
                       <h2 className="text-base font-bold text-primary">
                         Instructor Approval Queue
                       </h2>

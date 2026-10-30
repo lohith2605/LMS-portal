@@ -79,6 +79,13 @@ const sanitizeUser = (user) => {
   const raw = user.toObject ? user.toObject() : user;
   const id = raw._id ? raw._id.toString() : (raw.id ? raw.id.toString() : '');
 
+  let safeAvatar = null;
+  if (typeof raw.avatar === 'string' && raw.avatar.trim()) {
+    safeAvatar = { url: raw.avatar, publicId: null };
+  } else if (raw.avatar && raw.avatar.url) {
+    safeAvatar = { url: raw.avatar.url, publicId: raw.avatar.publicId || null };
+  }
+
   return {
     id,
     _id: id,
@@ -87,7 +94,7 @@ const sanitizeUser = (user) => {
     role: raw.role,
     accountStatus: raw.accountStatus,
     emailVerified: Boolean(raw.emailVerified),
-    avatar: raw.avatar || '',
+    avatar: safeAvatar,
     createdAt: raw.createdAt,
     lastLoginAt: raw.lastLoginAt,
   };

@@ -194,7 +194,7 @@ test('6. Valid new Google user creates student account with 201 Created and sets
   assert.strictEqual(res.body.user.role, 'student');
   assert.strictEqual(res.body.user.accountStatus, 'active');
   assert.strictEqual(res.body.user.emailVerified, true);
-  assert.strictEqual(res.body.user.avatar, 'https://lh3.googleusercontent.com/photo.jpg');
+  assert.strictEqual(res.body.user.avatar.url, 'https://lh3.googleusercontent.com/photo.jpg');
 
   // Verify HttpOnly auth cookie is set
   const cookies = res.headers['set-cookie'];
@@ -295,7 +295,7 @@ test('9. Existing account with email links firebaseUid safely and marks email ve
   assert.strictEqual(res.status, 200);
   assert.strictEqual(res.body.user.email, 'legacy@example.com');
   assert.strictEqual(res.body.user.emailVerified, true);
-  assert.strictEqual(res.body.user.avatar, 'https://google.com/avatar.png');
+  assert.strictEqual(res.body.user.avatar.url, 'https://google.com/avatar.png');
 
   // Verify in mock DB that firebaseUid was linked
   assert.strictEqual(legacyUser.firebaseUid, 'google_uid_linked_3003');

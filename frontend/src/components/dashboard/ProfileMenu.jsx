@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LogOut, KeyRound, ExternalLink, ChevronDown } from 'lucide-react';
+import { LogOut, KeyRound, ExternalLink, ChevronDown, Camera } from 'lucide-react';
 
-export default function ProfileMenu({ user, logout, onOpenPasswordModal }) {
+export default function ProfileMenu({ user, logout, onOpenPasswordModal, onOpenAvatarModal }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -44,6 +44,8 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal }) {
     student: 'bg-accent-blue-pale text-accent-blue-dark',
   };
 
+  const avatarUrl = user?.avatar?.url;
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -51,10 +53,18 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal }) {
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className="flex items-center gap-2.5 p-1.5 rounded-xl border border-border-subtle bg-white hover:bg-surface-subtle transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="group flex items-center gap-2.5 p-1.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle hover-lift transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/30"
       >
-        <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold tracking-tight">
-          {initials}
+        <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold tracking-tight ring-2 ring-border-subtle group-hover:ring-accent transition-all overflow-hidden">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={user?.name || 'Profile'}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            initials
+          )}
         </div>
         <div className="hidden md:flex flex-col text-left pr-1">
           <span className="text-xs font-bold text-primary truncate max-w-[120px]">
@@ -71,7 +81,7 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal }) {
         <div
           role="menu"
           aria-orientation="vertical"
-          className="absolute right-0 mt-2 w-64 bg-white border border-border-subtle rounded-2xl shadow-elevated py-2 z-50 animate-[modalSlideUp_0.15s_ease-out]"
+          className="absolute right-0 mt-2 w-64 bg-surface-elevated border border-border-subtle rounded-2xl shadow-elevated py-2 z-50 animate-[modalSlideUp_0.15s_ease-out]"
         >
           {/* User Details Header */}
           <div className="px-4 py-3 border-b border-border-subtle">
@@ -92,6 +102,19 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal }) {
 
           {/* Menu Items */}
           <div className="py-1">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                if (onOpenAvatarModal) onOpenAvatarModal();
+              }}
+              className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
+            >
+              <Camera size={14} className="text-secondary" />
+              <span>Edit Profile Picture</span>
+            </button>
+
             <button
               type="button"
               role="menuitem"

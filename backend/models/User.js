@@ -40,10 +40,6 @@ const userSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    avatar: {
-      type: String,
-      default: '',
-    },
     role: {
       type: String,
       enum: {
@@ -86,6 +82,16 @@ const userSchema = new mongoose.Schema(
     },
     lastLoginAt: {
       type: Date,
+    },
+    avatar: {
+      url: {
+        type: String,
+        default: null,
+      },
+      publicId: {
+        type: String,
+        default: null,
+      },
     },
   },
   {
