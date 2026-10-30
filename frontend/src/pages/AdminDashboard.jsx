@@ -393,30 +393,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'analytics':
-        return 'Platform-Wide Learning Analytics';
-      case 'approvals':
-        return 'Instructor Approval Queue';
-      case 'users':
-        return 'Platform User Directory';
-      case 'moderation':
-        return 'Course Moderation';
-      case 'health':
-        return 'System Health Telemetry';
-      case 'security':
-        return 'Admin Credentials & Security';
-      case 'overview':
-      default:
-        return null;
-    }
-  };
-
   return (
     <DashboardLayout
-      title={getPageTitle()}
-      subtitle={getPageTitle() ? 'Platform governance, security, and verification' : null}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={ADMIN_ANNOUNCEMENTS}

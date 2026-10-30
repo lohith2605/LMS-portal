@@ -8,8 +8,6 @@ import NotificationDrawer from '../components/dashboard/NotificationDrawer';
 import ChangePasswordModal from '../components/dashboard/ChangePasswordModal';
 
 export default function DashboardLayout({
-  title = 'Dashboard',
-  subtitle,
   activeTab = 'overview',
   onSelectTab = () => {},
   announcements = [],
@@ -38,9 +36,6 @@ export default function DashboardLayout({
       {/* Main Workspace Column */}
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader
-          title={title}
-          subtitle={subtitle}
-          role={role}
           user={user}
           logout={logout}
           onOpenMobileNav={() => setMobileNavOpen(true)}
