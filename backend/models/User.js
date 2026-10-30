@@ -24,10 +24,25 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: [
+        function () {
+          return !this.firebaseUid;
+        },
+        'Please provide a password',
+      ],
       minlength: [8, 'Password must be at least 8 characters long'],
       maxlength: [128, 'Password cannot exceed 128 characters'],
       select: false, // Never return password hash in queries by default
+    },
+    firebaseUid: {
+      type: String,
+      sparse: true,
+      unique: true,
+      index: true,
+    },
+    avatar: {
+      type: String,
+      default: '',
     },
     role: {
       type: String,
@@ -91,7 +106,7 @@ const userSchema = new mongoose.Schema(
 
 // Pre-save hook: Hash password securely if modified
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
 
   // Generate salt and hash with cost factor 12
   const salt = await bcrypt.genSalt(12);

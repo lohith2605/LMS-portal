@@ -87,6 +87,7 @@ const sanitizeUser = (user) => {
     role: raw.role,
     accountStatus: raw.accountStatus,
     emailVerified: Boolean(raw.emailVerified),
+    avatar: raw.avatar || '',
     createdAt: raw.createdAt,
     lastLoginAt: raw.lastLoginAt,
   };

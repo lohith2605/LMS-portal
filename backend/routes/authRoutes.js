@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   register,
   login,
+  googleLogin,
   logout,
   getMe,
   forgotPassword,
@@ -27,6 +28,7 @@ const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimiter
 // Public Authentication Endpoints
 router.post('/register', authLimiter, validateRegister, register);
 router.post('/login', authLimiter, validateLogin, login);
+router.post('/google', authLimiter, googleLogin);
 router.post('/logout', logout);
 
 // Password Reset Flow
