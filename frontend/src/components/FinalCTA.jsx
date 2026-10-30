@@ -22,7 +22,7 @@ export default function FinalCTA({ onExploreCourses, onGetStarted }) {
           <div className="flex flex-col sm:flex-row items-center gap-3 mt-3 flex-wrap justify-center w-full sm:w-auto">
             <button
               type="button"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6.5 py-3 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-neutral-800 hover:-translate-y-0.5 shadow-sm hover:shadow-card transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6.5 py-3 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover:-translate-y-0.5 shadow-sm shadow-cobalt/20 hover:shadow-card transition-all cursor-pointer"
               onClick={onExploreCourses}
             >
               <span>Explore Courses</span>

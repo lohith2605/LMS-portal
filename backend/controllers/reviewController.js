@@ -214,6 +214,25 @@ const restoreReview = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/reviews/testimonials
+ * Public endpoint to fetch verified student testimonials for the landing page
+ */
+const getTestimonials = async (req, res) => {
+  try {
+    const limit = req.query.limit;
+    const result = await reviewService.getTestimonials({ limit });
+    return res.status(200).json(result);
+  } catch (error) {
+    logger.error(`getTestimonials error: ${error.message}`);
+    return res.status(500).json({
+      error: 'Failed to retrieve testimonials.',
+      testimonials: [],
+      total: 0,
+    });
+  }
+};
+
 module.exports = {
   getCourseReviews,
   getMyReview,
@@ -223,5 +242,6 @@ module.exports = {
   getAdminReviews,
   hideReview,
   restoreReview,
+  getTestimonials,
 };
 

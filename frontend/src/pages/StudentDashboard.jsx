@@ -370,7 +370,7 @@ export default function StudentDashboard() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('explore')}
-                    className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer shadow-xs"
+                    className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition-all cursor-pointer shadow-sm shadow-cobalt/20"
                   >
                     <Compass size={14} strokeWidth={1.75} className="group-hover-wobble" />
                     <span>Explore Courses</span>
@@ -383,9 +383,9 @@ export default function StudentDashboard() {
                   type="button"
                   onClick={() => setIsAvatarModalOpen(true)}
                   title="Click to edit profile picture"
-                  className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent rounded-2xl"
+                  className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-2xl"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-accent transition-all">
+                  <div className="w-16 h-16 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
                     {user?.avatar?.url ? (
                       <img
                         src={user.avatar.url}
@@ -593,7 +593,7 @@ export default function StudentDashboard() {
                             </Link>
                             <Link
                               to={`/courses/${c.slug}/learn`}
-                              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition shadow-xs"
+                              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition shadow-sm shadow-cobalt/20"
                             >
                               <span>Continue Learning</span>
                               <ArrowRight size={13} strokeWidth={1.75} className="group-hover-nudge-x" />
@@ -728,7 +728,7 @@ export default function StudentDashboard() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('explore')}
-                  className="px-3.5 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition cursor-pointer self-start sm:self-auto"
+                  className="px-3.5 py-1.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer self-start sm:self-auto"
                 >
                   Explore Catalog
                 </button>
@@ -789,7 +789,7 @@ export default function StudentDashboard() {
                         <div className="p-4 pt-0">
                           <Link
                             to={`/courses/${c.slug}/learn`}
-                            className="w-full py-2 px-3 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition flex items-center justify-center gap-1.5"
+                            className="w-full py-2 px-3 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition flex items-center justify-center gap-1.5"
                           >
                             <span>Continue Learning</span>
                             <ArrowRight size={13} />
@@ -903,7 +903,7 @@ export default function StudentDashboard() {
                       <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
                         <Link
                           to={`/verify/${cert.certificateId}`}
-                          className="flex-1 py-2 px-3 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition flex items-center justify-center gap-1.5"
+                          className="flex-1 py-2 px-3 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition flex items-center justify-center gap-1.5"
                         >
                           <ExternalLink size={13} />
                           <span>View & Verify</span>
@@ -959,7 +959,7 @@ export default function StudentDashboard() {
                     />
                     <input
                       type="text"
-                      className="w-full py-2.5 pl-10 pr-9 text-xs sm:text-sm bg-surface-subtle border border-border-subtle rounded-xl text-primary transition-all focus:outline-none focus:bg-white focus:border-primary placeholder:text-tertiary"
+                      className="w-full py-2.5 pl-10 pr-9 text-xs sm:text-sm bg-surface-subtle border border-border-subtle rounded-xl text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 placeholder:text-tertiary"
                       placeholder="Search courses by title, topic, or keyword..."
                       value={exploreSearch}
                       onChange={handleSearchInput}
@@ -982,7 +982,7 @@ export default function StudentDashboard() {
                     <select
                       value={exploreLevel}
                       onChange={(e) => handleLevelSelect(e.target.value)}
-                      className="w-full py-2.5 px-3 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:bg-white focus:border-primary font-medium cursor-pointer"
+                      className="w-full py-2.5 px-3 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 font-medium cursor-pointer"
                       aria-label="Filter by course difficulty level"
                     >
                       {EXPLORE_LEVELS.map((lvl) => (
@@ -998,7 +998,7 @@ export default function StudentDashboard() {
                     <select
                       value={exploreSort}
                       onChange={(e) => handleSortSelect(e.target.value)}
-                      className="w-full py-2.5 px-3 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:bg-white focus:border-primary font-medium cursor-pointer"
+                      className="w-full py-2.5 px-3 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 font-medium cursor-pointer"
                       aria-label="Sort course catalog"
                     >
                       {EXPLORE_SORT_OPTIONS.map((opt) => (
@@ -1022,8 +1022,8 @@ export default function StudentDashboard() {
                         onClick={() => handleCategorySelect(cat)}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
                           exploreCategory === cat
-                            ? 'bg-primary text-white border-primary shadow-xs'
-                            : 'bg-surface-subtle text-secondary border-border-subtle hover:text-primary hover:border-border-medium'
+                            ? 'bg-cobalt text-white border-cobalt shadow-xs shadow-cobalt/20'
+                            : 'bg-surface-subtle text-secondary border-border-subtle hover:text-primary hover:border-cobalt-border'
                         }`}
                       >
                         {cat}
@@ -1167,7 +1167,7 @@ export default function StudentDashboard() {
 
                         <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6.5 h-6.5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                            <div className="w-6.5 h-6.5 rounded-full bg-cobalt text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                               {instructorInitials}
                             </div>
                             <span className="text-xs font-medium text-primary truncate max-w-[130px]">
@@ -1177,7 +1177,7 @@ export default function StudentDashboard() {
 
                           <Link
                             to={`/courses/${course.slug || course._id}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-subtle border border-border-subtle hover:bg-primary hover:text-white text-xs font-semibold text-primary transition-all cursor-pointer shrink-0"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-subtle border border-border-subtle hover:bg-cobalt hover:text-white hover:border-cobalt active:bg-cobalt-pressed text-xs font-semibold text-primary transition-all cursor-pointer shrink-0"
                           >
                             <Eye size={13} />
                             <span>View Track</span>
@@ -1217,7 +1217,7 @@ export default function StudentDashboard() {
                               onClick={() => setExplorePage(pg)}
                               className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                                 current === pg
-                                  ? 'bg-primary text-white shadow-xs'
+                                  ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                                   : 'bg-white border border-border-subtle text-secondary hover:text-primary hover:bg-surface-subtle'
                               }`}
                             >
@@ -1312,7 +1312,7 @@ export default function StudentDashboard() {
                       onClick={() => setAssignmentFilter(f.id)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         assignmentFilter === f.id
-                          ? 'bg-primary text-white shadow-xs'
+                          ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                           : 'bg-white border border-border-subtle text-secondary hover:text-primary'
                       }`}
                     >
@@ -1385,7 +1385,7 @@ export default function StudentDashboard() {
                         return (
                           <div
                             key={item._id}
-                            className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-primary/30 transition-all"
+                            className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-cobalt/40 transition-all"
                           >
                             <div>
                               <div className="flex items-center justify-between gap-2 mb-2">
@@ -1507,7 +1507,7 @@ export default function StudentDashboard() {
                                     ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                                     : isSubmitted
                                     ? 'bg-surface-subtle text-primary border border-border-subtle hover:bg-border-subtle'
-                                    : 'bg-primary text-white hover:bg-[#2b2b2b]'
+                                    : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
                                 }`}
                               >
                                 <span>
@@ -1672,7 +1672,7 @@ export default function StudentDashboard() {
               <div className="lg:col-span-2 bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
                 <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
                   <div className="relative group">
-                    <div className="w-20 h-20 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-xl overflow-hidden shadow-xs ring-4 ring-border-subtle">
+                    <div className="w-20 h-20 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-xl overflow-hidden shadow-xs ring-4 ring-border-subtle">
                       {user?.avatar?.url ? (
                         <img
                           src={user.avatar.url}
@@ -1702,7 +1702,7 @@ export default function StudentDashboard() {
                   <div>
                     <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                       <h3 className="text-base font-bold text-primary">{user?.name}</h3>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-blue-pale text-accent-blue-dark">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cobalt-soft text-cobalt border border-cobalt-border">
                         {user?.role}
                       </span>
                     </div>
@@ -1727,7 +1727,7 @@ export default function StudentDashboard() {
               {/* Password update form */}
               <div className="bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <KeyRound size={18} className="text-accent-blue-dark" />
+                  <KeyRound size={18} className="text-cobalt" />
                   <h2 className="text-base font-bold text-primary">Change Password</h2>
                 </div>
                 <p className="text-xs text-secondary leading-relaxed mb-5">
@@ -1738,7 +1738,7 @@ export default function StudentDashboard() {
                   <div
                     className={`mb-4 p-3 rounded-xl flex items-center gap-2 text-xs font-medium border ${
                       pwFeedback.type === 'success'
-                        ? 'bg-accent-sage-pale text-accent-sage-dark border-[#A8B5A0]/40'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : 'bg-red-50 text-red-700 border-red-200'
                     }`}
                   >
@@ -1762,7 +1762,7 @@ export default function StudentDashboard() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Enter current password"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                     />
                   </div>
 
@@ -1776,7 +1776,7 @@ export default function StudentDashboard() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                     />
                   </div>
 
@@ -1790,14 +1790,14 @@ export default function StudentDashboard() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm new password"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={pwLoading}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {pwLoading ? 'Updating Password...' : 'Save Password'}
                   </button>

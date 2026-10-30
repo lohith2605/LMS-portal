@@ -357,7 +357,7 @@ export default function ProfilePictureModal({ isOpen, onClose }) {
               type="button"
               onClick={handleSave}
               disabled={!selectedFile || isUploading || isRemoving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-cobalt/20"
             >
               {isUploading ? (
                 <>

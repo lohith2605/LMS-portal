@@ -475,15 +475,15 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 onClick={() => setActiveStep(s.num)}
                 className={`flex items-center gap-2.5 text-xs font-medium pb-2 border-b-2 transition ${
                   activeStep === s.num
-                    ? 'border-[#637D91] text-[#171717] font-semibold'
-                    : 'border-transparent text-[#686868] hover:text-[#171717]'
+                    ? 'border-cobalt text-primary font-semibold'
+                    : 'border-transparent text-secondary hover:text-primary'
                 }`}
               >
                 <span
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     activeStep === s.num
-                      ? 'bg-[#637D91] text-[#FFFFFF]'
-                      : 'bg-[#F2F2F0] text-[#686868]'
+                      ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
+                      : 'bg-surface-subtle text-secondary'
                   }`}
                 >
                   {s.num}
@@ -491,7 +491,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 <span className="hidden sm:inline">{s.label}</span>
               </button>
               {idx < steps.length - 1 && (
-                <div className="flex-1 h-0.5 bg-[#E4E4E1] mx-2 -mt-2" />
+                <div className="flex-1 h-0.5 bg-border-subtle mx-2 -mt-2" />
               )}
             </React.Fragment>
           ))}
@@ -514,7 +514,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="e.g. Design Systems from Figma to Production Code"
-                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
               />
             </div>
 
@@ -530,7 +530,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 onChange={handleChange}
                 maxLength={300}
                 placeholder="A concise 1-2 sentence overview for the course card catalog."
-                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
               />
               <span className="text-[10px] text-[#686868] mt-1 block">
                 {formData.summary.length}/300 characters
@@ -548,7 +548,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Detailed curriculum overview, methodologies, what students will construct, and practical applications."
-                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
               />
             </div>
 
@@ -560,7 +560,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -577,7 +577,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   name="level"
                   value={formData.level}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                 >
                   {LEVELS.map((lvl) => (
                     <option key={lvl} value={lvl}>
@@ -595,7 +595,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   type="text"
                   value={formData.language}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                 />
               </div>
             </div>
@@ -611,7 +611,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 value={formData.thumbnail}
                 onChange={handleChange}
                 placeholder="https://images.unsplash.com/..."
-                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717] mb-3"
+                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717] mb-3"
               />
 
               <div className="flex items-center gap-3">
@@ -622,8 +622,8 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                     onClick={() => setFormData((prev) => ({ ...prev, thumbnail: thumbUrl }))}
                     className={`relative w-20 h-12 rounded-lg overflow-hidden border-2 transition ${
                       formData.thumbnail === thumbUrl
-                        ? 'border-[#637D91] ring-2 ring-[#637D91]/20'
-                        : 'border-[#E4E4E1] hover:border-[#686868]'
+                        ? 'border-cobalt ring-2 ring-focus-ring/30'
+                        : 'border-[#E4E4E1] hover:border-border-focus'
                     }`}
                   >
                     <img src={thumbUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -656,7 +656,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                       value={obj}
                       onChange={(e) => handleObjectiveChange(idx, e.target.value)}
                       placeholder="e.g. Construct resilient token architectures from Figma to code"
-                      className="flex-1 px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                      className="flex-1 px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                     />
                     <button
                       type="button"
@@ -673,7 +673,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
               <button
                 type="button"
                 onClick={addObjective}
-                className="mt-3 text-xs font-medium text-[#637D91] hover:text-[#171717] flex items-center gap-1 transition"
+                className="mt-3 text-xs font-medium text-cobalt hover:text-cobalt-hover flex items-center gap-1 transition"
               >
                 + Add Learning Objective
               </button>
@@ -690,7 +690,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 value={formData.prerequisites}
                 onChange={handleChange}
                 placeholder="e.g. Basic understanding of JavaScript and modern component-based frontend libraries."
-                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
               />
             </div>
 
@@ -706,7 +706,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={formData.intendedAudience}
                   onChange={handleChange}
                   placeholder="e.g. Frontend developers, design technologists"
-                  className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                  className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                 />
               </div>
 
@@ -721,7 +721,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={formData.estimatedDuration}
                   onChange={handleChange}
                   placeholder="e.g. 6 weeks"
-                  className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] text-[#171717]"
+                  className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                 />
               </div>
             </div>
@@ -741,7 +741,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
               <button
                 type="button"
                 onClick={openAddSection}
-                className="px-3.5 py-1.5 text-xs font-medium text-[#FFFFFF] bg-[#637D91] hover:bg-[#526879] rounded-lg transition"
+                className="px-3.5 py-1.5 text-xs font-semibold text-white bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed rounded-lg shadow-sm shadow-cobalt/20 transition cursor-pointer"
               >
                 + Add Section
               </button>
@@ -756,7 +756,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 <button
                   type="button"
                   onClick={openAddSection}
-                  className="px-4 py-2 text-xs font-medium text-[#FFFFFF] bg-[#637D91] hover:bg-[#526879] rounded-lg transition"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed rounded-lg shadow-sm shadow-cobalt/20 transition cursor-pointer"
                 >
                   Create First Section
                 </button>
@@ -771,7 +771,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                     {/* Section Header */}
                     <div className="p-4 bg-[#FAFAFA] border-b border-[#E4E4E1] flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#637D91]/10 text-[#637D91] text-xs font-semibold flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-full bg-cobalt-soft text-cobalt border border-cobalt-border text-xs font-bold flex items-center justify-center">
                           {sIdx + 1}
                         </span>
                         <div>
@@ -786,7 +786,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                         <button
                           type="button"
                           onClick={() => openAddLesson(sIdx)}
-                          className="px-2.5 py-1 text-xs font-medium text-[#637D91] hover:bg-[#F2F2F0] rounded transition"
+                          className="px-2.5 py-1 text-xs font-medium text-cobalt hover:bg-surface-subtle rounded transition cursor-pointer"
                         >
                           + Lesson
                         </button>
@@ -821,7 +821,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                           <button
                             type="button"
                             onClick={() => openAddLesson(sIdx)}
-                            className="text-[#637D91] font-medium underline"
+                            className="text-cobalt hover:text-cobalt-hover font-semibold underline cursor-pointer"
                           >
                             Add one now
                           </button>
@@ -904,7 +904,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   <span className="px-2.5 py-1 bg-[#171717]/80 text-[#FFFFFF] text-xs font-medium rounded-full backdrop-blur-sm">
                     {formData.category}
                   </span>
-                  <span className="px-2.5 py-1 bg-[#637D91]/90 text-[#FFFFFF] text-xs font-medium rounded-full backdrop-blur-sm">
+                  <span className="px-2.5 py-1 bg-cobalt/90 text-white text-xs font-semibold rounded-full backdrop-blur-sm shadow-xs">
                     {formData.level}
                   </span>
                 </div>
@@ -997,7 +997,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 type="button"
                 onClick={handleSubmitForReview}
                 disabled={saving || submitting || formData.status === 'pending_review'}
-                className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold text-[#FFFFFF] bg-[#637D91] hover:bg-[#526879] rounded-lg shadow-sm transition disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold text-white bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed rounded-lg shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
               >
                 {submitting
                   ? 'Submitting...'
@@ -1025,7 +1025,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
           <button
             type="button"
             onClick={() => setActiveStep((prev) => Math.min(4, prev + 1))}
-            className="px-5 py-2 text-xs font-semibold text-[#FFFFFF] bg-[#637D91] hover:bg-[#526879] rounded-lg transition"
+            className="px-5 py-2 text-xs font-semibold text-white bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed rounded-lg shadow-sm shadow-cobalt/20 transition cursor-pointer"
           >
             Continue to {steps[activeStep].label} &rarr;
           </button>
@@ -1052,7 +1052,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={sectionForm.title}
                   onChange={(e) => setSectionForm((p) => ({ ...p, title: e.target.value }))}
                   placeholder="e.g. Module 1: Architecture Foundations"
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                 />
               </div>
 
@@ -1065,7 +1065,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={sectionForm.description}
                   onChange={(e) => setSectionForm((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Brief summary of topics covered in this module."
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                 />
               </div>
             </div>
@@ -1082,7 +1082,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 type="button"
                 onClick={saveSection}
                 disabled={!sectionForm.title.trim()}
-                className="px-4 py-2 text-xs font-medium text-[#FFFFFF] bg-[#637D91] hover:bg-[#526879] rounded-lg transition disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold text-white bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed rounded-lg shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
               >
                 Save Section
               </button>
@@ -1109,7 +1109,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={lessonForm.title}
                   onChange={(e) => setLessonForm((p) => ({ ...p, title: e.target.value }))}
                   placeholder="e.g. Component Trees & Spatial Grids"
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                 />
               </div>
 
@@ -1119,7 +1119,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   <select
                     value={lessonForm.contentType}
                     onChange={(e) => setLessonForm((p) => ({ ...p, contentType: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                    className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                   >
                     <option value="video">Video Lecture</option>
                     <option value="text">Rich Reading / Markdown</option>
@@ -1134,7 +1134,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                     value={lessonForm.duration}
                     onChange={(e) => setLessonForm((p) => ({ ...p, duration: e.target.value }))}
                     placeholder="e.g. 15 mins"
-                    className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                    className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                   />
                 </div>
               </div>
@@ -1149,7 +1149,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                     value={lessonForm.videoUrl}
                     onChange={(e) => setLessonForm((p) => ({ ...p, videoUrl: e.target.value }))}
                     placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                    className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                   />
                 </div>
               )}
@@ -1163,7 +1163,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={lessonForm.textContent}
                   onChange={(e) => setLessonForm((p) => ({ ...p, textContent: e.target.value }))}
                   placeholder="# Lesson Overview&#10;&#10;Key concepts covered in this lesson..."
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91] font-mono text-xs"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 font-mono text-xs"
                 />
               </div>
 
@@ -1176,7 +1176,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   value={lessonForm.attachmentUrl}
                   onChange={(e) => setLessonForm((p) => ({ ...p, attachmentUrl: e.target.value }))}
                   placeholder="https://github.com/learnspace/example-code"
-                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#637D91]"
+                  className="w-full px-3 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                 />
               </div>
             </div>
@@ -1193,7 +1193,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                 type="button"
                 onClick={saveLesson}
                 disabled={!lessonForm.title.trim()}
-                className="px-4 py-2 text-xs font-medium text-[#FFFFFF] bg-[#637D91] hover:bg-[#526879] rounded-lg transition disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold text-white bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed rounded-lg shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
               >
                 Save Lesson
               </button>

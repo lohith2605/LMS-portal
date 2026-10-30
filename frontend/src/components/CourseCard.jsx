@@ -51,8 +51,8 @@ export default function CourseCard({ course, onSelectCourse }) {
           <div
             className={`w-full h-full flex items-center justify-between p-4 ${
               course.category === 'Design'
-                ? 'bg-gradient-to-br from-[#EDF0E9] to-[#Dfe5da] dark:from-[#1F242A] dark:to-[#15181C]'
-                : 'bg-gradient-to-br from-[#E9EFF2] to-[#D8E3E8] dark:from-[#1F242A] dark:to-[#15181C]'
+                ? 'bg-gradient-to-br from-cobalt-light to-cobalt-soft/80 dark:from-[#111827] dark:to-[#1E293B]'
+                : 'bg-gradient-to-br from-surface-subtle to-cobalt-soft/60 dark:from-[#111827] dark:to-[#1E293B]'
             }`}
           >
             <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-surface/85 text-primary backdrop-blur-xs shadow-xs">
@@ -80,7 +80,7 @@ export default function CourseCard({ course, onSelectCourse }) {
       <div className="p-5 flex flex-col flex-grow gap-3">
         {!course.thumbnail && (
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold uppercase tracking-wider text-accent-blue-dark">
+            <span className="font-bold uppercase tracking-wider text-cobalt">
               {course.category}
             </span>
             <span className="text-[11px] font-medium text-secondary bg-surface-subtle px-2 py-0.5 rounded border border-border-subtle">
@@ -135,7 +135,7 @@ export default function CourseCard({ course, onSelectCourse }) {
 
           <button
             type="button"
-            className="text-xs font-semibold text-primary inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-subtle border border-border-subtle hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer"
+            className="text-xs font-semibold text-primary inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-subtle border border-border-subtle hover:bg-cobalt hover:text-white hover:border-cobalt active:bg-cobalt-pressed transition-all cursor-pointer"
             onClick={() => onSelectCourse(course)}
             aria-label={`View course ${course.title}`}
           >

@@ -202,7 +202,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
             <div className="flex items-center gap-2">
               <Link
                 to={getDashboardPath()}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-primary text-white hover:bg-[#2b2b2b] px-3.5 py-2 rounded-xl shadow-xs transition-all"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed px-3.5 py-2 rounded-xl shadow-xs transition-all"
               >
                 <LayoutDashboard size={14} />
                 <span>Dashboard</span>
@@ -236,7 +236,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-sm font-semibold bg-primary text-white hover:bg-[#2b2b2b] hover:-translate-y-0.5 px-4.5 py-2.25 rounded-xl shadow-sm transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 text-sm font-semibold bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover:-translate-y-0.5 px-4.5 py-2.25 rounded-xl shadow-sm shadow-cobalt/20 transition-all cursor-pointer"
                 onClick={() => (onOpenAuth ? onOpenAuth('register') : navigate('/register'))}
               >
                 <span>Get Started</span>
@@ -307,7 +307,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                   <Link
                     to={getDashboardPath()}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-[#2b2b2b] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <LayoutDashboard size={16} />
                     <span>Go to Dashboard</span>
@@ -349,7 +349,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                   </button>
                   <button
                     type="button"
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-[#2b2b2b] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       if (onOpenAuth) onOpenAuth('register');

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Clock, ExternalLink, ShieldCheck, HeartHandshake } from 'lucide-react';
+import { Mail, Clock } from 'lucide-react';
 import BrandLogo from './ui/BrandLogo';
 import { SocialIcon } from './ui/SocialIcons';
 import { SOCIAL_LINKS, CONTACT_INFO } from '../config/socialLinks';
@@ -49,14 +49,11 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
               LearnSpace is a full-stack learning platform helping students and instructors access structured courses, interactive assignments, assessments, and verified completion credentials.
             </p>
 
-            {/* Social Media Channels & Handles */}
+            {/* Social Media Channels */}
             <div className="pt-2">
-              <div className="flex items-center justify-between mb-2.5 max-w-xs">
+              <div className="mb-2.5">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
                   Connect With Us
-                </span>
-                <span className="text-[10px] font-mono font-medium text-secondary bg-surface-subtle px-2 py-0.5 rounded-full border border-border-subtle">
-                  @learnspace_lms
                 </span>
               </div>
               <div className="flex items-center gap-2 flex-wrap" role="list" aria-label="Social media links">
@@ -98,37 +95,6 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
                     </button>
                   );
                 })}
-              </div>
-
-              {/* Visible Dummy Social Media Handles */}
-              <div className="mt-2.5 text-[11px] text-tertiary flex items-center gap-1.5 flex-wrap">
-                <span>Handles:</span>
-                <a
-                  href={SOCIAL_LINKS.find((s) => s.id === 'github')?.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-secondary hover:text-primary transition-colors underline-offset-2 hover:underline"
-                >
-                  github/lohith2605
-                </a>
-                <span>&bull;</span>
-                <a
-                  href={SOCIAL_LINKS.find((s) => s.id === 'twitter')?.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-secondary hover:text-primary transition-colors underline-offset-2 hover:underline"
-                >
-                  x/@learnspace_lms
-                </a>
-                <span>&bull;</span>
-                <a
-                  href={SOCIAL_LINKS.find((s) => s.id === 'linkedin')?.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-secondary hover:text-primary transition-colors underline-offset-2 hover:underline"
-                >
-                  in/learnspace-lms
-                </a>
               </div>
             </div>
           </div>

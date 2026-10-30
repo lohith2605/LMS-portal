@@ -117,7 +117,7 @@ export default function AuthModal({ isOpen, mode = 'register', courseContext = n
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary focus:shadow-sm placeholder:text-tertiary"
+                className="w-full px-3.5 py-3 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 focus:shadow-sm placeholder:text-tertiary"
               />
             </div>
 
@@ -131,7 +131,7 @@ export default function AuthModal({ isOpen, mode = 'register', courseContext = n
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 px-4.5 py-2.5 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-[#2a2a2a] shadow-sm hover:shadow-card transition-all cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-4.5 py-2.5 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 hover:shadow-card transition-all cursor-pointer"
               >
                 <span>Request Early Access</span>
                 <ArrowRight size={14} aria-hidden="true" />

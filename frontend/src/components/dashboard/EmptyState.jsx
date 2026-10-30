@@ -45,7 +45,7 @@ export default function EmptyState({
             actionHref ? (
               <Link
                 to={actionHref}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 hover-lift btn-press transition-all"
               >
                 {actionLabel}
               </Link>
@@ -53,7 +53,7 @@ export default function EmptyState({
               <button
                 type="button"
                 onClick={onAction}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 hover-lift btn-press transition-all cursor-pointer"
               >
                 {actionLabel}
               </button>

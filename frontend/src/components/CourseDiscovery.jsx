@@ -90,8 +90,8 @@ export default function CourseDiscovery({ onSelectCourse }) {
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 w-full">
         {/* Section Header */}
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent-blue-dark mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-blue" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cobalt mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-cobalt" aria-hidden="true" />
             <span>Course Catalog</span>
           </div>
           <h2 className="text-[clamp(1.85rem,3.2vw,2.5rem)] font-bold tracking-tight text-primary leading-tight mb-3">
@@ -114,7 +114,7 @@ export default function CourseDiscovery({ onSelectCourse }) {
               />
               <input
                 type="text"
-                className="w-full py-3 pl-11 pr-11 text-sm bg-surface-subtle border border-border-subtle rounded-xl text-primary transition-all focus:outline-none focus:bg-surface focus:border-primary focus:shadow-sm placeholder:text-tertiary"
+                className="w-full py-3 pl-11 pr-11 text-sm bg-surface-subtle border border-border-subtle rounded-xl text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 focus:shadow-sm placeholder:text-tertiary"
                 placeholder="Search by topic, skill, or keyword..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -137,7 +137,7 @@ export default function CourseDiscovery({ onSelectCourse }) {
               <select
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                className="w-full py-3 px-3.5 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:bg-surface focus:border-primary font-medium"
+                className="w-full py-3 px-3.5 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 font-medium"
                 aria-label="Filter by difficulty level"
               >
                 {DIFFICULTY_LEVELS.map((lvl) => (
@@ -163,8 +163,8 @@ export default function CourseDiscovery({ onSelectCourse }) {
                     aria-selected={isSelected}
                     className={`group inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full border transition-all cursor-pointer hover-lift btn-press ${
                       isSelected
-                        ? 'bg-primary text-white border-primary shadow-xs'
-                        : 'bg-surface-subtle text-secondary border-border-subtle hover:text-primary hover:border-border-medium'
+                        ? 'bg-cobalt text-white border-cobalt shadow-xs shadow-cobalt/20'
+                        : 'bg-surface-subtle text-secondary border-border-subtle hover:text-primary hover:border-cobalt-border'
                     }`}
                     onClick={() => setSelectedCategory(category)}
                   >

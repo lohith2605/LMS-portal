@@ -69,19 +69,19 @@ export default function ForgotPasswordPage() {
         formSubtitle="Password reset instructions have been dispatched to your address."
       >
         <div className="py-2 text-center">
-          <div className="w-12 h-12 bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
             <Mail size={24} />
           </div>
-          <h3 className="text-base font-bold text-[#171717] mb-2">
+          <h3 className="text-base font-bold text-primary mb-2">
             Reset Link Dispatched
           </h3>
-          <p className="text-xs text-[#686868] leading-relaxed mb-6">
-            If an account matching <strong className="text-[#171717]">{email}</strong> exists, an email containing your password reset link has been dispatched. Please check your inbox and spam folders.
+          <p className="text-xs text-secondary leading-relaxed mb-6">
+            If an account matching <strong className="text-primary">{email}</strong> exists, an email containing your password reset link has been dispatched. Please check your inbox and spam folders.
           </p>
           <div className="flex flex-col gap-2.5">
             <Link
               to="/login"
-              className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-1.5"
+              className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5"
             >
               <span>Return to Sign In</span>
               <ArrowRight size={13} />
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
                 setSubmitted(false);
                 setEmail('');
               }}
-              className="w-full h-11 px-4 rounded-xl bg-[#F8F8F6] text-[#686868] hover:text-[#171717] border border-[#E4E4E1] text-xs font-semibold transition-all cursor-pointer"
+              className="w-full h-11 px-4 rounded-xl bg-surface-subtle text-secondary hover:text-primary border border-border-subtle text-xs font-semibold transition-all cursor-pointer"
             >
               Try another email
             </button>
@@ -127,7 +127,7 @@ export default function ForgotPasswordPage() {
         <div>
           <label
             htmlFor="forgot-email"
-            className="block text-xs font-semibold text-[#171717] mb-1.5"
+            className="block text-xs font-semibold text-primary mb-1.5"
           >
             Email Address
           </label>
@@ -140,14 +140,14 @@ export default function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             disabled={submitting}
-            className="w-full h-11 sm:h-12 px-3.5 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+            className="w-full h-11 sm:h-12 px-3.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
           />
         </div>
 
         <button
           type="submit"
           disabled={submitting}
-          className="mt-2 w-full h-11 sm:h-12 px-4 rounded-xl bg-[#171717] text-white text-sm font-semibold hover:bg-[#2b2b2b] hover:-translate-y-0.5 active:translate-y-0 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+          className="mt-2 w-full h-11 sm:h-12 px-4 rounded-xl bg-cobalt text-white text-sm font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
         >
           {submitting ? (
             <>
@@ -162,10 +162,10 @@ export default function ForgotPasswordPage() {
           )}
         </button>
 
-        <div className="text-center pt-3 border-t border-[#E4E4E1] text-xs text-[#686868]">
+        <div className="text-center pt-3 border-t border-divider text-xs text-secondary">
           <Link
             to="/login"
-            className="font-semibold text-[#171717] hover:underline inline-flex items-center gap-1.5"
+            className="font-semibold text-cobalt hover:text-cobalt-hover hover:underline inline-flex items-center gap-1.5"
           >
             <ArrowLeft size={13} />
             <span>Back to sign in</span>

@@ -318,7 +318,7 @@ export default function AssignmentSubmissionModal({
                       multiple
                       disabled={uploading}
                       onChange={handleFileChange}
-                      className="text-xs text-secondary file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-primary file:text-white hover:file:bg-[#2b2b2b] cursor-pointer disabled:opacity-50"
+                      className="text-xs text-secondary file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-cobalt file:text-white hover:file:bg-cobalt-hover active:file:bg-cobalt-pressed transition cursor-pointer disabled:opacity-50"
                     />
                   </div>
                 )}
@@ -412,7 +412,7 @@ export default function AssignmentSubmissionModal({
               <button
                 type="submit"
                 disabled={isSubmissionBlocked || submitting || uploading}
-                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-[#2b2b2b] transition cursor-pointer shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-cobalt text-white font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
               >
                 <Send size={14} />
                 <span>

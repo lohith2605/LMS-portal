@@ -115,7 +115,7 @@ export default function BrandLogo({
     >
       {/* Purpose-driven Logo Icon Chip */}
       <div
-        className={`${currentSize.chip} bg-primary text-[var(--btn-primary-text)] border border-border-subtle/30 shadow-xs flex items-center justify-center shrink-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105 group-hover:shadow-sm`}
+        className={`${currentSize.chip} bg-cobalt text-white border border-cobalt-border/30 shadow-xs flex items-center justify-center shrink-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105 group-hover:shadow-sm`}
         aria-hidden="true"
       >
         <LearnSpaceLogoIcon className={currentSize.icon} animate />
@@ -147,7 +147,7 @@ export default function BrandLogo({
       {badge && (
         <div className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-2 motion-reduce:transform-none">
           {typeof badge === 'string' ? (
-            <span className="text-[11px] font-semibold uppercase tracking-wider px-[7px] py-[2px] rounded-full bg-accent-sage-pale text-accent-sage-dark border border-accent-sage-soft/30">
+            <span className="text-[11px] font-semibold uppercase tracking-wider px-[7px] py-[2px] rounded-full bg-cobalt-soft text-cobalt border border-cobalt-border">
               {badge}
             </span>
           ) : (

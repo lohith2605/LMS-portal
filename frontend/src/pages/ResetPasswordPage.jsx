@@ -98,12 +98,12 @@ export default function ResetPasswordPage() {
           <div className="w-12 h-12 bg-red-50 text-red-600 border border-red-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
             <AlertCircle size={24} />
           </div>
-          <p className="text-xs text-[#686868] leading-relaxed mb-6">
+          <p className="text-xs text-secondary leading-relaxed mb-6">
             The link you followed does not contain a valid security token or has already expired. Please request a fresh reset link below.
           </p>
           <Link
             to="/forgot-password"
-            className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-1.5"
+            className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5"
           >
             <span>Request New Reset Link</span>
             <ArrowRight size={13} />
@@ -125,19 +125,19 @@ export default function ResetPasswordPage() {
         formSubtitle="Your credentials have been securely updated and an active session established."
       >
         <div className="py-2 text-center">
-          <div className="w-12 h-12 bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
             <CheckCircle2 size={24} />
           </div>
-          <h3 className="text-base font-bold text-[#171717] mb-2">
+          <h3 className="text-base font-bold text-primary mb-2">
             You are ready to go!
           </h3>
-          <p className="text-xs text-[#686868] leading-relaxed mb-6">
+          <p className="text-xs text-secondary leading-relaxed mb-6">
             Your password was changed and an authenticated session has been established.
           </p>
           <button
             type="button"
             onClick={() => navigate('/dashboard')}
-            className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>Proceed to Dashboard</span>
             <ArrowRight size={14} />
@@ -173,7 +173,7 @@ export default function ResetPasswordPage() {
         <div>
           <label
             htmlFor="reset-password"
-            className="block text-xs font-semibold text-[#171717] mb-1"
+            className="block text-xs font-semibold text-primary mb-1"
           >
             New Password
           </label>
@@ -187,13 +187,13 @@ export default function ResetPasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Minimum 8 characters"
               disabled={submitting}
-              className="w-full h-10 sm:h-11 pl-3.5 pr-10 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+              className="w-full h-10 sm:h-11 pl-3.5 pr-10 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8A8A86] hover:text-[#171717] p-1 transition-colors cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary hover:text-primary p-1 transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -204,8 +204,8 @@ export default function ResetPasswordPage() {
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-colors ${
                 hasMinLength
-                  ? 'bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40'
-                  : 'bg-[#F8F8F6] text-[#8A8A86] border border-[#E4E4E1]'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-surface-subtle text-tertiary border border-border-subtle'
               }`}
             >
               <CheckCircle2 size={10} /> 8+ chars
@@ -213,8 +213,8 @@ export default function ResetPasswordPage() {
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-colors ${
                 hasLetter
-                  ? 'bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40'
-                  : 'bg-[#F8F8F6] text-[#8A8A86] border border-[#E4E4E1]'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-surface-subtle text-tertiary border border-border-subtle'
               }`}
             >
               <CheckCircle2 size={10} /> Letters
@@ -222,8 +222,8 @@ export default function ResetPasswordPage() {
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-colors ${
                 hasNumber
-                  ? 'bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40'
-                  : 'bg-[#F8F8F6] text-[#8A8A86] border border-[#E4E4E1]'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-surface-subtle text-tertiary border border-border-subtle'
               }`}
             >
               <CheckCircle2 size={10} /> Numbers
@@ -235,7 +235,7 @@ export default function ResetPasswordPage() {
         <div>
           <label
             htmlFor="reset-confirm-password"
-            className="block text-xs font-semibold text-[#171717] mb-1"
+            className="block text-xs font-semibold text-primary mb-1"
           >
             Confirm New Password
           </label>
@@ -249,17 +249,17 @@ export default function ResetPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-type new password"
               disabled={submitting}
-              className={`w-full h-10 sm:h-11 pl-3.5 pr-10 rounded-xl border bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:ring-1 disabled:opacity-60 placeholder:text-[#8A8A86] ${
+              className={`w-full h-10 sm:h-11 pl-3.5 pr-10 rounded-xl border bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:ring-2 disabled:opacity-60 placeholder:text-tertiary ${
                 confirmPassword && !passwordsMatch
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                  : 'border-[#E4E4E1] focus:border-[#171717] focus:ring-[#171717]'
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30'
+                  : 'border-border-subtle focus:border-cobalt focus:ring-focus-ring/30'
               }`}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8A8A86] hover:text-[#171717] p-1 transition-colors cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary hover:text-primary p-1 transition-colors cursor-pointer"
             >
               {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -269,7 +269,7 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-1 w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs sm:text-sm font-semibold hover:bg-[#2b2b2b] hover:-translate-y-0.5 active:translate-y-0 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+          className="mt-1 w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs sm:text-sm font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
         >
           {submitting ? (
             <>
@@ -284,10 +284,10 @@ export default function ResetPasswordPage() {
           )}
         </button>
 
-        <div className="text-center pt-2.5 border-t border-[#E4E4E1] text-xs text-[#686868]">
+        <div className="text-center pt-2.5 border-t border-divider text-xs text-secondary">
           <Link
             to="/login"
-            className="font-semibold text-[#171717] hover:underline"
+            className="font-semibold text-cobalt hover:text-cobalt-hover hover:underline"
           >
             Cancel and return to sign in
           </Link>

@@ -6,6 +6,7 @@ import CourseDiscovery from '../components/CourseDiscovery';
 import LearningJourney from '../components/LearningJourney';
 import PlatformFeatures from '../components/PlatformFeatures';
 import InstructorSection from '../components/InstructorSection';
+import TestimonialsCarousel from '../components/TestimonialsCarousel';
 import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
 import CourseModal from '../components/CourseModal';
@@ -98,6 +99,11 @@ export default function LandingPage() {
         {/* Instructor Callout & Dashboard Preview */}
         <InstructorSection
           onInstructorInquiry={() => handleOpenAuth('instructor')}
+        />
+
+        {/* Real Student Testimonials Carousel */}
+        <TestimonialsCarousel
+          onSelectCourse={(course) => setSelectedCourse(course)}
         />
 
         {/* Final Call to Action */}

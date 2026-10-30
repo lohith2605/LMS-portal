@@ -18,7 +18,7 @@ export default function AuthLayout({
   backLabel = 'Back to Home'
 }) {
   return (
-    <div className="min-h-screen bg-page text-primary font-sans antialiased selection:bg-accent-blue-pale selection:text-primary">
+    <div className="min-h-screen bg-page text-primary font-sans antialiased selection:bg-cobalt-soft selection:text-cobalt">
       <div className="grid grid-cols-1 lg:grid-cols-12 min-h-screen">
         
         {/* ========================================================= */}
@@ -27,8 +27,8 @@ export default function AuthLayout({
         <aside className="hidden lg:flex lg:col-span-5 xl:col-span-5 bg-page border-r border-border-subtle flex-col justify-between p-8 xl:p-12 relative overflow-hidden">
           
           {/* Subtle architectural background accents */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-accent-blue-pale/40 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-accent-sage-pale/50 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-cobalt-light/50 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-cobalt-soft/40 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
           {/* Top Brand & Navigation Header */}
           <div className="relative z-10 flex items-center justify-between">
@@ -36,7 +36,7 @@ export default function AuthLayout({
               to="/"
               size="md"
               badge={
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-accent-sage-soft/30">
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cobalt-soft text-cobalt border border-cobalt-border">
                   {panelBadge}
                 </span>
               }
@@ -58,8 +58,8 @@ export default function AuthLayout({
           {/* Middle Story & Highlights Section */}
           <div className="relative z-10 my-auto py-8 max-w-md">
             {/* Eyebrow */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border-subtle text-[11px] font-bold tracking-wider uppercase text-accent-blue-dark mb-5 shadow-2xs">
-              <Sparkles size={12} className="text-accent-blue" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border-subtle text-[11px] font-bold tracking-wider uppercase text-cobalt mb-5 shadow-2xs">
+              <Sparkles size={12} className="text-cobalt" />
               <span>{eyebrow}</span>
             </div>
 
@@ -84,7 +84,7 @@ export default function AuthLayout({
                       className="p-3.5 rounded-2xl bg-surface/90 border border-border-subtle shadow-2xs flex items-start gap-3.5 transition-all hover:bg-surface hover:border-border-medium"
                     >
                       {Icon && (
-                        <div className="w-9 h-9 rounded-xl bg-accent-blue-pale text-accent-blue-dark flex items-center justify-center shrink-0 border border-accent-blue/20">
+                        <div className="w-9 h-9 rounded-xl bg-cobalt-soft text-cobalt flex items-center justify-center shrink-0 border border-cobalt-border">
                           <Icon size={18} />
                         </div>
                       )}

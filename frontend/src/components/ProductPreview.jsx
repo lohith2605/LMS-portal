@@ -122,7 +122,7 @@ export default function ProductPreview() {
     >
       {/* Dynamic ambient architectural glow behind canvas */}
       <div
-        className="absolute -inset-4 bg-gradient-to-b from-accent-blue-pale/50 via-accent/10 to-accent-sage-pale/50 rounded-3xl blur-2xl -z-10 pointer-events-none transition-all duration-500 ease-out"
+        className="absolute -inset-4 bg-gradient-to-b from-cobalt-light/60 via-cobalt-soft/20 to-cobalt-light/40 rounded-3xl blur-2xl -z-10 pointer-events-none transition-all duration-500 ease-out"
         style={{
           opacity: 0.3 + scrollProgress * 0.7,
           transform: `scale(${0.92 + scrollProgress * 0.1})`,
@@ -153,7 +153,7 @@ export default function ProductPreview() {
         <div className="bg-surface-subtle border-b border-border-subtle px-5 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Active Course Identity */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+            <div className="w-8 h-8 rounded-lg bg-cobalt text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-cobalt/20">
               DS
             </div>
             <div>
@@ -169,13 +169,13 @@ export default function ProductPreview() {
           {/* Active Learner & Session Status */}
           <div className="flex items-center gap-3 self-start sm:self-center">
             <div className="hidden md:flex items-center gap-2 text-xs">
-              <span className="w-6 h-6 rounded-full bg-accent-blue-pale text-accent-blue-dark flex items-center justify-center font-bold text-[10px]">
+              <span className="w-6 h-6 rounded-full bg-cobalt-soft border border-cobalt-border text-cobalt flex items-center justify-center font-bold text-[10px]">
                 AR
               </span>
               <span className="text-secondary text-[11px]">Alex Rivera (Student Track)</span>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-sage-pale border border-accent-sage-soft/40 text-[11px] font-semibold text-accent-sage-dark shadow-2xs">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 shadow-2xs">
               <span className="relative flex h-2 w-2">
                 <span className="animate-live-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
@@ -199,11 +199,11 @@ export default function ProductPreview() {
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-blue">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-cobalt">
                     <IconChip icon={TrendingUp} tone="accent" size="sm" animate />
                     <span>Track Velocity</span>
                   </div>
-                  <span className="text-xs font-bold text-accent-blue-dark bg-accent-blue-pale px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-bold text-cobalt bg-cobalt-soft border border-cobalt-border/50 px-2 py-0.5 rounded-full">
                     70% Complete
                   </span>
                 </div>
@@ -222,7 +222,7 @@ export default function ProductPreview() {
                   progress={70}
                   inProgress={true}
                   height="h-2"
-                  colorClass="bg-accent"
+                  colorClass="bg-cobalt"
                   ariaLabel="Course completion progress"
                 />
                 <div className="flex justify-between text-[11px] text-tertiary mt-2">
@@ -241,7 +241,7 @@ export default function ProductPreview() {
               }}
             >
               <div>
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-accent-blue mb-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-cobalt mb-2">
                   <IconChip icon={PlayCircle} tone="accent" size="sm" animate className="group-hover:scale-110" />
                   <span>Next Active Lesson</span>
                 </div>
@@ -264,7 +264,7 @@ export default function ProductPreview() {
 
               <div className="pt-2 border-t border-border-subtle flex items-center justify-between">
                 <span className="text-xs text-secondary">Interactive Exercise</span>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:underline cursor-pointer">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:text-cobalt group-hover:underline cursor-pointer">
                   <span>Resume Lesson</span>
                   <ArrowRight size={13} strokeWidth={1.75} className="group-hover-nudge-x" aria-hidden="true" />
                 </span>
@@ -280,7 +280,7 @@ export default function ProductPreview() {
               }}
             >
               <div>
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2">
                   <IconChip icon={CalendarClock} tone="success" size="sm" animate />
                   <span>Upcoming Due Date</span>
                 </div>
@@ -295,11 +295,11 @@ export default function ProductPreview() {
               </div>
 
               <div className="pt-2 border-t border-border-subtle flex items-center justify-between">
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent-sage-dark">
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 size={13} strokeWidth={1.75} aria-hidden="true" />
                   <span>2 of 3 tasks verified</span>
                 </div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-blue-dark bg-accent-blue-pale px-2 py-0.5 rounded-md">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cobalt bg-cobalt-soft px-2 py-0.5 rounded-md">
                   <ListChecks size={12} strokeWidth={1.75} aria-hidden="true" />
                   <span>Rubric Ready</span>
                 </span>
@@ -319,12 +319,12 @@ export default function ProductPreview() {
               <IconChip icon={Medal} tone="success" size="sm" animate />
               <div className="text-primary">
                 <span className="font-semibold">Recent Milestone: </span>
-                <span className="text-accent-sage-dark font-medium">Foundational Color &amp; Spacing Tokens Mastered</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-medium">Foundational Color &amp; Spacing Tokens Mastered</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 text-[11px] text-tertiary">
-              <Sparkles size={13} strokeWidth={1.75} className="text-accent-blue animate-sparkle" aria-hidden="true" />
+              <Sparkles size={13} strokeWidth={1.75} className="text-cobalt animate-sparkle" aria-hidden="true" />
               <span>Real-time mentor checkpoints &amp; code repository synchronization</span>
             </div>
           </div>

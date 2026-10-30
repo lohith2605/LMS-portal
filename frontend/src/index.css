@@ -7,18 +7,31 @@
   --color-surface: var(--bg-surface);
   --color-surface-subtle: var(--bg-surface-subtle);
   --color-surface-elevated: var(--bg-surface-elevated);
+  --color-surface-blue: var(--bg-surface-blue);
+  --color-surface-blue-soft: var(--bg-surface-blue-soft);
 
   --color-primary: var(--text-primary);
   --color-secondary: var(--text-secondary);
   --color-tertiary: var(--text-tertiary);
   --color-inverse: var(--text-inverse);
 
+  --color-cobalt: var(--cobalt);
+  --color-cobalt-hover: var(--cobalt-hover);
+  --color-cobalt-pressed: var(--cobalt-pressed);
+  --color-cobalt-light: var(--cobalt-light);
+  --color-cobalt-soft: var(--cobalt-soft);
+  --color-cobalt-border: var(--cobalt-border);
+
+  --color-blue-secondary: var(--blue-secondary);
+  --color-focus-ring: var(--focus-ring);
+  --color-divider: var(--divider);
+
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-subtle: var(--accent-subtle);
-  --color-accent-blue: var(--accent);
-  --color-accent-blue-dark: var(--accent-hover);
-  --color-accent-blue-pale: var(--accent-subtle);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-blue-dark: var(--accent-blue-dark);
+  --color-accent-blue-pale: var(--accent-blue-pale);
 
   --color-accent-sage: var(--accent-sage);
   --color-accent-sage-dark: var(--accent-sage-dark);
@@ -42,60 +55,78 @@
 }
 
 :root {
-  /* Theme 1: Paper Light (default) */
-  --bg-page: #F5F4F2;
+  /* Theme 1: Cloud White & Cobalt Blue (default) */
+  --bg-page: #F7F9FC;
   --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #F0EFEC;
+  --bg-surface-subtle: #F1F4F8;
   --bg-surface-elevated: #FFFFFF;
+  --bg-surface-blue: #F5F8FF;
+  --bg-surface-blue-soft: #EAF1FF;
 
-  --text-primary: #111111;
-  --text-secondary: #5B5F66;
-  --text-tertiary: #8A8E95;
+  --text-primary: #172033;
+  --text-secondary: #596579;
+  --text-tertiary: #788397;
   --text-inverse: #FFFFFF;
 
-  --btn-primary-bg: #111111;
+  --cobalt: #2457C5;
+  --cobalt-hover: #1D46A0;
+  --cobalt-pressed: #183A84;
+  --cobalt-light: #F5F8FF;
+  --cobalt-soft: #EAF1FF;
+  --cobalt-border: #D6E3FC;
+
+  --blue-secondary: #4B83F0;
+  --focus-ring: #80A7FF;
+
+  --btn-primary-bg: #2457C5;
   --btn-primary-text: #FFFFFF;
-  --btn-primary-hover: #2A2A2A;
+  --btn-primary-hover: #1D46A0;
+  --btn-primary-pressed: #183A84;
 
-  --accent: #5B7A99;
-  --accent-hover: #4A6580;
-  --accent-subtle: #E8EEF3;
+  --accent: #2457C5;
+  --accent-hover: #1D46A0;
+  --accent-subtle: #EAF1FF;
 
-  --accent-sage: #8E9F86;
-  --accent-sage-dark: #5F7158;
-  --accent-sage-soft: #A8B5A0;
-  --accent-sage-pale: #EDF0E9;
+  --accent-blue: #2457C5;
+  --accent-blue-dark: #1D46A0;
+  --accent-blue-pale: #EAF1FF;
 
-  --border-subtle: #E5E3DF;
-  --border-medium: #D5D3CF;
-  --border-focus: #111111;
+  --accent-sage: #4B83F0;
+  --accent-sage-dark: #1D46A0;
+  --accent-sage-soft: #D6E3FC;
+  --accent-sage-pale: #EAF1FF;
 
-  --success: #2F7D5B;
-  --warning: #B7791F;
-  --danger: #C0392B;
-  --info: #3B6EA5;
+  --border-subtle: #E1E7EF;
+  --border-medium: #D6E3FC;
+  --border-focus: #80A7FF;
+  --divider: #E8EDF4;
 
-  --badge-success-text: #2F7D5B;
-  --badge-success-bg: rgba(47, 125, 91, 0.10);
-  --badge-warning-text: #B7791F;
-  --badge-warning-bg: rgba(183, 121, 31, 0.12);
-  --badge-danger-text: #C0392B;
-  --badge-danger-bg: rgba(192, 57, 43, 0.10);
-  --badge-info-text: #3B6EA5;
-  --badge-info-bg: rgba(59, 110, 165, 0.10);
+  --success: #18794E;
+  --warning: #9A6700;
+  --danger: #C62828;
+  --info: #2457C5;
 
-  --banner-warning-bg: #FFF8E6;
+  --badge-success-text: #18794E;
+  --badge-success-bg: #E8F6EE;
+  --badge-warning-text: #9A6700;
+  --badge-warning-bg: #FFF4D6;
+  --badge-danger-text: #C62828;
+  --badge-danger-bg: #FDECEC;
+  --badge-info-text: #2457C5;
+  --badge-info-bg: #EAF1FF;
+
+  --banner-warning-bg: #FFF4D6;
   --banner-warning-border: #F5DEAE;
-  --banner-warning-text: #7A4B0A;
+  --banner-warning-text: #9A6700;
 
-  --sidebar-active-bg: #111111;
+  --sidebar-active-bg: #2457C5;
   --sidebar-active-text: #FFFFFF;
 
-  --shadow-xs: 0 1px 2px rgba(17, 17, 17, 0.04);
-  --shadow-sm: 0 2px 5px rgba(17, 17, 17, 0.04), 0 1px 2px rgba(17, 17, 17, 0.02);
-  --shadow-card: 0 3px 10px rgba(17, 17, 17, 0.03), 0 1px 3px rgba(17, 17, 17, 0.02);
-  --shadow-elevated: 0 14px 30px -6px rgba(17, 17, 17, 0.07), 0 4px 10px -2px rgba(17, 17, 17, 0.03);
-  --shadow-preview: 0 20px 48px -12px rgba(17, 17, 17, 0.10), 0 2px 6px rgba(17, 17, 17, 0.03);
+  --shadow-xs: 0 1px 2px rgba(23, 32, 51, 0.04);
+  --shadow-sm: 0 2px 5px rgba(23, 32, 51, 0.04), 0 1px 2px rgba(23, 32, 51, 0.02);
+  --shadow-card: 0 3px 10px rgba(23, 32, 51, 0.03), 0 1px 3px rgba(23, 32, 51, 0.02);
+  --shadow-elevated: 0 14px 30px -6px rgba(23, 32, 51, 0.07), 0 4px 10px -2px rgba(23, 32, 51, 0.03);
+  --shadow-preview: 0 20px 48px -12px rgba(36, 87, 197, 0.12), 0 2px 6px rgba(23, 32, 51, 0.03);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-fast: 150ms;
@@ -109,54 +140,72 @@
 }
 
 [data-theme="dark"] {
-  /* Theme 2: Midnight Ink */
-  --bg-page: #0D0F12;
-  --bg-surface: #15181C;
-  --bg-surface-subtle: #1F242A;
-  --bg-surface-elevated: #1B1F24;
+  /* Theme 2: Deep Cobalt & Midnight Slate */
+  --bg-page: #0B0F19;
+  --bg-surface: #111827;
+  --bg-surface-subtle: #1E293B;
+  --bg-surface-elevated: #1A2234;
+  --bg-surface-blue: rgba(36, 87, 197, 0.14);
+  --bg-surface-blue-soft: rgba(75, 131, 240, 0.20);
 
-  --text-primary: #ECEEF1;
-  --text-secondary: #A3A9B2;
-  --text-tertiary: #7A808A;
-  --text-inverse: #0D0F12;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
+  --text-inverse: #0B0F19;
 
-  --btn-primary-bg: #ECEEF1;
-  --btn-primary-text: #0D0F12;
-  --btn-primary-hover: #FFFFFF;
+  --cobalt: #3B82F6;
+  --cobalt-hover: #60A5FA;
+  --cobalt-pressed: #2563EB;
+  --cobalt-light: rgba(59, 130, 246, 0.12);
+  --cobalt-soft: rgba(59, 130, 246, 0.20);
+  --cobalt-border: rgba(96, 165, 250, 0.30);
 
-  --accent: #8FB0D3;
-  --accent-hover: #A8C4E3;
-  --accent-subtle: rgba(143, 176, 211, 0.15);
+  --blue-secondary: #60A5FA;
+  --focus-ring: #60A5FA;
 
-  --accent-sage: #9FB895;
-  --accent-sage-dark: #B9D0B0;
-  --accent-sage-soft: #7A8E72;
-  --accent-sage-pale: rgba(159, 184, 149, 0.15);
+  --btn-primary-bg: #3B82F6;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #2563EB;
+  --btn-primary-pressed: #1D4ED8;
 
-  --border-subtle: #2A2F36;
-  --border-medium: #373E47;
-  --border-focus: #8FB0D3;
+  --accent: #3B82F6;
+  --accent-hover: #60A5FA;
+  --accent-subtle: rgba(59, 130, 246, 0.16);
 
-  --success: #4CC38A;
-  --warning: #E3A83B;
-  --danger: #F07167;
-  --info: #6CA6E0;
+  --accent-blue: #3B82F6;
+  --accent-blue-dark: #60A5FA;
+  --accent-blue-pale: rgba(59, 130, 246, 0.16);
 
-  --badge-success-text: #4CC38A;
-  --badge-success-bg: rgba(76, 195, 138, 0.15);
-  --badge-warning-text: #E3A83B;
-  --badge-warning-bg: rgba(227, 168, 59, 0.15);
-  --badge-danger-text: #F07167;
-  --badge-danger-bg: rgba(240, 113, 103, 0.15);
-  --badge-info-text: #6CA6E0;
-  --badge-info-bg: rgba(108, 166, 224, 0.15);
+  --accent-sage: #60A5FA;
+  --accent-sage-dark: #93C5FD;
+  --accent-sage-soft: rgba(96, 165, 250, 0.35);
+  --accent-sage-pale: rgba(59, 130, 246, 0.16);
 
-  --banner-warning-bg: rgba(227, 168, 59, 0.10);
-  --banner-warning-border: rgba(227, 168, 59, 0.30);
-  --banner-warning-text: #F3C468;
+  --border-subtle: #1E293B;
+  --border-medium: #334155;
+  --border-focus: #60A5FA;
+  --divider: #1E293B;
 
-  --sidebar-active-bg: #ECEEF1;
-  --sidebar-active-text: #0D0F12;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --info: #60A5FA;
+
+  --badge-success-text: #34D399;
+  --badge-success-bg: rgba(52, 211, 153, 0.15);
+  --badge-warning-text: #FBBF24;
+  --badge-warning-bg: rgba(251, 191, 36, 0.15);
+  --badge-danger-text: #F87171;
+  --badge-danger-bg: rgba(248, 113, 113, 0.15);
+  --badge-info-text: #60A5FA;
+  --badge-info-bg: rgba(96, 165, 250, 0.15);
+
+  --banner-warning-bg: rgba(251, 191, 36, 0.12);
+  --banner-warning-border: rgba(251, 191, 36, 0.30);
+  --banner-warning-text: #FCD34D;
+
+  --sidebar-active-bg: #3B82F6;
+  --sidebar-active-text: #FFFFFF;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.35);
@@ -209,34 +258,40 @@ html, body, header, nav, aside, main, section, footer, article, button, input, t
   outline-color: var(--accent) !important;
 }
 
-/* Primary Button High-Contrast Styling */
-[data-theme="dark"] button.bg-primary,
-[data-theme="dark"] a.bg-primary,
-[data-theme="dark"] .btn-primary {
+/* Primary Button Consistent Cobalt Styling (Light & Dark) */
+button.bg-primary,
+a.bg-primary,
+.btn-primary {
   background-color: var(--btn-primary-bg) !important;
   color: var(--btn-primary-text) !important;
 }
 
-[data-theme="dark"] button.bg-primary:hover,
-[data-theme="dark"] a.bg-primary:hover,
-[data-theme="dark"] .btn-primary:hover {
+button.bg-primary:hover,
+a.bg-primary:hover,
+.btn-primary:hover {
   background-color: var(--btn-primary-hover) !important;
 }
 
-[data-theme="dark"] button.bg-primary *,
-[data-theme="dark"] a.bg-primary * {
+button.bg-primary:active,
+a.bg-primary:active,
+.btn-primary:active {
+  background-color: var(--btn-primary-pressed) !important;
+}
+
+button.bg-primary *,
+a.bg-primary * {
   color: var(--btn-primary-text) !important;
 }
 
-/* Active Sidebar Navigation Item in Dark Theme */
-[data-theme="dark"] aside nav button.bg-primary,
-[data-theme="dark"] nav button.bg-primary {
+/* Active Sidebar Navigation Item */
+aside nav button.bg-primary,
+nav button.bg-primary {
   background-color: var(--sidebar-active-bg) !important;
   color: var(--sidebar-active-text) !important;
 }
 
-[data-theme="dark"] aside nav button.bg-primary *,
-[data-theme="dark"] nav button.bg-primary * {
+aside nav button.bg-primary *,
+nav button.bg-primary * {
   color: var(--sidebar-active-text) !important;
 }
 
@@ -366,6 +421,54 @@ html, body, header, nav, aside, main, section, footer, article, button, input, t
 
 [data-theme="dark"] .text-\[\#8A8A86\] {
   color: var(--text-tertiary) !important;
+}
+
+/* Global Compatibility Mappings for Legacy Color Classes (Light & Dark) */
+.bg-\[\#F2F2F0\],
+.bg-\[\#F8F8F6\],
+.bg-\[\#F5F4F2\] {
+  background-color: var(--bg-page) !important;
+}
+
+.border-\[\#E4E4E1\],
+.border-\[\#D5D5D0\] {
+  border-color: var(--border-subtle) !important;
+}
+
+.text-\[\#171717\],
+.text-\[\#111111\] {
+  color: var(--text-primary) !important;
+}
+
+.text-\[\#686868\],
+.text-\[\#5B5F66\] {
+  color: var(--text-secondary) !important;
+}
+
+.text-\[\#8A8A86\],
+.text-\[\#8A8E95\] {
+  color: var(--text-tertiary) !important;
+}
+
+/* Old black action buttons automatically upgrade to Cobalt Blue */
+button.bg-\[\#171717\],
+button.bg-\[\#111111\],
+a.bg-\[\#171717\],
+a.bg-\[\#111111\] {
+  background-color: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
+}
+button.bg-\[\#171717\]:hover,
+button.bg-\[\#111111\]:hover,
+a.bg-\[\#171717\]:hover,
+a.bg-\[\#111111\]:hover {
+  background-color: var(--btn-primary-hover) !important;
+}
+button.bg-\[\#171717\]:active,
+button.bg-\[\#111111\]:active,
+a.bg-\[\#171717\]:active,
+a.bg-\[\#111111\]:active {
+  background-color: var(--btn-primary-pressed) !important;
 }
 
 /* Custom Scrollbars */
@@ -630,6 +733,50 @@ html, body, header, nav, aside, main, section, footer, article, button, input, t
   animation: floatStickerC 5.2s ease-in-out infinite;
 }
 
+/* Carousel Slide Transition Animations */
+@keyframes carouselSlideFadeNext {
+  0% {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes carouselSlideFadePrev {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes carouselProgressBar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-carousel-slide-next {
+  animation: carouselSlideFadeNext 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-carousel-slide-prev {
+  animation: carouselSlideFadePrev 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-carousel-progress {
+  animation: carouselProgressBar 5s linear forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -645,6 +792,9 @@ html, body, header, nav, aside, main, section, footer, article, button, input, t
   .animate-float-sticker-a,
   .animate-float-sticker-b,
   .animate-float-sticker-c,
+  .animate-carousel-slide-next,
+  .animate-carousel-slide-prev,
+  .animate-carousel-progress,
   .hover-lift:hover,
   .btn-press:active,
   .group:hover .group-hover-nudge-x,

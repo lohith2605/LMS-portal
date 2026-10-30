@@ -133,8 +133,8 @@ export default function LearningJourney() {
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 w-full">
         {/* Editorial Section Header */}
         <div className="text-center max-w-[680px] mx-auto mb-10 md:mb-12">
-          <div className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent-blue-dark mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-blue" aria-hidden="true" />
+          <div className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-cobalt mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-cobalt" aria-hidden="true" />
             <span>The Methodology</span>
           </div>
           <h2 className="text-[clamp(1.85rem,3.2vw,2.5rem)] font-bold tracking-tight text-primary leading-tight mb-3">A clearer path from learning to doing.</h2>
@@ -165,15 +165,15 @@ export default function LearningJourney() {
                 <div
                   className={`w-12.5 h-12.5 rounded-full border-2 flex items-center justify-center font-bold text-xs shrink-0 md:mb-3 shadow-xs transition-all duration-200 ${
                     isActive
-                      ? 'bg-primary border-primary text-white shadow-sm scale-105'
-                      : 'bg-surface border-border-medium text-secondary group-hover:border-primary group-hover:text-primary group-hover:-translate-y-0.5'
+                      ? 'bg-cobalt border-cobalt text-white shadow-sm shadow-cobalt/25 scale-105'
+                      : 'bg-surface border-border-medium text-secondary group-hover:border-cobalt group-hover:text-cobalt group-hover:-translate-y-0.5'
                   }`}
                   aria-hidden="true"
                 >
                   <StageIcon size={20} strokeWidth={1.75} className="transition-transform group-hover:scale-110" />
                 </div>
                 <div className="flex flex-col items-start md:items-center">
-                  <div className="text-[11px] font-bold tracking-wider uppercase text-accent-blue-dark mb-0.5">Stage {stage.number}</div>
+                  <div className="text-[11px] font-bold tracking-wider uppercase text-cobalt mb-0.5">Stage {stage.number}</div>
                   <div className="text-base font-bold text-primary leading-snug mb-1">{stage.label}</div>
                   <div className="text-xs text-secondary leading-relaxed max-w-full md:max-w-[190px]">{stage.shortDesc}</div>
                 </div>
@@ -192,7 +192,7 @@ export default function LearningJourney() {
           >
             {/* Left Description Column */}
             <div className="flex flex-col gap-3">
-              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-blue-dark">
+              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cobalt">
                 <IconChip icon={IconComponent} tone="accent" size="sm" animate />
                 <span>Stage {currentStage.number} • {currentStage.label}</span>
               </div>
@@ -202,7 +202,7 @@ export default function LearningJourney() {
               <div className="flex flex-col gap-2 mt-2">
                 {currentStage.highlights.map((point, index) => (
                   <div key={index} className="flex items-center gap-2 text-xs text-primary font-medium">
-                    <CheckCircle2 size={15} strokeWidth={1.75} className="text-accent-sage-dark shrink-0" aria-hidden="true" />
+                    <CheckCircle2 size={15} strokeWidth={1.75} className="text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
                     <span>{point}</span>
                   </div>
                 ))}

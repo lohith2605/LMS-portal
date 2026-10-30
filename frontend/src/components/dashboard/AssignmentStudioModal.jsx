@@ -501,7 +501,7 @@ export default function AssignmentStudioModal({
               type="button"
               onClick={handlePublish}
               disabled={saving || publishing}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#2b2b2b] transition cursor-pointer shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-cobalt text-white text-xs font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
             >
               <Send size={14} />
               <span>{publishing ? 'Publishing...' : 'Publish Assignment'}</span>

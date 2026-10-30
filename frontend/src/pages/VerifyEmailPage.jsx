@@ -112,8 +112,8 @@ export default function VerifyEmailPage() {
       <div className="py-3 text-center">
         {status === 'checking' && (
           <div className="space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-surface-subtle border border-border-subtle flex items-center justify-center mx-auto text-primary">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-12 h-12 rounded-2xl bg-surface-subtle border border-border-subtle flex items-center justify-center mx-auto text-cobalt">
+              <div className="w-6 h-6 border-2 border-cobalt border-t-transparent rounded-full animate-spin" />
             </div>
             <h3 className="text-base font-bold text-primary">
               Verifying your email address...
@@ -126,7 +126,7 @@ export default function VerifyEmailPage() {
 
         {status === 'success' && (
           <div className="space-y-4">
-            <div className="w-12 h-12 bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40 rounded-2xl flex items-center justify-center mx-auto shadow-2xs">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto shadow-2xs">
               <CheckCircle2 size={24} />
             </div>
             <h3 className="text-base font-bold text-primary">
@@ -141,7 +141,7 @@ export default function VerifyEmailPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/dashboard', { replace: true })}
-                  className="w-full h-11 px-4 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Proceed to Dashboard</span>
                   <ArrowRight size={14} />
@@ -149,7 +149,7 @@ export default function VerifyEmailPage() {
               ) : (
                 <Link
                   to="/login"
-                  className="w-full h-11 px-4 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition-all inline-flex items-center justify-center gap-1.5 shadow-xs"
+                  className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5"
                 >
                   <span>Sign In to Your Account</span>
                   <ArrowRight size={14} />
@@ -175,7 +175,7 @@ export default function VerifyEmailPage() {
               <div
                 className={`p-3 rounded-xl text-xs font-medium border flex items-center gap-2 text-left ${
                   resendNotice.type === 'success'
-                    ? 'bg-[#EDF0E9] text-[#5F7158] border-[#A8B5A0]/40'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : 'bg-red-50 text-red-700 border-red-200'
                 }`}
               >
@@ -194,7 +194,7 @@ export default function VerifyEmailPage() {
                   type="button"
                   disabled={resending || cooldown > 0}
                   onClick={handleResend}
-                  className="w-full h-11 px-4 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+                  className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw size={13} className={resending ? 'animate-spin' : ''} />
                   <span>

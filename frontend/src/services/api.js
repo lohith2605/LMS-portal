@@ -755,6 +755,14 @@ export const calendarService = {
 
 export const reviewService = {
   /**
+   * Fetch approved public student testimonials for landing page carousel
+   */
+  getTestimonials: async (params = {}) => {
+    const res = await api.get('/reviews/testimonials', { params });
+    return res.data;
+  },
+
+  /**
    * Fetch public paginated reviews and summary for a course
    */
   getCourseReviews: async (idOrSlug, params = {}) => {

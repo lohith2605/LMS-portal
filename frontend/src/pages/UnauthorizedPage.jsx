@@ -62,15 +62,15 @@ export default function UnauthorizedPage() {
         </p>
 
         {user && (
-          <div className="mb-6 p-3.5 bg-[#F8F8F6] border border-[#E4E4E1] rounded-xl text-left text-xs space-y-1">
-            <div className="font-bold text-[#171717]">Current Session Identity:</div>
-            <div className="text-[#686868]">
-              Signed in as: <strong className="text-[#171717]">{user.email}</strong>
+          <div className="mb-6 p-3.5 bg-surface-subtle border border-border-subtle rounded-xl text-left text-xs space-y-1">
+            <div className="font-bold text-primary">Current Session Identity:</div>
+            <div className="text-secondary">
+              Signed in as: <strong className="text-primary">{user.email}</strong>
             </div>
-            <div className="text-[#686868]">
-              Role: <span className="capitalize font-semibold text-[#171717]">{user.role}</span>
+            <div className="text-secondary">
+              Role: <span className="capitalize font-semibold text-primary">{user.role}</span>
               {user.accountStatus && (
-                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#EDF0E9] text-[#5F7158]">
+                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cobalt-soft text-cobalt border border-cobalt-border">
                   {user.accountStatus}
                 </span>
               )}
@@ -81,7 +81,7 @@ export default function UnauthorizedPage() {
         <div className="flex flex-col gap-2.5">
           <Link
             to={getDestinationPath()}
-            className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-2"
+            className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-2"
           >
             <Home size={14} />
             <span>Go to My Dashboard</span>
@@ -89,7 +89,7 @@ export default function UnauthorizedPage() {
 
           <Link
             to="/"
-            className="w-full h-11 px-4 rounded-xl bg-[#F8F8F6] text-[#686868] hover:text-[#171717] border border-[#E4E4E1] text-xs font-semibold transition-all inline-flex items-center justify-center gap-2"
+            className="w-full h-11 px-4 rounded-xl bg-surface-subtle text-secondary hover:text-primary border border-border-subtle text-xs font-semibold transition-all inline-flex items-center justify-center gap-2"
           >
             <ArrowLeft size={14} />
             <span>Return to Landing Page</span>

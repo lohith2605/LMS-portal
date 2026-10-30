@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Brain,
@@ -91,9 +91,18 @@ function SkillSticker({
  */
 export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [direction, setDirection] = useState('next'); // 'next' | 'prev'
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    return false;
+  });
+
   const slideCount = 3;
-  const timerRef = useRef(null);
 
   const slides = [
     {
@@ -218,22 +227,77 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
     },
   ];
 
-  // Auto-advance slides every 6.5s unless paused
+  // Listen to OS/browser reduced-motion accessibility preference
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = (e) => setPrefersReducedMotion(e.matches);
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
+  }, []);
+
+  // Derive pause state: paused ONLY on pointer hover or keyboard focus
+  const isPaused = isHovered || isFocused;
+
+  // Auto-advance slides every 5.0 seconds when not paused
+  // Uses setInterval so it reliably ticks every 5 seconds without dependent state lags
   useEffect(() => {
     if (isPaused) return;
-    timerRef.current = setInterval(() => {
+
+    const interval = setInterval(() => {
+      setDirection('next');
       setActiveSlide((prev) => (prev + 1) % slideCount);
-    }, 6500);
+    }, 5000);
 
-    return () => clearInterval(timerRef.current);
-  }, [isPaused, slideCount]);
+    return () => clearInterval(interval);
+  }, [isPaused, resetKey, slideCount]);
 
-  const handlePrev = () => {
+  const handlePrev = (e) => {
+    e?.currentTarget?.blur();
+    setIsFocused(false);
+    setDirection('prev');
     setActiveSlide((prev) => (prev - 1 + slideCount) % slideCount);
+    setResetKey((k) => k + 1);
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    e?.currentTarget?.blur();
+    setIsFocused(false);
+    setDirection('next');
     setActiveSlide((prev) => (prev + 1) % slideCount);
+    setResetKey((k) => k + 1);
+  };
+
+  const goToSlide = (idx, e) => {
+    e?.currentTarget?.blur();
+    setIsFocused(false);
+    if (idx === activeSlide) {
+      setResetKey((k) => k + 1);
+      return;
+    }
+    setDirection(idx > activeSlide ? 'next' : 'prev');
+    setActiveSlide(idx);
+    setResetKey((k) => k + 1);
+  };
+
+  const handleFocus = (e) => {
+    // Only pause for intentional keyboard Tab navigation (:focus-visible), never for mouse clicks
+    if (e.target?.matches?.(':focus-visible')) {
+      setIsFocused(true);
+    }
+  };
+
+  const handleBlur = (e) => {
+    // Only unpause if focus has left the carousel container completely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsFocused(false);
+    }
   };
 
   const current = slides[activeSlide];
@@ -242,13 +306,26 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
     <section
       className="max-w-[1240px] mx-auto px-4 sm:px-6 my-10 sm:my-14"
       aria-label="Skill Showcase & Featured Tracks"
+      aria-roledescription="carousel"
     >
+      {/* Screen Reader Live Announcement */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        Slide {activeSlide + 1} of {slideCount}: {current.eyebrow} - {current.title}
+      </div>
+
       {/* Banner Card Container */}
       <div
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        onFocus={() => setIsPaused(true)}
-        onBlur={() => setIsPaused(false)}
+        id={`carousel-slide-${current.id}`}
+        role="region"
+        aria-roledescription="slide"
+        aria-label={`Slide ${activeSlide + 1} of ${slideCount}: ${current.eyebrow}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onTouchStart={() => setIsHovered(true)}
+        onTouchEnd={() => setIsHovered(false)}
+        onTouchCancel={() => setIsHovered(false)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         className={`relative rounded-3xl overflow-hidden border border-border-subtle/50 shadow-elevated bg-gradient-to-br ${current.gradientClass} text-white transition-all duration-700`}
       >
         {/* Subtle Ambient Background Mesh */}
@@ -260,7 +337,17 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           {/* LEFT: Text Content, CTA & Carousel Indicators             */}
           {/* ========================================================= */}
           <div className="col-span-1 lg:col-span-7 p-6 sm:p-10 lg:p-14 z-10 flex flex-col justify-between h-full">
-            <div>
+            {/* Animated Slide Content Panel */}
+            <div
+              key={`content-${activeSlide}`}
+              className={
+                prefersReducedMotion
+                  ? ''
+                  : direction === 'next'
+                  ? 'animate-carousel-slide-next'
+                  : 'animate-carousel-slide-prev'
+              }
+            >
               {/* Eyebrow & Badge */}
               <div className="flex items-center gap-2.5 mb-4">
                 <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/15 text-white backdrop-blur-md border border-white/20 inline-flex items-center gap-1.5">
@@ -287,7 +374,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
                 <button
                   type="button"
                   onClick={activeSlide === 1 ? onGetStarted : onExploreCourses}
-                  className="px-6 py-3 rounded-full bg-white text-neutral-900 hover:bg-neutral-100 font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-card hover-lift btn-press cursor-pointer group/cta transition-all"
+                  className="px-6 py-3 rounded-full bg-white text-neutral-900 hover:bg-neutral-100 font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-card hover-lift btn-press cursor-pointer group/cta transition-all focus:outline-none focus:ring-2 focus:ring-white"
                   aria-label={current.cta}
                 >
                   <span>{current.cta}</span>
@@ -309,43 +396,62 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
                 role="tablist"
                 aria-label="Skill Banner Slides"
               >
-                {slides.map((slide, idx) => (
-                  <button
-                    key={slide.id}
-                    type="button"
-                    onClick={() => setActiveSlide(idx)}
-                    role="tab"
-                    aria-selected={activeSlide === idx}
-                    aria-label={`Go to slide ${idx + 1}: ${slide.eyebrow}`}
-                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      activeSlide === idx
-                        ? 'w-8 bg-white shadow-xs'
-                        : 'w-2.5 bg-white/35 hover:bg-white/60'
-                    }`}
-                  />
-                ))}
+                {slides.map((slide, idx) => {
+                  const isActive = activeSlide === idx;
+                  return (
+                    <button
+                      key={slide.id}
+                      type="button"
+                      onClick={(e) => goToSlide(idx, e)}
+                      role="tab"
+                      id={`carousel-tab-${slide.id}`}
+                      aria-selected={isActive}
+                      aria-controls={`carousel-slide-${slide.id}`}
+                      aria-label={`Go to slide ${idx + 1} of ${slideCount}: ${slide.eyebrow}`}
+                      className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer overflow-hidden relative focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                        isActive
+                          ? 'w-8 bg-white/30 shadow-xs'
+                          : 'w-2.5 bg-white/35 hover:bg-white/60'
+                      }`}
+                    >
+                      {isActive && (
+                        <span
+                          key={`progress-${activeSlide}-${resetKey}-${isPaused}`}
+                          className={`absolute inset-0 rounded-full bg-white ${
+                            isPaused
+                              ? 'w-full'
+                              : 'animate-carousel-progress'
+                          }`}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Slide Counter & Arrow Buttons */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-white/60 font-medium mr-2">
+                <span
+                  className="text-xs text-white/60 font-medium mr-2 tabular-nums"
+                  aria-hidden="true"
+                >
                   0{activeSlide + 1} / 0{slideCount}
                 </span>
                 <button
                   type="button"
                   onClick={handlePrev}
-                  aria-label="Previous skill slide"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Previous slide"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/15 flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={16} aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   onClick={handleNext}
-                  aria-label="Next skill slide"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Next slide"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/15 flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -356,14 +462,23 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           {/* ========================================================= */}
           <div className="col-span-1 lg:col-span-5 relative h-full flex items-center justify-center p-6 lg:p-8 min-h-[320px] sm:min-h-[380px] lg:min-h-full overflow-hidden">
             {/* Visual Container */}
-            <div className="relative w-full max-w-md lg:max-w-none aspect-4/3 sm:aspect-16/10 lg:aspect-square flex items-center justify-center">
+            <div
+              key={`visual-${activeSlide}`}
+              className={`relative w-full max-w-md lg:max-w-none aspect-4/3 sm:aspect-16/10 lg:aspect-square flex items-center justify-center ${
+                prefersReducedMotion
+                  ? ''
+                  : direction === 'next'
+                  ? 'animate-carousel-slide-next'
+                  : 'animate-carousel-slide-prev'
+              }`}
+            >
               {/* Graphic Mask / Portal */}
               <div className="relative w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden border border-white/15 shadow-elevated">
                 <img
                   src={current.image}
                   alt={current.imageAlt}
                   className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
-                  loading="lazy"
+                  loading="eager"
                 />
                 {/* Subtle gradient vignette to blend with banner background */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />

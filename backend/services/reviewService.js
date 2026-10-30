@@ -623,6 +623,143 @@ const moderateReview = async ({ adminUser, reviewId, action, reason = '' }) => {
   };
 };
 
+/**
+ * Retrieve public student testimonials for landing page carousel.
+ * Only reviews with moderationStatus === 'approved', non-empty reviewText,
+ * with published courses, and populated safe reviewer details.
+ */
+const getTestimonials = async ({ limit = 10 } = {}) => {
+  const parsedLimit = Math.min(20, Math.max(1, parseInt(limit, 10) || 10));
+
+  // Query reviews with approved moderation
+  const filter = {
+    moderationStatus: 'approved',
+  };
+
+  let rawReviews = [];
+  try {
+    const query = Review.find(filter)
+      .populate('student', 'name avatar role')
+      .populate('course', 'title slug status')
+      .sort({ rating: -1, createdAt: -1 })
+      .limit(parsedLimit * 2);
+
+    rawReviews = await (query && query.lean ? query.lean() : query);
+  } catch (err) {
+    logger.warn(`getTestimonials query error: ${err.message}`);
+    return { testimonials: [], total: 0 };
+  }
+
+  if (!rawReviews || !Array.isArray(rawReviews) || rawReviews.length === 0) {
+    return { testimonials: [], total: 0 };
+  }
+
+  // Filter out any review where reviewText is missing/empty, or student is missing
+  const textReviews = rawReviews.filter((r) => {
+    const hasText = r.reviewText && typeof r.reviewText === 'string' && r.reviewText.trim().length >= 3;
+    const hasStudent = Boolean(r.student);
+    return hasText && hasStudent;
+  });
+
+  if (textReviews.length === 0) {
+    return { testimonials: [], total: 0 };
+  }
+
+  // Gather student IDs and course IDs for enrollment verification and course title resolution
+  const studentIds = [];
+  const courseIds = [];
+  textReviews.forEach((r) => {
+    const sId = r.student?._id || r.student;
+    if (sId) studentIds.push(sId);
+    const cId = r.course?._id || r.course;
+    if (cId) courseIds.push(cId);
+  });
+
+  // Check enrollment completion status safely
+  const completionSet = new Set();
+  try {
+    if (Enrollment && typeof Enrollment.find === 'function') {
+      const enrollQuery = Enrollment.find({
+        student: { $in: studentIds },
+        course: { $in: courseIds },
+        status: { $in: ['active', 'completed'] },
+      }).select('student course isCompleted status');
+
+      const enrollments = await (enrollQuery && enrollQuery.lean ? enrollQuery.lean() : enrollQuery);
+
+      if (Array.isArray(enrollments)) {
+        enrollments.forEach((e) => {
+          if (e.isCompleted || e.status === 'completed') {
+            const sKey = e.student?._id ? e.student._id.toString() : e.student?.toString();
+            const cKey = e.course?._id ? e.course._id.toString() : e.course?.toString();
+            if (sKey && cKey) completionSet.add(`${sKey}_${cKey}`);
+          }
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn(`getTestimonials enrollment check error: ${err.message}`);
+  }
+
+  // Map to strictly public-safe fields
+  const testimonials = [];
+  for (const r of textReviews) {
+    if (testimonials.length >= parsedLimit) break;
+
+    let courseTitle = 'Featured Course';
+    let courseSlug = '';
+    let courseId = '';
+
+    if (r.course && typeof r.course === 'object' && r.course.title) {
+      // If course has status and status !== 'published', skip it
+      if (r.course.status && r.course.status !== 'published') {
+        continue;
+      }
+      courseTitle = r.course.title;
+      courseSlug = r.course.slug || '';
+      courseId = r.course._id ? r.course._id.toString() : '';
+    } else if (r.course) {
+      courseId = r.course.toString();
+    }
+
+    const sId = r.student?._id ? r.student._id.toString() : r.student?.toString() || '';
+    const isCompleted = completionSet.has(`${sId}_${courseId}`);
+
+    // Resolve avatar url cleanly
+    let avatarUrl = null;
+    if (r.student?.avatar) {
+      if (typeof r.student.avatar === 'string' && r.student.avatar.trim()) {
+        avatarUrl = r.student.avatar.trim();
+      } else if (r.student.avatar.url && typeof r.student.avatar.url === 'string') {
+        avatarUrl = r.student.avatar.url.trim();
+      }
+    }
+
+    testimonials.push({
+      _id: r._id.toString(),
+      rating: typeof r.rating === 'number' ? r.rating : 5,
+      reviewText: r.reviewText.trim(),
+      createdAt: r.createdAt,
+      student: {
+        name: r.student?.name || 'Verified Learner',
+        avatar: avatarUrl ? { url: avatarUrl } : null,
+        role: r.student?.role === 'student' ? 'Student' : (r.student?.role || 'Learner'),
+        isCourseCompleted: isCompleted,
+      },
+      course: {
+        id: courseId,
+        title: courseTitle,
+        slug: courseSlug,
+      },
+    });
+  }
+
+  return {
+    testimonials,
+    total: testimonials.length,
+  };
+};
+
 module.exports = {
   calculateRatingSummary,
   getBatchCourseRatings,
@@ -634,4 +771,5 @@ module.exports = {
   getCourseReviews,
   getAdminReviews,
   moderateReview,
+  getTestimonials,
 };

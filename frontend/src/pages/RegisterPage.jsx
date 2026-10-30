@@ -122,20 +122,20 @@ export default function RegisterPage() {
         formSubtitle="A confirmation email has been dispatched to your inbox."
       >
         <div className="py-2 text-center">
-          <div className="w-12 h-12 bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
             <CheckCircle2 size={24} />
           </div>
-          <h3 className="text-base font-bold text-[#171717] mb-2">
+          <h3 className="text-base font-bold text-primary mb-2">
             Check your inbox, {registeredStudentNotice.name}
           </h3>
-          <p className="text-xs text-[#686868] leading-relaxed mb-6">
-            We sent a verification link to <strong className="text-[#171717]">{registeredStudentNotice.email}</strong>. Click the link to complete verification and secure your coursework credentials.
+          <p className="text-xs text-secondary leading-relaxed mb-6">
+            We sent a verification link to <strong className="text-primary">{registeredStudentNotice.email}</strong>. Click the link to complete verification and secure your coursework credentials.
           </p>
           <div className="flex flex-col gap-2.5">
             <button
               type="button"
               onClick={() => navigate('/student/dashboard', { replace: true })}
-              className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Continue to Student Workspace</span>
               <ArrowRight size={13} />
@@ -158,26 +158,26 @@ export default function RegisterPage() {
         formSubtitle="Your instructor profile is currently under administrator review."
       >
         <div className="py-2 text-center">
-          <div className="w-12 h-12 bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
             <CheckCircle2 size={24} />
           </div>
-          <h3 className="text-base font-bold text-[#171717] mb-2">
+          <h3 className="text-base font-bold text-primary mb-2">
             Verification in Progress
           </h3>
-          <p className="text-xs text-[#686868] leading-relaxed mb-6">
+          <p className="text-xs text-secondary leading-relaxed mb-6">
             {pendingInstructorNotice} Once approved by our team, you will receive an invitation email to activate your instructor console.
           </p>
           <div className="flex flex-col gap-2.5">
             <Link
               to="/login"
-              className="w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all inline-flex items-center justify-center gap-1.5"
+              className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5"
             >
               <span>Return to Sign In</span>
               <ArrowRight size={13} />
             </Link>
             <Link
               to="/"
-              className="w-full h-11 px-4 rounded-xl bg-[#F8F8F6] text-[#686868] hover:text-[#171717] border border-[#E4E4E1] text-xs font-semibold transition-all inline-flex items-center justify-center"
+              className="w-full h-11 px-4 rounded-xl bg-surface-subtle text-secondary hover:text-primary border border-border-subtle text-xs font-semibold transition-all inline-flex items-center justify-center"
             >
               Explore Course Catalog
             </Link>
@@ -210,11 +210,11 @@ export default function RegisterPage() {
 
       {/* Account Type Selector (Compact Segmented Control) */}
       <div className="mb-3">
-        <label className="block text-xs font-semibold text-[#171717] mb-1">
+        <label className="block text-xs font-semibold text-primary mb-1">
           I am joining as:
         </label>
         <div
-          className="grid grid-cols-2 gap-1.5 p-1 bg-[#F8F8F6] border border-[#E4E4E1] rounded-xl"
+          className="grid grid-cols-2 gap-1.5 p-1 bg-surface-subtle border border-border-subtle rounded-xl"
           role="tablist"
         >
           <button
@@ -224,8 +224,8 @@ export default function RegisterPage() {
             onClick={() => setRole('student')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               role === 'student'
-                ? 'bg-white text-[#171717] shadow-2xs border border-[#E4E4E1]/80'
-                : 'text-[#686868] hover:text-[#171717]'
+                ? 'bg-surface text-cobalt shadow-2xs border border-cobalt-border/60'
+                : 'text-secondary hover:text-primary'
             }`}
           >
             <GraduationCap size={14} />
@@ -238,8 +238,8 @@ export default function RegisterPage() {
             onClick={() => setRole('instructor')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               role === 'instructor'
-                ? 'bg-white text-[#171717] shadow-2xs border border-[#E4E4E1]/80'
-                : 'text-[#686868] hover:text-[#171717]'
+                ? 'bg-surface text-cobalt shadow-2xs border border-cobalt-border/60'
+                : 'text-secondary hover:text-primary'
             }`}
           >
             <Briefcase size={14} />
@@ -247,8 +247,8 @@ export default function RegisterPage() {
           </button>
         </div>
         {role === 'instructor' && (
-          <p className="mt-1 text-[11px] text-[#4A6376] leading-tight flex items-center gap-1">
-            <Sparkles size={11} className="text-[#637D91]" />
+          <p className="mt-1 text-[11px] text-cobalt leading-tight flex items-center gap-1">
+            <Sparkles size={11} className="text-cobalt" />
             <span>Instructor accounts require approval before publishing courses.</span>
           </p>
         )}
@@ -259,7 +259,7 @@ export default function RegisterPage() {
         <div>
           <label
             htmlFor="register-name"
-            className="block text-xs font-semibold text-[#171717] mb-1"
+            className="block text-xs font-semibold text-primary mb-1"
           >
             Full Name
           </label>
@@ -272,7 +272,7 @@ export default function RegisterPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Alex Rivera"
             disabled={submitting}
-            className="w-full h-10 px-3.5 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+            className="w-full h-10 px-3.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
           />
         </div>
 
@@ -280,7 +280,7 @@ export default function RegisterPage() {
         <div>
           <label
             htmlFor="register-email"
-            className="block text-xs font-semibold text-[#171717] mb-1"
+            className="block text-xs font-semibold text-primary mb-1"
           >
             Email Address
           </label>
@@ -293,7 +293,7 @@ export default function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="alex@example.com"
             disabled={submitting}
-            className="w-full h-10 px-3.5 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+            className="w-full h-10 px-3.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
           />
         </div>
 
@@ -301,7 +301,7 @@ export default function RegisterPage() {
         <div>
           <label
             htmlFor="register-password"
-            className="block text-xs font-semibold text-[#171717] mb-1"
+            className="block text-xs font-semibold text-primary mb-1"
           >
             Password
           </label>
@@ -315,13 +315,13 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Minimum 8 characters"
               disabled={submitting}
-              className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+              className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8A8A86] hover:text-[#171717] p-1 transition-colors cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary hover:text-primary p-1 transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -332,8 +332,8 @@ export default function RegisterPage() {
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-colors ${
                 hasMinLength
-                  ? 'bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40'
-                  : 'bg-[#F8F8F6] text-[#8A8A86] border border-[#E4E4E1]'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-surface-subtle text-tertiary border border-border-subtle'
               }`}
             >
               <CheckCircle2 size={10} /> 8+ chars
@@ -341,8 +341,8 @@ export default function RegisterPage() {
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-colors ${
                 hasLetter
-                  ? 'bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40'
-                  : 'bg-[#F8F8F6] text-[#8A8A86] border border-[#E4E4E1]'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-surface-subtle text-tertiary border border-border-subtle'
               }`}
             >
               <CheckCircle2 size={10} /> Letters
@@ -350,8 +350,8 @@ export default function RegisterPage() {
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-colors ${
                 hasNumber
-                  ? 'bg-[#EDF0E9] text-[#5F7158] border border-[#A8B5A0]/40'
-                  : 'bg-[#F8F8F6] text-[#8A8A86] border border-[#E4E4E1]'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-surface-subtle text-tertiary border border-border-subtle'
               }`}
             >
               <CheckCircle2 size={10} /> Numbers
@@ -363,7 +363,7 @@ export default function RegisterPage() {
         <div>
           <label
             htmlFor="register-confirm-password"
-            className="block text-xs font-semibold text-[#171717] mb-1"
+            className="block text-xs font-semibold text-primary mb-1"
           >
             Confirm Password
           </label>
@@ -377,17 +377,17 @@ export default function RegisterPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-type password"
               disabled={submitting}
-              className={`w-full h-10 pl-3.5 pr-10 rounded-xl border bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:ring-1 disabled:opacity-60 placeholder:text-[#8A8A86] ${
+              className={`w-full h-10 pl-3.5 pr-10 rounded-xl border bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:ring-2 disabled:opacity-60 placeholder:text-tertiary ${
                 confirmPassword && !passwordsMatch
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                  : 'border-[#E4E4E1] focus:border-[#171717] focus:ring-[#171717]'
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30'
+                  : 'border-border-subtle focus:border-cobalt focus:ring-focus-ring/30'
               }`}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8A8A86] hover:text-[#171717] p-1 transition-colors cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary hover:text-primary p-1 transition-colors cursor-pointer"
             >
               {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -398,7 +398,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-1 w-full h-11 px-4 rounded-xl bg-[#171717] text-white text-xs sm:text-sm font-semibold hover:bg-[#2b2b2b] hover:-translate-y-0.5 active:translate-y-0 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+          className="mt-1 w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs sm:text-sm font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
         >
           {submitting ? (
             <>
@@ -414,11 +414,11 @@ export default function RegisterPage() {
         </button>
 
         {/* Switch to Login */}
-        <div className="text-center pt-2.5 border-t border-[#E4E4E1] text-xs text-[#686868]">
+        <div className="text-center pt-2.5 border-t border-divider text-xs text-secondary">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="font-semibold text-[#171717] hover:underline"
+            className="font-semibold text-cobalt hover:text-cobalt-hover hover:underline"
           >
             Sign in
           </Link>

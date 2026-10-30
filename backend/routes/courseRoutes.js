@@ -29,8 +29,13 @@ const {
   createReview,
   updateReview,
   deleteReview,
+  getTestimonials,
 } = require('../controllers/reviewController');
 const { protect, restrictTo, optionalProtect } = require('../middleware/authMiddleware');
+
+// Public verified student testimonials (placed before :idOrSlug to prevent route capture)
+router.get('/testimonials', getTestimonials);
+router.get('/reviews/testimonials', getTestimonials);
 
 // Public & authenticated course browsing
 router.get('/', optionalProtect, getCourses);

@@ -438,7 +438,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('approvals')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-neutral-800 hover-lift btn-press transition-all cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition-all cursor-pointer shadow-sm shadow-cobalt/20"
                   >
                     <ShieldAlert size={14} strokeWidth={1.75} />
                     <span>Review Instructor Queue ({pendingInstructors.length})</span>
@@ -868,14 +868,14 @@ export default function AdminDashboard() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search name or email..."
-                        className="pl-8 pr-3 py-2 text-xs bg-surface-subtle border border-border-subtle rounded-xl focus:outline-none focus:bg-white focus:border-primary text-primary w-48 sm:w-60"
+                        className="pl-8 pr-3 py-2 text-xs bg-surface-subtle border border-border-subtle rounded-xl focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-primary w-48 sm:w-60"
                       />
                     </div>
 
                     <select
                       value={roleFilter}
                       onChange={(e) => handleRoleFilterChange(e.target.value)}
-                      className="px-3 py-2 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none cursor-pointer"
+                      className="px-3 py-2 text-xs bg-surface-subtle border border-border-subtle rounded-xl text-primary focus:outline-none focus:border-cobalt cursor-pointer"
                     >
                       <option value="">All Roles</option>
                       <option value="student">Students</option>
@@ -885,7 +885,7 @@ export default function AdminDashboard() {
 
                     <button
                       type="submit"
-                      className="px-3 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-[#2b2b2b] transition-all cursor-pointer"
+                      className="px-3 py-2 bg-cobalt text-white text-xs font-semibold rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all cursor-pointer"
                     >
                       Search
                     </button>
@@ -895,7 +895,7 @@ export default function AdminDashboard() {
                 {/* Users Table */}
                 {usersLoading ? (
                   <div className="py-12 text-center text-xs text-secondary">
-                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <div className="w-6 h-6 border-2 border-cobalt border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                     <span>Loading user records...</span>
                   </div>
                 ) : users.length > 0 ? (
@@ -1005,7 +1005,7 @@ export default function AdminDashboard() {
                   onClick={() => setModerationSubTab('courses')}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                     moderationSubTab === 'courses'
-                      ? 'bg-primary text-white shadow-xs'
+                      ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                       : 'bg-surface-subtle text-secondary hover:text-primary'
                   }`}
                 >
@@ -1019,7 +1019,7 @@ export default function AdminDashboard() {
                   }}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                     moderationSubTab === 'reviews'
-                      ? 'bg-primary text-white shadow-xs'
+                      ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                       : 'bg-surface-subtle text-secondary hover:text-primary'
                   }`}
                 >
@@ -1036,7 +1036,7 @@ export default function AdminDashboard() {
                         <h2 className="text-base font-bold text-primary">
                           Student Review Moderation
                         </h2>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cobalt-soft text-cobalt border border-cobalt-border">
                           {adminReviewTotalCount} total reviews
                         </span>
                       </div>
@@ -1056,7 +1056,7 @@ export default function AdminDashboard() {
                           }}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition capitalize cursor-pointer ${
                             adminReviewsFilter === f
-                              ? 'bg-primary text-white shadow-xs'
+                              ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                               : 'bg-surface-subtle border border-border-subtle text-secondary hover:text-primary'
                           }`}
                         >
@@ -1472,7 +1472,7 @@ export default function AdminDashboard() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                     />
                   </div>
 
@@ -1486,7 +1486,7 @@ export default function AdminDashboard() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                     />
                   </div>
 
@@ -1500,14 +1500,14 @@ export default function AdminDashboard() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-white focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={pwLoading}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {pwLoading ? 'Updating Password...' : 'Save Password'}
                   </button>

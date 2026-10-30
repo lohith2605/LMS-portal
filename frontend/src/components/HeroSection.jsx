@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Compass, Layers, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Compass } from 'lucide-react';
 import ProductPreview from './ProductPreview';
 import Reveal from './ui/Reveal';
 
@@ -45,7 +45,7 @@ export default function HeroSection({ onExploreCourses, onHowItWorks }) {
             <div className="flex items-center justify-center w-full mt-7 sm:mt-8">
               <button
                 type="button"
-                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-neutral-800 hover-lift btn-press shadow-xs transition-all cursor-pointer"
+                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press shadow-sm shadow-cobalt/20 transition-all cursor-pointer"
                 onClick={onExploreCourses}
               >
                 <span>Explore Courses</span>
@@ -53,31 +53,6 @@ export default function HeroSection({ onExploreCourses, onHowItWorks }) {
               </button>
             </div>
           </Reveal>
-
-          {/* Verified Capabilities Trust Row */}
-          <Reveal triggerOnMount delayMs={320}>
-            <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-7 pt-6 mt-6 border-t border-border-subtle text-xs text-secondary">
-              <span className="group inline-flex items-center gap-2 font-medium hover:text-primary transition-colors">
-                <span className="w-5 h-5 rounded-md bg-accent-subtle border border-accent/20 flex items-center justify-center text-accent">
-                  <Layers size={13} strokeWidth={1.75} aria-hidden="true" />
-                </span>
-                Structured curricula
-              </span>
-              <span className="group inline-flex items-center gap-2 font-medium hover:text-primary transition-colors">
-                <span className="w-5 h-5 rounded-md bg-[var(--badge-success-bg)] border border-[var(--success)]/20 flex items-center justify-center text-[var(--success)]">
-                  <ClipboardCheck size={13} strokeWidth={1.75} aria-hidden="true" />
-                </span>
-                Applied assignments
-              </span>
-              <span className="group inline-flex items-center gap-2 font-medium hover:text-primary transition-colors">
-                <span className="w-5 h-5 rounded-md bg-accent-subtle border border-accent/20 flex items-center justify-center text-accent">
-                  <ShieldCheck size={13} strokeWidth={1.75} aria-hidden="true" />
-                </span>
-                Verified progress
-              </span>
-            </div>
-          </Reveal>
-
         </div>
 
         {/* ========================================================= */}

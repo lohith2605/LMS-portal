@@ -20,6 +20,7 @@ const discussionRoutes = require('./routes/discussionRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 const { startDeadlineReminderScheduler, stopDeadlineReminderScheduler } = require('./services/deadlineReminderScheduler');
 const http = require('http');
 const { initSocket } = require('./services/socketService');
@@ -82,6 +83,7 @@ app.use('/api/discussions', discussionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 
 // Root route

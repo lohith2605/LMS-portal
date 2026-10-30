@@ -150,7 +150,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition-all cursor-pointer disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all cursor-pointer disabled:opacity-50"
             >
               {loading ? 'Updating...' : 'Save Password'}
             </button>

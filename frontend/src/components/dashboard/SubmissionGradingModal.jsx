@@ -186,7 +186,7 @@ export default function SubmissionGradingModal({
                       href={assignmentService.getFileDownloadUrl(file.fileUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:bg-[#2b2b2b] transition shrink-0"
+                      className="px-3 py-1.5 rounded-lg bg-cobalt text-white text-[11px] font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition shrink-0 shadow-sm shadow-cobalt/20"
                     >
                       View / Open
                     </a>
@@ -329,7 +329,7 @@ export default function SubmissionGradingModal({
                 <button
                   type="submit"
                   disabled={saving || returning}
-                  className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-[#2b2b2b] transition cursor-pointer shadow-xs disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-cobalt text-white font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed transition cursor-pointer shadow-sm shadow-cobalt/20 disabled:opacity-50"
                 >
                   <Send size={14} />
                   <span>{saving ? 'Saving...' : 'Submit Evaluation'}</span>

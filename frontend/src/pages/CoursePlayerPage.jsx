@@ -579,11 +579,11 @@ export default function CoursePlayerPage() {
             onClick={handleOpenDiscussions}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               activeView === 'discussions'
-                ? 'bg-blue-50 text-blue-800 border border-blue-300'
+                ? 'bg-cobalt-soft text-cobalt border border-cobalt-border'
                 : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
             }`}
           >
-            <MessageSquare size={14} className="text-accent-blue-dark" />
+            <MessageSquare size={14} className="text-cobalt" />
             <span className="hidden sm:inline">Q&A Forum</span>
           </button>
 
@@ -601,7 +601,7 @@ export default function CoursePlayerPage() {
               className={
                 isCertIssued || isEligibleToClaim
                   ? 'text-emerald-700'
-                  : 'text-accent-sage-dark'
+                  : 'text-cobalt'
               }
             />
             <span className="hidden sm:inline">
@@ -631,23 +631,23 @@ export default function CoursePlayerPage() {
         {/* Playlist Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? 'w-80 border-r border-[#E4E4E1]' : 'w-0'
-          } bg-[#FFFFFF] transition-all duration-200 shrink-0 overflow-y-auto flex flex-col z-20 absolute md:relative inset-y-0 left-0 shadow-md md:shadow-none`}
+            sidebarOpen ? 'w-80 border-r border-border-subtle' : 'w-0'
+          } bg-surface transition-all duration-200 shrink-0 overflow-y-auto flex flex-col z-20 absolute md:relative inset-y-0 left-0 shadow-md md:shadow-none`}
         >
           {/* Completion Progress Header */}
           <div
             onClick={() => setActiveView('completion')}
-            className={`p-4 border-b border-[#E4E4E1] cursor-pointer transition ${
-              activeView === 'completion' ? 'bg-accent-sage-pale/40' : 'bg-[#FAFAFA] hover:bg-[#F2F2F0]'
+            className={`p-4 border-b border-border-subtle cursor-pointer transition ${
+              activeView === 'completion' ? 'bg-cobalt-soft/60' : 'bg-surface-subtle hover:bg-surface'
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-accent-sage-dark">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-cobalt">
                 Course Progress
               </span>
               <span className="text-xs font-bold text-primary">{progressPercent}%</span>
             </div>
-            <div className="w-full h-1.5 bg-[#E4E4E1] rounded-full overflow-hidden mb-2">
+            <div className="w-full h-1.5 bg-border-subtle rounded-full overflow-hidden mb-2">
               <div
                 className="h-full bg-emerald-600 transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
@@ -742,21 +742,21 @@ export default function CoursePlayerPage() {
                         onClick={() => handleSelectQuiz(quiz)}
                         className={`w-full px-4 py-2.5 flex items-center justify-between text-left transition cursor-pointer ${
                           isSelected
-                            ? 'bg-accent-sage-pale/60 border-l-3 border-accent-sage-dark text-[#171717]'
-                            : 'hover:bg-[#F2F2F0] text-[#686868]'
+                            ? 'bg-cobalt-soft border-l-3 border-cobalt text-primary'
+                            : 'hover:bg-surface-subtle text-secondary'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
                           <Award
                             size={14}
                             className={`shrink-0 ${
-                              hasPassed ? 'text-emerald-600' : 'text-accent-sage-dark'
+                              hasPassed ? 'text-emerald-600' : 'text-cobalt'
                             }`}
                           />
                           <div className="min-w-0">
                             <span
                               className={`text-xs block truncate ${
-                                isSelected ? 'font-bold text-[#171717]' : 'font-medium'
+                                isSelected ? 'font-bold text-primary' : 'font-medium'
                               }`}
                             >
                               {quiz.title}
@@ -795,14 +795,14 @@ export default function CoursePlayerPage() {
                 onClick={handleOpenDiscussions}
                 className={`w-full px-4 py-2.5 flex items-center justify-between text-left transition cursor-pointer ${
                   activeView === 'discussions'
-                    ? 'bg-blue-50 text-blue-800 font-semibold border-r-2 border-accent-blue-dark'
-                    : 'hover:bg-[#F2F2F0] text-[#686868]'
+                    ? 'bg-cobalt-soft text-cobalt font-semibold border-r-2 border-cobalt'
+                    : 'hover:bg-surface-subtle text-secondary'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <MessageSquare
                     size={14}
-                    className={activeView === 'discussions' ? 'text-accent-blue-dark' : 'text-tertiary'}
+                    className={activeView === 'discussions' ? 'text-cobalt' : 'text-tertiary'}
                   />
                   <span className="text-xs">Q&A & Discussion Forum</span>
                 </div>
@@ -953,7 +953,7 @@ export default function CoursePlayerPage() {
                         className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer self-start sm:self-auto ${
                           isLessonCompleted
                             ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
-                            : 'bg-[#171717] text-white hover:bg-[#2b2b2b] shadow-sm'
+                            : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
                         }`}
                       >
                         <CheckCircle size={15} />
@@ -1065,7 +1065,7 @@ export default function CoursePlayerPage() {
                 {quizDetailsLoading ? (
                   <div className="h-80 bg-white border border-border-subtle rounded-2xl flex items-center justify-center animate-pulse">
                     <div className="text-center space-y-2">
-                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                      <div className="w-8 h-8 border-2 border-cobalt border-t-transparent rounded-full animate-spin mx-auto" />
                       <p className="text-xs text-secondary">Preparing assessment environment...</p>
                     </div>
                   </div>
@@ -1078,7 +1078,7 @@ export default function CoursePlayerPage() {
                   <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-subtle">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-sage-dark uppercase tracking-wider mb-1">
+                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cobalt uppercase tracking-wider mb-1">
                           <Award size={14} />
                           <span>Course Assessment</span>
                         </div>
@@ -1157,7 +1157,7 @@ export default function CoursePlayerPage() {
                           quizAttempts.length >= activeQuiz.maxAttempts &&
                           !activeQuiz.userStats?.hasPassed
                         }
-                        className="w-full sm:w-auto px-6 py-3 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#2b2b2b] transition cursor-pointer shadow-xs disabled:opacity-50"
+                        className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cobalt text-white text-xs font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
                       >
                         {quizAttempts.length === 0
                           ? 'Start Assessment'
@@ -1255,7 +1255,7 @@ export default function CoursePlayerPage() {
                             onClick={() => setCurrentQuestionIdx(idx)}
                             className={`w-7 h-7 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center ${
                               isCurrent
-                                ? 'bg-primary text-white shadow-xs'
+                                ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                                 : isAnswered
                                 ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                                 : 'bg-surface-subtle text-secondary hover:bg-border-subtle'
@@ -1299,8 +1299,8 @@ export default function CoursePlayerPage() {
                                       onClick={() => handleSelectOption(question._id, opt.id)}
                                       className={`p-4 rounded-2xl border text-xs sm:text-sm font-medium flex items-center gap-3 cursor-pointer transition ${
                                         isChecked
-                                          ? 'bg-accent-sage-pale/60 border-accent-sage-dark text-primary shadow-xs'
-                                          : 'bg-surface-subtle border-border-subtle text-secondary hover:bg-white hover:border-primary/40'
+                                          ? 'bg-cobalt-soft border-cobalt text-primary shadow-xs'
+                                          : 'bg-surface-subtle border-border-subtle text-secondary hover:bg-white hover:border-cobalt-border'
                                       }`}
                                     >
                                       <input
@@ -1308,7 +1308,7 @@ export default function CoursePlayerPage() {
                                         name={`question_${question._id}`}
                                         checked={isChecked}
                                         onChange={() => {}}
-                                        className="w-4 h-4 text-primary focus:ring-primary"
+                                        className="w-4 h-4 text-cobalt focus:ring-cobalt"
                                       />
                                       <span className="flex-1">{opt.text}</span>
                                     </label>
@@ -1338,7 +1338,7 @@ export default function CoursePlayerPage() {
                                           Math.min(currentAttempt.questions.length - 1, prev + 1)
                                         )
                                       }
-                                      className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition cursor-pointer"
+                                      className="px-5 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer"
                                     >
                                       Next &rarr;
                                     </button>
@@ -1415,7 +1415,7 @@ export default function CoursePlayerPage() {
                         <button
                           type="button"
                           onClick={handleStartAttempt}
-                          className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#2b2b2b] transition cursor-pointer"
+                          className="px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer"
                         >
                           Retake Assessment
                         </button>
@@ -1533,7 +1533,7 @@ export default function CoursePlayerPage() {
                 {/* Status Card */}
                 {completionLoading && !completionData ? (
                   <div className="bg-white border border-border-subtle rounded-3xl p-10 text-center space-y-3">
-                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <div className="w-8 h-8 border-2 border-cobalt border-t-transparent rounded-full animate-spin mx-auto" />
                     <p className="text-xs text-secondary">
                       Auditing graduation criteria and verified course progress...
                     </p>
@@ -1554,7 +1554,7 @@ export default function CoursePlayerPage() {
                     <button
                       type="button"
                       onClick={fetchQuizzesAndCompletion}
-                      className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-[#2e2e2e] transition cursor-pointer"
+                      className="px-4 py-2 bg-cobalt text-white text-xs font-semibold rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer"
                     >
                       Retry Verification
                     </button>
@@ -1563,7 +1563,7 @@ export default function CoursePlayerPage() {
                   <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-subtle">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-sage-dark uppercase tracking-wider mb-1">
+                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cobalt uppercase tracking-wider mb-1">
                           <ShieldCheck size={14} />
                           <span>Graduation & Credentialing</span>
                         </div>
@@ -1582,7 +1582,7 @@ export default function CoursePlayerPage() {
                             <CheckCircle2 size={15} /> Certificate Issued
                           </span>
                         ) : isEligibleToClaim ? (
-                          <span className="px-4 py-2 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40 font-bold text-xs flex items-center gap-1.5">
+                          <span className="px-4 py-2 rounded-full bg-cobalt-soft text-cobalt border border-cobalt-border font-bold text-xs flex items-center gap-1.5">
                             <CheckCircle2 size={15} /> Ready to Claim
                           </span>
                         ) : (
@@ -1660,14 +1660,14 @@ export default function CoursePlayerPage() {
 
                     {/* Certificate Claim Action or Preview Card */}
                     {isCertIssued && certificateObj ? (
-                      <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-white to-surface-subtle border-2 border-accent-sage-dark/30 shadow-sm space-y-6">
+                      <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-white to-surface-subtle border-2 border-cobalt/30 shadow-sm space-y-6">
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-border-subtle">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-accent-sage-pale text-accent-sage-dark flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-2xl bg-cobalt-soft text-cobalt flex items-center justify-center">
                               <Award size={24} />
                             </div>
                             <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-accent-sage-dark">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-cobalt">
                                 Official Credential
                               </span>
                               <h3 className="text-base font-bold text-primary">
@@ -1684,7 +1684,7 @@ export default function CoursePlayerPage() {
                           <div className="flex items-center gap-2">
                             <Link
                               to={`/verify/${certificateObj.certificateId}`}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-[#2b2b2b] transition"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition"
                             >
                               <ExternalLink size={13} />
                               <span>Verify Page</span>

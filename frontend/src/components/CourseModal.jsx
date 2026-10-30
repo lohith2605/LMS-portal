@@ -107,7 +107,7 @@ export default function CourseModal({ course, onClose, onEnrollInterest }) {
 
         {/* Instructor */}
         <div className="flex items-center gap-3 p-3 bg-surface-subtle rounded-xl border border-border-subtle mb-6">
-          <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">
+          <div className="w-9 h-9 rounded-full bg-cobalt text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-cobalt/20">
             {course.instructor?.initials || course.instructor?.name?.slice(0, 2).toUpperCase() || 'LS'}
           </div>
           <div>
@@ -131,7 +131,7 @@ export default function CourseModal({ course, onClose, onEnrollInterest }) {
           </button>
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 px-4.5 py-2.5 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-[#2a2a2a] shadow-sm hover:shadow-card transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4.5 py-2.5 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 hover:shadow-card transition-all cursor-pointer"
             onClick={() => {
               onClose();
               onEnrollInterest(course);

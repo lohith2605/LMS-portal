@@ -47,7 +47,7 @@ export default class ErrorBoundary extends React.Component {
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition cursor-pointer shadow-sm shadow-cobalt/20"
               >
                 <RefreshCw size={13} />
                 <span>Reload Page</span>
@@ -55,7 +55,7 @@ export default class ErrorBoundary extends React.Component {
               <button
                 type="button"
                 onClick={this.handleGoHome}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F8F8F6] border border-[#E4E4E1] text-[#686868] hover:text-[#171717] text-xs font-semibold transition cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition cursor-pointer"
               >
                 <Home size={13} />
                 <span>Home</span>

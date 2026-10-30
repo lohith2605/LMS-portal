@@ -201,7 +201,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="login-email"
-            className="block text-xs font-semibold text-[#171717] mb-1.5"
+            className="block text-xs font-semibold text-primary mb-1.5"
           >
             Email Address
           </label>
@@ -214,7 +214,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             disabled={submitting || googleSubmitting}
-            className="w-full h-11 sm:h-12 px-3.5 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+            className="w-full h-11 sm:h-12 px-3.5 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
           />
         </div>
 
@@ -223,13 +223,13 @@ export default function LoginPage() {
           <div className="flex items-center justify-between mb-1.5">
             <label
               htmlFor="login-password"
-              className="block text-xs font-semibold text-[#171717]"
+              className="block text-xs font-semibold text-primary"
             >
               Password
             </label>
             <Link
               to="/forgot-password"
-              className="text-xs font-semibold text-[#4A6376] hover:text-[#171717] hover:underline transition-colors"
+              className="text-xs font-semibold text-cobalt hover:text-cobalt-hover hover:underline transition-colors"
             >
               Forgot password?
             </Link>
@@ -244,13 +244,13 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={submitting || googleSubmitting}
-              className="w-full h-11 sm:h-12 pl-3.5 pr-11 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
+              className="w-full h-11 sm:h-12 pl-3.5 pr-11 rounded-xl border border-border-subtle bg-surface-subtle text-sm text-primary transition-all focus:outline-none focus:bg-surface focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 disabled:opacity-60 placeholder:text-tertiary"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8A86] hover:text-[#171717] p-1.5 transition-colors cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-primary p-1.5 transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -261,7 +261,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={submitting || googleSubmitting}
-          className="mt-2 w-full h-11 sm:h-12 px-4 rounded-xl bg-[#171717] text-white text-sm font-semibold hover:bg-[#2b2b2b] hover:-translate-y-0.5 active:translate-y-0 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+          className="mt-2 w-full h-11 sm:h-12 px-4 rounded-xl bg-cobalt text-white text-sm font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
         >
           {submitting ? (
             <>
@@ -278,8 +278,8 @@ export default function LoginPage() {
 
         {/* Divider */}
         <div className="relative my-4 flex items-center justify-center">
-          <div className="border-t border-[#E4E4E1] w-full" />
-          <span className="bg-white px-3 text-xs uppercase tracking-wider text-[#8A8A86] font-medium absolute">
+          <div className="border-t border-divider w-full" />
+          <span className="bg-surface px-3 text-xs uppercase tracking-wider text-tertiary font-medium absolute">
             or
           </span>
         </div>
@@ -290,11 +290,11 @@ export default function LoginPage() {
           onClick={handleGoogleSignIn}
           disabled={submitting || googleSubmitting}
           aria-label="Continue with Google"
-          className="w-full h-11 sm:h-12 px-4 rounded-xl border border-[#E4E4E1] bg-white text-sm font-semibold text-[#171717] hover:bg-[#F8F8F6] hover:border-[#D0D0CE] active:bg-[#F0F0EE] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
+          className="w-full h-11 sm:h-12 px-4 rounded-xl border border-border-subtle bg-surface text-sm font-semibold text-primary hover:bg-surface-subtle hover:border-border-medium active:bg-surface transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
         >
           {googleSubmitting ? (
             <>
-              <div className="w-4 h-4 border-2 border-[#171717]/30 border-t-[#171717] rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-cobalt/30 border-t-cobalt rounded-full animate-spin" />
               <span>Connecting to Google...</span>
             </>
           ) : (
@@ -306,11 +306,11 @@ export default function LoginPage() {
         </button>
 
         {/* Switch to Register */}
-        <div className="text-center pt-3 border-t border-[#E4E4E1] text-xs text-[#686868]">
+        <div className="text-center pt-3 border-t border-divider text-xs text-secondary">
           Don't have an account yet?{' '}
           <Link
             to="/register"
-            className="font-semibold text-[#171717] hover:underline"
+            className="font-semibold text-cobalt hover:text-cobalt-hover hover:underline"
           >
             Create an account
           </Link>

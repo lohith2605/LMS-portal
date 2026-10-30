@@ -6,23 +6,38 @@ import ThemeToggle from '../ThemeToggle';
 export default function DashboardHeader({
   user,
   logout,
+  isCollapsed = false,
+  isDesktop = true,
+  onToggleSidebar,
   onOpenMobileNav,
   onOpenNotifications,
   unreadCount = 0,
   onOpenPasswordModal,
   onOpenAvatarModal,
 }) {
+  const toggleLabel = isDesktop
+    ? (isCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar')
+    : 'Open navigation drawer';
+
+  const toggleTitle = isDesktop
+    ? (isCollapsed ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)')
+    : 'Open navigation drawer';
+
   return (
     <header className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border-subtle h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-      {/* Left: Mobile Toggle */}
+      {/* Left: Responsive Sidebar / Drawer Toggle */}
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={onOpenMobileNav}
-          aria-label="Open navigation drawer"
-          className="lg:hidden p-2 rounded-xl border border-border-subtle bg-surface text-secondary hover:text-primary transition-colors cursor-pointer"
+          id="sidebar-toggle-btn"
+          onClick={onToggleSidebar || onOpenMobileNav}
+          aria-label={toggleLabel}
+          aria-expanded={isDesktop ? !isCollapsed : false}
+          aria-controls={isDesktop ? 'dashboard-sidebar' : 'mobile-nav-dialog'}
+          title={toggleTitle}
+          className="p-2 rounded-xl border border-border-subtle bg-surface text-secondary hover:text-primary hover:bg-surface-subtle transition-colors cursor-pointer flex items-center justify-center focus-visible:outline-2 focus-visible:outline-cobalt focus-visible:outline-offset-2"
         >
-          <Menu size={18} />
+          <Menu size={18} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
 

@@ -358,7 +358,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 statusFilter === tab.id
-                  ? 'bg-primary text-white shadow-xs'
+                  ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                   : 'bg-surface-subtle text-secondary hover:text-primary hover:bg-white border border-border-subtle'
               }`}
             >
@@ -436,11 +436,11 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                       onClick={() => setSelectedDate(cell.date)}
                       className={`min-h-[75px] sm:min-h-[85px] p-1 sm:p-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between text-left ${
                         cell.isSelected
-                          ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary'
+                          ? 'border-cobalt bg-cobalt-light/40 shadow-xs ring-1 ring-focus-ring/40'
                           : cell.isToday
-                          ? 'border-accent-blue-dark/50 bg-blue-50/20 hover:border-border-subtle hover:bg-surface-subtle'
+                          ? 'border-cobalt/60 bg-cobalt-light/30 hover:border-cobalt-border hover:bg-cobalt-soft/40'
                           : hasEvents
-                          ? 'border-border-subtle bg-white hover:border-primary/50 hover:bg-surface-subtle/40'
+                          ? 'border-border-subtle bg-white hover:border-cobalt/50 hover:bg-surface-blue/40'
                           : 'border-border-subtle/60 bg-white hover:bg-surface-subtle/40'
                       }`}
                     >
@@ -449,9 +449,9 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                         <span
                           className={`text-xs font-extrabold w-5 h-5 flex items-center justify-center rounded-full ${
                             cell.isToday
-                              ? 'bg-primary text-white'
+                              ? 'bg-cobalt text-white'
                               : cell.isSelected
-                              ? 'text-primary font-black'
+                              ? 'text-cobalt font-black'
                               : 'text-primary/80'
                           }`}
                         >
@@ -618,7 +618,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
                             isCompleted
                               ? 'bg-surface-subtle text-primary border border-border-subtle hover:bg-white'
-                              : 'bg-primary text-white hover:bg-[#2b2b2b]'
+                              : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
                           }`}
                         >
                           <span>
@@ -636,7 +636,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs ${
                             isCompleted
                               ? 'bg-surface-subtle text-primary border border-border-subtle hover:bg-white'
-                              : 'bg-primary text-white hover:bg-[#2b2b2b]'
+                              : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
                           }`}
                         >
                           <span>

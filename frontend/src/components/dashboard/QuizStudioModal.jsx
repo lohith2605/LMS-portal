@@ -466,7 +466,7 @@ export default function QuizStudioModal({
                 <button
                   type="button"
                   onClick={handleSaveQuestion}
-                  className="px-4 py-2 bg-[#171717] text-white rounded-xl text-xs font-semibold hover:bg-[#2b2b2b] transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="px-4 py-2 bg-cobalt text-white rounded-xl text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition flex items-center gap-1.5 cursor-pointer shadow-sm shadow-cobalt/20"
                 >
                   <Plus size={14} />
                   <span>{editingQuestionIdx !== null ? 'Save Question Edit' : 'Add Question'}</span>
@@ -557,7 +557,7 @@ export default function QuizStudioModal({
               type="button"
               onClick={handlePublish}
               disabled={saving || publishing || formData.questions.length === 0}
-              className="px-4 py-2 rounded-xl bg-[#171717] text-white text-xs font-semibold hover:bg-[#2b2b2b] transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
+              className="px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm shadow-cobalt/20"
             >
               <Send size={14} />
               <span>{publishing ? 'Publishing...' : 'Publish Quiz'}</span>

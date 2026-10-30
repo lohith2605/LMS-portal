@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import BrandLogo from '../ui/BrandLogo';
 import {
   X,
@@ -107,12 +106,14 @@ export default function MobileNavigation({
       role="dialog"
       aria-modal="true"
       aria-labelledby="mobile-nav-title"
+      id="mobile-nav-dialog"
       className="fixed inset-0 z-50 lg:hidden"
     >
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+        aria-hidden="true"
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity cursor-pointer"
       />
 
       {/* Drawer */}
@@ -153,7 +154,7 @@ export default function MobileNavigation({
                     onClick={() => handleSelect(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
                       isActive
-                        ? 'bg-primary text-white shadow-xs'
+                        ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
                         : 'text-secondary hover:text-primary hover:bg-surface-subtle'
                     }`}
                   >
@@ -175,7 +176,7 @@ export default function MobileNavigation({
                 onClose();
                 if (onOpenAvatarModal) onOpenAvatarModal();
               }}
-              className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold overflow-hidden ring-1 ring-border-subtle cursor-pointer shrink-0"
+              className="w-8 h-8 rounded-lg bg-cobalt text-white flex items-center justify-center text-xs font-bold overflow-hidden ring-1 ring-border-subtle cursor-pointer shrink-0"
               title="Edit Profile Picture"
             >
               {user?.avatar?.url ? (

@@ -5,8 +5,8 @@ import { useTheme } from '../context/useTheme';
 export default function ThemeToggle({ className = '', showLabel = false }) {
   const { theme, isDark, toggleTheme } = useTheme();
 
-  const nextThemeName = isDark ? 'Paper Light' : 'Midnight Ink';
-  const currentThemeName = isDark ? 'Midnight Ink' : 'Paper Light';
+  const nextThemeName = isDark ? 'Cloud White' : 'Deep Cobalt';
+  const currentThemeName = isDark ? 'Deep Cobalt' : 'Cloud White';
 
   return (
     <button
