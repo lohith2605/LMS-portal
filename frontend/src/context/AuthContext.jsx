@@ -67,6 +67,21 @@ export function AuthProvider({ children }) {
   };
 
   /**
+   * Log in or register with verified Firebase Google ID token
+   */
+  const loginWithGoogle = async (idToken) => {
+    setError(null);
+    try {
+      const data = await authService.googleLogin(idToken);
+      setUser(data.user);
+      return data;
+    } catch (err) {
+      setError(err.normalizedMessage);
+      throw err;
+    }
+  };
+
+  /**
    * Perform registration and set user state if approved
    */
   const register = async ({ name, email, password, role }) => {
@@ -127,6 +142,7 @@ export function AuthProvider({ children }) {
     isLoading,
     error,
     login,
+    loginWithGoogle,
     register,
     logout,
     checkAuth,

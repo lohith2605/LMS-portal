@@ -14,6 +14,7 @@ const {
   uploadProfilePicture,
   deleteAsset,
 } = require('../services/cloudinaryStorageService');
+const firebaseAdmin = require('../config/firebaseAdmin');
 const { logger } = require('../utils/logger');
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -397,6 +398,143 @@ const resendVerification = async (req, res) => {
 };
 
 /**
+ * Authenticate with verified Firebase Google ID token
+ * POST /api/auth/google
+ */
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken || typeof idToken !== 'string' || !idToken.trim()) {
+      return res.status(400).json({
+        error: 'Firebase ID token is required.',
+      });
+    }
+
+    // 1. Cryptographically verify the ID token on the backend
+    let decodedToken;
+    try {
+      decodedToken = await firebaseAdmin.verifyFirebaseIdToken(idToken.trim());
+    } catch (verifyError) {
+      logger.warn(`Firebase ID token verification failed: ${verifyError.message}`);
+      if (verifyError.message && verifyError.message.includes('Firebase Admin SDK is not configured')) {
+        return res.status(503).json({
+          error: 'Google sign-in is temporarily unavailable on the server. Please check Firebase Admin credentials.',
+        });
+      }
+      return res.status(401).json({
+        error: 'Google authentication failed: invalid or expired token.',
+      });
+    }
+
+    // 2. Extract verified profile claims from decoded token
+    const { uid, email, email_verified, name, picture } = decodedToken;
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'Google account must have an associated email address.',
+      });
+    }
+
+    if (!email_verified) {
+      return res.status(403).json({
+        error: 'Your Google email address is not verified. Please verify your email with Google first.',
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 3. Find existing user by firebaseUid or email
+    let user = await User.findOne({ firebaseUid: uid });
+    let isNewUser = false;
+
+    if (!user) {
+      user = await User.findOne({ email: normalizedEmail });
+      if (user) {
+        // Link Google UID to existing account safely
+        user.firebaseUid = uid;
+        if (!user.emailVerified) {
+          user.emailVerified = true;
+        }
+        if (picture && (!user.avatar || !user.avatar.url)) {
+          user.avatar = { url: picture, publicId: null };
+        }
+        await user.save({ validateBeforeSave: false });
+        logger.info(`Linked Firebase UID to existing account: ${user.email}`);
+      }
+    }
+
+    // 4. Create new student account if user doesn't exist
+    if (!user) {
+      isNewUser = true;
+      user = await User.create({
+        name: name || normalizedEmail.split('@')[0],
+        email: normalizedEmail,
+        firebaseUid: uid,
+        role: 'student', // Strictly enforce student role - prevent client role escalation
+        accountStatus: 'active',
+        emailVerified: true,
+        avatar: { url: picture || null, publicId: null },
+      });
+      logger.info(`New user registered via Google: ${user.email} (${user.role})`);
+    }
+
+    // 5. Enforce account status policies
+    if (user.accountStatus === 'suspended') {
+      return res.status(403).json({
+        error: 'Your account has been suspended. Please contact platform support for assistance.',
+      });
+    }
+
+    if (user.accountStatus === 'pending') {
+      return res.status(403).json({
+        error: 'Your instructor account is currently pending administrator approval.',
+      });
+    }
+
+    // 6. Update last login timestamp
+    user.lastLoginAt = new Date();
+    if (picture && (!user.avatar || !user.avatar.url)) {
+          user.avatar = { url: picture, publicId: null };
+        }
+    await user.save({ validateBeforeSave: false });
+
+    // 7. Issue standard LMS session JWT cookie
+    const token = signToken(user);
+    sendAuthCookie(res, token);
+
+    logger.info(`User logged in via Google: ${user.email} (${user.role})`);
+
+    return res.status(isNewUser ? 201 : 200).json({
+      message: isNewUser
+        ? 'Welcome to LearnSpace! Your account has been created.'
+        : 'Logged in successfully with Google.',
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      try {
+        const existing = await User.findOne({ email: req.body?.email?.toLowerCase()?.trim() });
+        if (existing) {
+          const token = signToken(existing);
+          sendAuthCookie(res, token);
+          return res.status(200).json({
+            message: 'Logged in successfully with Google.',
+            user: sanitizeUser(existing),
+          });
+        }
+      } catch {}
+    }
+
+    logger.error(`Google login error: ${error.message}`);
+    return res.status(500).json({
+      error: 'An internal error occurred during Google sign-in. Please try again.',
+    });
+  }
+};
+
+
+/**
  * Update authenticated user's profile picture
  * PATCH /api/auth/profile-picture
  */
@@ -511,6 +649,7 @@ const deleteProfilePicture = async (req, res) => {
 module.exports = {
   register,
   login,
+  googleLogin,
   logout,
   getMe,
   forgotPassword,

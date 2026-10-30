@@ -333,34 +333,8 @@ export default function StudentDashboard() {
     }
   };
 
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'analytics':
-        return 'Learning Analytics';
-      case 'learning':
-        return 'My Learning';
-      case 'certificates':
-        return 'Earned Certificates';
-      case 'explore':
-        return 'Course Catalog';
-      case 'assignments':
-        return 'Assignments & Submissions';
-      case 'calendar':
-        return 'Schedule & Calendar';
-      case 'announcements':
-        return 'Announcements';
-      case 'security':
-        return 'Account & Security';
-      case 'overview':
-      default:
-        return null;
-    }
-  };
-
   return (
     <DashboardLayout
-      title={getPageTitle()}
-      subtitle={getPageTitle() ? 'Personalized learning workspace' : null}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={data?.announcements || []}

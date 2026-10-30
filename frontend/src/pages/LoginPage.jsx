@@ -10,8 +10,33 @@ import {
   Layers,
   ShieldCheck,
 } from 'lucide-react';
+import { signInWithPopup } from 'firebase/auth';
 import AuthLayout from '../layouts/AuthLayout';
 import { useAuth } from '../context/useAuth';
+import { auth, googleProvider, isFirebaseConfigured } from '../config/firebase';
+
+function GoogleIcon({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+      />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const location = useLocation();
@@ -22,9 +47,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
 
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Return to intended page if safe, otherwise role-appropriate dashboard
@@ -86,6 +112,58 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setFormError(null);
+
+    if (!isFirebaseConfigured() || !auth) {
+      setFormError(
+        'Google sign-in is currently unavailable because Firebase is not fully configured. Please ensure frontend Firebase environment variables are set.'
+      );
+      return;
+    }
+
+    try {
+      setGoogleSubmitting(true);
+      const userCredential = await signInWithPopup(auth, googleProvider);
+      const idToken = await userCredential.user.getIdToken();
+
+      const data = await loginWithGoogle(idToken);
+
+      // Navigate based on assigned role if no specific path was requested
+      if (destination === '/dashboard' && data?.user?.role) {
+        if (data.user.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else if (data.user.role === 'instructor') {
+          navigate('/instructor/dashboard', { replace: true });
+        } else {
+          navigate('/student/dashboard', { replace: true });
+        }
+      } else {
+        navigate(destination, { replace: true });
+      }
+    } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        // User intentionally closed or cancelled popup - ignore cleanly
+        return;
+      }
+      if (err.code === 'auth/popup-blocked') {
+        setFormError(
+          'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.'
+        );
+        return;
+      }
+      if (err.code === 'auth/network-request-failed') {
+        setFormError(
+          'Network connection issue during Google sign-in. Please check your internet connection.'
+        );
+        return;
+      }
+      setFormError(err.normalizedMessage || err.message || 'Google sign-in failed. Please try again.');
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  };
+
   return (
     <AuthLayout
       eyebrow="WELCOME BACK"
@@ -135,7 +213,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            disabled={submitting}
+            disabled={submitting || googleSubmitting}
             className="w-full h-11 sm:h-12 px-3.5 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
           />
         </div>
@@ -165,7 +243,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              disabled={submitting}
+              disabled={submitting || googleSubmitting}
               className="w-full h-11 sm:h-12 pl-3.5 pr-11 rounded-xl border border-[#E4E4E1] bg-[#F8F8F6] text-sm text-[#171717] transition-all focus:outline-none focus:bg-white focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:opacity-60 placeholder:text-[#8A8A86]"
             />
             <button
@@ -182,7 +260,7 @@ export default function LoginPage() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || googleSubmitting}
           className="mt-2 w-full h-11 sm:h-12 px-4 rounded-xl bg-[#171717] text-white text-sm font-semibold hover:bg-[#2b2b2b] hover:-translate-y-0.5 active:translate-y-0 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
         >
           {submitting ? (
@@ -194,6 +272,35 @@ export default function LoginPage() {
             <>
               <span>Sign In</span>
               <ArrowRight size={15} aria-hidden="true" />
+            </>
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="border-t border-[#E4E4E1] w-full" />
+          <span className="bg-white px-3 text-xs uppercase tracking-wider text-[#8A8A86] font-medium absolute">
+            or
+          </span>
+        </div>
+
+        {/* Google Sign-In Button */}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={submitting || googleSubmitting}
+          aria-label="Continue with Google"
+          className="w-full h-11 sm:h-12 px-4 rounded-xl border border-[#E4E4E1] bg-white text-sm font-semibold text-[#171717] hover:bg-[#F8F8F6] hover:border-[#D0D0CE] active:bg-[#F0F0EE] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
+        >
+          {googleSubmitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-[#171717]/30 border-t-[#171717] rounded-full animate-spin" />
+              <span>Connecting to Google...</span>
+            </>
+          ) : (
+            <>
+              <GoogleIcon className="w-4 h-4 shrink-0" />
+              <span>Continue with Google</span>
             </>
           )}
         </button>

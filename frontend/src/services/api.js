@@ -49,6 +49,14 @@ export const authService = {
   },
 
   /**
+   * Log in or register with verified Firebase Google ID token
+   */
+  googleLogin: async (idToken) => {
+    const res = await api.post('/auth/google', { idToken });
+    return res.data;
+  },
+
+  /**
    * Log out and clear session cookie
    */
   logout: async () => {

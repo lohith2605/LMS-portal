@@ -425,34 +425,8 @@ export default function InstructorDashboard() {
     setGradingModalOpen(true);
   };
 
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'analytics':
-        return 'Teaching & Course Analytics';
-      case 'courses':
-        return 'Course Management';
-      case 'assignments':
-        return 'Course Assignments';
-      case 'assessments':
-        return 'Assessments & Quizzes';
-      case 'learners':
-        return 'Enrolled Learners';
-      case 'reviews':
-        return 'Submissions & Grading';
-      case 'announcements':
-        return 'Teaching Bulletins';
-      case 'security':
-        return 'Account & Security';
-      case 'overview':
-      default:
-        return null;
-    }
-  };
-
   return (
     <DashboardLayout
-      title={getPageTitle()}
-      subtitle={getPageTitle() ? 'Educator & course administration console' : null}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={data?.announcements || []}
