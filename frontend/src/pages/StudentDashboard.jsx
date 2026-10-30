@@ -10,7 +10,6 @@ import {
   ArrowRight,
   ExternalLink,
   ShieldCheck,
-  Tag,
   KeyRound,
   Eye,
   Award,
@@ -678,35 +677,6 @@ export default function StudentDashboard() {
                       </p>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Platform Announcements */}
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
-                  <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                    <Tag size={15} className="text-accent-blue-dark" />
-                    <span>Platform Announcements</span>
-                  </h3>
-                  <span className="text-[11px] text-secondary">Verified Communications</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {data?.announcements?.map((ann) => (
-                    <div
-                      key={ann.id}
-                      className="p-4 rounded-xl border border-border-subtle bg-surface-subtle"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark">
-                          {ann.tag}
-                        </span>
-                        <span className="text-[11px] text-tertiary">{ann.date}</span>
-                      </div>
-                      <h4 className="text-xs font-bold text-primary mb-1">{ann.title}</h4>
-                      <p className="text-xs text-secondary leading-relaxed">{ann.content}</p>
-                    </div>
-                  ))}
                 </div>
               </div>
             </>
