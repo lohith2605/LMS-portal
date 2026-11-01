@@ -3,6 +3,8 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
+const Certificate = require('../models/Certificate');
+const { getPublishedLessons } = require('../utils/courseHelper');
 const { logger } = require('../utils/logger');
 
 /**
@@ -43,14 +45,17 @@ const getStudentOverview = async (req, res) => {
 
     let completedCount = 0;
     let inProgressCount = 0;
+    let notStartedCount = 0;
 
     const enrolledCourses = activeEnrollments.map((e) => {
       const c = e.course;
-      const totalLessons = (c.sections || []).reduce(
-        (sum, s) => sum + (s.lessons ? s.lessons.length : 0),
-        0
+      const validLessons = getPublishedLessons(c);
+      const totalLessons = validLessons.length;
+      const validLessonIds = new Set(validLessons.map((l) => (l._id ? l._id.toString() : '')));
+      const completedLessonsList = (e.completedLessons || []).filter((id) =>
+        validLessonIds.has(id.toString())
       );
-      const completedLessonsCount = (e.completedLessons || []).length;
+      const completedLessonsCount = completedLessonsList.length;
       const progressPercentage =
         totalLessons > 0 ? Math.min(100, Math.round((completedLessonsCount / totalLessons) * 100)) : 0;
 
@@ -58,7 +63,12 @@ const getStudentOverview = async (req, res) => {
         completedCount++;
       } else if (completedLessonsCount > 0) {
         inProgressCount++;
+      } else {
+        notStartedCount++;
       }
+
+      const completedSet = new Set(completedLessonsList.map((id) => id.toString()));
+      const nextLesson = validLessons.find((l) => !completedSet.has(l._id ? l._id.toString() : ''));
 
       return {
         id: e._id.toString(),
@@ -68,6 +78,10 @@ const getStudentOverview = async (req, res) => {
         completedCount: completedLessonsCount,
         totalLessons,
         lastAccessedAt: e.lastAccessedAt,
+        certificateIssued: Boolean(e.certificateIssued),
+        certificateId: e.certificateId || null,
+        firstLessonTitle: validLessons[0]?.title || null,
+        nextLessonTitle: nextLesson?.title || null,
         course: {
           _id: c._id.toString(),
           title: c.title,
@@ -87,6 +101,95 @@ const getStudentOverview = async (req, res) => {
         },
       };
     });
+
+    // 3a. Resolve resumeLearning: most recently accessed NON-completed enrollment
+    let resumeLearning = null;
+    const nonCompletedEnrollment = activeEnrollments.find((e) => {
+      const c = e.course;
+      const validLessons = getPublishedLessons(c);
+      const totalLessons = validLessons.length;
+      const validLessonIds = new Set(validLessons.map((l) => (l._id ? l._id.toString() : '')));
+      const completedCount = (e.completedLessons || []).filter((id) =>
+        validLessonIds.has(id.toString())
+      ).length;
+      const isCompleted =
+        e.status === 'completed' ||
+        Boolean(e.isCompleted) ||
+        (totalLessons > 0 && completedCount >= totalLessons);
+      return !isCompleted;
+    });
+
+    if (nonCompletedEnrollment) {
+      const c = nonCompletedEnrollment.course;
+      const validLessons = getPublishedLessons(c);
+      const totalLessons = validLessons.length;
+      const validLessonIds = new Set(validLessons.map((l) => (l._id ? l._id.toString() : '')));
+      const completedList = (nonCompletedEnrollment.completedLessons || []).filter((id) =>
+        validLessonIds.has(id.toString())
+      );
+      const completedSet = new Set(completedList.map((id) => id.toString()));
+      const progressPercentage =
+        totalLessons > 0 ? Math.min(100, Math.round((completedList.length / totalLessons) * 100)) : 0;
+
+      let targetSectionTitle = '';
+      let targetLessonId = '';
+      let targetLessonTitle = '';
+
+      // Check if lastAccessedLesson is valid and published
+      if (nonCompletedEnrollment.lastAccessedLesson) {
+        const lastIdStr = nonCompletedEnrollment.lastAccessedLesson.toString();
+        for (const section of c.sections || []) {
+          const found = (section.lessons || []).find(
+            (l) => l && l._id && l._id.toString() === lastIdStr && l.isPublished !== false
+          );
+          if (found) {
+            targetSectionTitle = section.title || '';
+            targetLessonId = found._id.toString();
+            targetLessonTitle = found.title || '';
+            break;
+          }
+        }
+      }
+
+      // If lastAccessedLesson is not found, unpublished, or already completed, fall back to first unfinished published lesson
+      if (!targetLessonId || completedSet.has(targetLessonId)) {
+        for (const section of c.sections || []) {
+          const unfinished = (section.lessons || []).find(
+            (l) => l && l._id && l.isPublished !== false && !completedSet.has(l._id.toString())
+          );
+          if (unfinished) {
+            targetSectionTitle = section.title || '';
+            targetLessonId = unfinished._id.toString();
+            targetLessonTitle = unfinished.title || '';
+            break;
+          }
+        }
+      }
+
+      // If still not found, fall back to first published lesson
+      if (!targetLessonId && validLessons.length > 0) {
+        const first = validLessons[0];
+        const section = (c.sections || []).find((s) =>
+          (s.lessons || []).some((l) => l && l._id && l._id.toString() === first._id.toString())
+        );
+        targetSectionTitle = section?.title || '';
+        targetLessonId = first._id ? first._id.toString() : '';
+        targetLessonTitle = first.title || '';
+      }
+
+      if (targetLessonTitle || totalLessons > 0) {
+        resumeLearning = {
+          courseId: c._id.toString(),
+          courseSlug: c.slug || '',
+          courseTitle: c.title,
+          sectionTitle: targetSectionTitle,
+          lessonId: targetLessonId,
+          lessonTitle: targetLessonTitle,
+          progressPercentage,
+          lastAccessedAt: nonCompletedEnrollment.lastAccessedAt || nonCompletedEnrollment.enrolledAt,
+        };
+      }
+    }
 
     // Query real upcoming deadlines from published course assignments
     let upcomingDeadlines = [];
@@ -131,16 +234,102 @@ const getStudentOverview = async (req, res) => {
       }
     }
 
+    // 4b. Synthesize dynamic recentActivity from real data (no new collection)
+    const activityItems = [];
+
+    // 1. Recent lesson access from active enrollments
+    for (const enr of activeEnrollments) {
+      if (enr.lastAccessedAt && enr.course) {
+        activityItems.push({
+          type: 'lesson_access',
+          text: `Studied "${enr.course.title}"`,
+          courseTitle: enr.course.title,
+          timestamp: enr.lastAccessedAt,
+          link: `/courses/${enr.course.slug}/learn`,
+        });
+      }
+    }
+
+    if (mongoose.Types.ObjectId.isValid(studentId)) {
+      try {
+        // 2. Assignment Submissions & Published Grades
+        const submissions = await AssignmentSubmission.find({ student: studentId })
+          .populate({
+            path: 'assignment',
+            select: 'title course maxMarks',
+            populate: { path: 'course', select: 'title slug' },
+          })
+          .sort({ updatedAt: -1 })
+          .limit(8)
+          .lean();
+
+        for (const sub of submissions || []) {
+          const assign = sub.assignment;
+          const course = assign?.course;
+          const cTitle = course?.title || '';
+          const cSlug = course?.slug || '';
+
+          if (sub.createdAt || sub.submittedAt) {
+            activityItems.push({
+              type: 'assignment_submission',
+              text: `Submitted assignment: "${assign?.title || 'Assignment'}"`,
+              courseTitle: cTitle,
+              timestamp: sub.submittedAt || sub.createdAt,
+              link: cSlug ? `/courses/${cSlug}/learn` : '/student/dashboard',
+            });
+          }
+
+          if (sub.status === 'graded' && sub.grade !== undefined && sub.grade !== null) {
+            activityItems.push({
+              type: 'grade_published',
+              text: `Grade published: ${sub.grade}/${assign?.maxMarks || 100} for "${assign?.title || 'Assignment'}"`,
+              courseTitle: cTitle,
+              timestamp: sub.gradedAt || sub.updatedAt,
+              link: cSlug ? `/courses/${cSlug}/learn` : '/student/dashboard',
+            });
+          }
+        }
+
+        // 3. Certificates Issued
+        const certificates = await Certificate.find({ student: studentId })
+          .select('certificateId courseTitleSnapshot issueDate course')
+          .populate('course', 'title slug')
+          .sort({ issueDate: -1 })
+          .limit(4)
+          .lean();
+
+        for (const cert of certificates || []) {
+          activityItems.push({
+            type: 'certificate_issued',
+            text: `Earned Certificate of Completion for "${cert.courseTitleSnapshot || cert.course?.title || 'Course'}"`,
+            courseTitle: cert.courseTitleSnapshot || cert.course?.title || '',
+            timestamp: cert.issueDate,
+            link: `/verify/${cert.certificateId}`,
+          });
+        }
+      } catch (actErr) {
+        logger.warn(`Recent activity synthesis fallback: ${actErr.message}`);
+      }
+    }
+
+    // Sort newest first and limit to 8
+    const recentActivity = activityItems
+      .filter((item) => item && item.timestamp)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 8);
+
     return res.status(200).json({
       overview: {
         enrolledCount: activeEnrollments.length,
         inProgressCount,
         completedCount,
+        notStartedCount,
         upcomingDeadlinesCount,
       },
+      resumeLearning,
       enrolledCourses,
       upcomingDeadlines,
-      recentActivity: [],
+      recentActivity,
       announcements: [
         {
           id: 'ann-1',

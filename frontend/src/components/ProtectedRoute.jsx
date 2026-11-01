@@ -23,7 +23,11 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 3. Pending status check
+  // 3. Pending and suspended status checks
+  if (user.accountStatus === 'suspended') {
+    return <Navigate to="/unauthorized" state={{ reason: 'suspended' }} replace />;
+  }
+
   if (user.accountStatus === 'pending') {
     return <Navigate to="/unauthorized" state={{ reason: 'pending' }} replace />;
   }
