@@ -441,3 +441,31 @@ test('14. Logging out after Google login invalidates session access', async () =
   assert.strictEqual(meRes.status, 401);
 });
 
+// ============================================================================
+// 15. Existing administrator attempting Google login on common flow is rejected
+// ============================================================================
+test('15. Existing administrator attempting Google login on common flow is rejected (403 Forbidden)', async () => {
+  const adminUser = createMockUserDoc({
+    name: 'Super Admin',
+    email: 'admin.google@learnspace.org',
+    role: 'admin',
+    accountStatus: 'active',
+  });
+  mockUsers.push(adminUser);
+
+  firebaseAdmin.verifyFirebaseIdToken = async () => ({
+    uid: 'google_uid_admin_9999',
+    email: 'admin.google@learnspace.org',
+    email_verified: true,
+    name: 'Super Admin',
+  });
+
+  const res = await request(app)
+    .post('/api/auth/google')
+    .send({ idToken: 'token_admin_google' });
+
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.body.error.includes('Administrator accounts cannot sign in via Google'));
+  assert.strictEqual(res.headers['set-cookie'], undefined);
+});
+

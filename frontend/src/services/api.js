@@ -41,10 +41,18 @@ export const authService = {
   },
 
   /**
-   * Log in with credentials
+   * Log in with credentials (Student and Instructor common portal)
    */
   login: async ({ email, password }) => {
     const res = await api.post('/auth/login', { email, password });
+    return res.data;
+  },
+
+  /**
+   * Log in with administrator credentials (Dedicated Administrator portal)
+   */
+  adminLogin: async ({ email, password }) => {
+    const res = await api.post('/auth/admin/login', { email, password });
     return res.data;
   },
 
@@ -728,7 +736,9 @@ export const notificationService = {
     return res.data;
   },
   getUnreadCount: async () => {
-    const res = await api.get('/notifications/unread-count');
+    const res = await api.get('/notifications/unread-count', {
+      headers: { 'x-background-request': 'true' },
+    });
     return res.data;
   },
   markAsRead: async (id) => {
@@ -836,6 +846,146 @@ export const contactService = {
    */
   submitMessage: async (payload) => {
     const res = await api.post('/contact', payload);
+    return res.data;
+  },
+};
+
+export const mfaService = {
+  /**
+   * Verify an active MFA login challenge or recovery code
+   */
+  verifyChallenge: async ({ preAuthToken, code, isRecoveryCode }) => {
+    const res = await api.post('/auth/mfa/verify-challenge', { preAuthToken, code, isRecoveryCode });
+    return res.data;
+  },
+
+  /**
+   * Resend Email OTP during active login challenge
+   */
+  resendEmailOtp: async (preAuthToken) => {
+    const res = await api.post('/auth/mfa/resend-email-otp', { preAuthToken });
+    return res.data;
+  },
+
+  /**
+   * Initialize first-time TOTP enrollment for an administrator
+   */
+  initAdminSetup: async (preAuthToken) => {
+    const res = await api.post('/auth/mfa/admin-init-setup', { preAuthToken });
+    return res.data;
+  },
+
+  /**
+   * Confirm first-time TOTP enrollment and finalize administrator sign in
+   */
+  confirmAdminSetup: async ({ preAuthToken, code }) => {
+    const res = await api.post('/auth/mfa/admin-confirm-setup', { preAuthToken, code });
+    return res.data;
+  },
+
+  /**
+   * Fetch current MFA configuration status for authenticated user
+   */
+  getStatus: async () => {
+    const res = await api.get('/auth/mfa/status');
+    return res.data;
+  },
+
+  /**
+   * Initialize Google Authenticator TOTP setup for authenticated user
+   */
+  setupTotp: async () => {
+    const res = await api.post('/auth/mfa/totp/setup');
+    return res.data;
+  },
+
+  /**
+   * Verify and activate TOTP setup
+   */
+  verifyTotp: async (code) => {
+    const res = await api.post('/auth/mfa/totp/verify', { code });
+    return res.data;
+  },
+
+  /**
+   * Initialize Email OTP setup for authenticated user
+   */
+  setupEmailOtp: async () => {
+    const res = await api.post('/auth/mfa/email-otp/setup');
+    return res.data;
+  },
+
+  /**
+   * Verify and activate Email OTP setup
+   */
+  verifyEmailOtp: async (code) => {
+    const res = await api.post('/auth/mfa/email-otp/verify', { code });
+    return res.data;
+  },
+
+  /**
+   * Update preferred MFA method ('totp' | 'email_otp')
+   */
+  updatePreference: async ({ preferredMethod, password }) => {
+    const res = await api.put('/auth/mfa/preference', { preferredMethod, password });
+    return res.data;
+  },
+
+  /**
+   * Invalidate old codes and regenerate 8 fresh recovery codes
+   */
+  regenerateRecoveryCodes: async (password) => {
+    const res = await api.post('/auth/mfa/recovery-codes/regenerate', { password });
+    return res.data;
+  },
+
+  /**
+   * Disable two-factor authentication (students/instructors only)
+   */
+  disableMfa: async ({ password, code }) => {
+    const res = await api.post('/auth/mfa/disable', { password, code });
+    return res.data;
+  },
+};
+
+export const sessionService = {
+  /**
+   * Fetch all active sessions for the authenticated user
+   */
+  getSessions: async () => {
+    const res = await api.get('/auth/sessions');
+    return res.data;
+  },
+
+  /**
+   * Fetch current session metadata
+   */
+  getCurrentSession: async () => {
+    const res = await api.get('/auth/sessions/current');
+    return res.data;
+  },
+
+  /**
+   * Revoke a specific session
+   */
+  revokeSession: async (sessionId) => {
+    const res = await api.delete(`/auth/sessions/${sessionId}`);
+    return res.data;
+  },
+
+  /**
+   * Revoke all other active sessions except current
+   */
+  revokeOtherSessions: async () => {
+    const res = await api.delete('/auth/sessions/other');
+    return res.data;
+  },
+
+  /**
+   * Refresh current session idle window
+   */
+  refreshSession: async () => {
+    const res = await api.post('/auth/sessions/refresh');
     return res.data;
   },
 };

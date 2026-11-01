@@ -676,3 +676,200 @@ test('26. Already verified user is rejected when requesting resend', async () =>
   assert.strictEqual(res.status, 400);
   assert.ok(res.body.error.includes('already verified'));
 });
+
+// ============================================================================
+// 27. Eligible instructor can log in through common login flow
+// ============================================================================
+test('27. Eligible instructor can log in through common login flow', async () => {
+  const instructor = createMockUserDoc({
+    name: 'Professor Smith',
+    email: 'smith@learnspace.org',
+    password: 'Password123',
+    role: 'instructor',
+    accountStatus: 'active',
+  });
+  mockUsers.push(instructor);
+
+  const res = await request(app).post('/api/auth/login').send({
+    email: 'smith@learnspace.org',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.user.role, 'instructor');
+  const cookies = res.headers['set-cookie'];
+  assert.ok(cookies && cookies.some((c) => c.includes('jwt=') && c.includes('HttpOnly')));
+});
+
+// ============================================================================
+// 28. Administrator is rejected by common login flow (403 Forbidden)
+// ============================================================================
+test('28. Administrator is rejected by common login flow (403 Forbidden)', async () => {
+  const admin = createMockUserDoc({
+    name: 'Platform Admin',
+    email: 'admin@learnspace.io',
+    password: 'Password123',
+    role: 'admin',
+    accountStatus: 'active',
+  });
+  mockUsers.push(admin);
+
+  const res = await request(app).post('/api/auth/login').send({
+    email: 'admin@learnspace.io',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.body.error.includes('Administrator accounts must sign in through the Administrator Sign In portal'));
+  // Ensure NO session cookie was issued
+  const cookies = res.headers['set-cookie'];
+  assert.strictEqual(cookies, undefined);
+});
+
+// ============================================================================
+// 29. Administrator can log in through dedicated admin login flow
+// ============================================================================
+test('29. Administrator can log in through dedicated admin login flow', async () => {
+  const admin = createMockUserDoc({
+    name: 'Platform Admin',
+    email: 'admin@learnspace.io',
+    password: 'Password123',
+    role: 'admin',
+    accountStatus: 'active',
+  });
+  mockUsers.push(admin);
+
+  const res = await request(app).post('/api/auth/admin/login').send({
+    email: 'admin@learnspace.io',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.mfaRequired, true);
+  assert.ok(res.body.preAuthToken);
+
+  // Complete admin 2FA setup with valid TOTP code
+  const setupRes = await request(app).post('/api/auth/mfa/admin-init-setup').send({
+    preAuthToken: res.body.preAuthToken,
+  });
+  assert.strictEqual(setupRes.status, 200);
+  assert.ok(setupRes.body.secret);
+
+  const otplib = require('otplib');
+  const code = otplib.generateSync({ secret: setupRes.body.secret });
+
+  const confirmRes = await request(app).post('/api/auth/mfa/admin-confirm-setup').send({
+    preAuthToken: res.body.preAuthToken,
+    code,
+  });
+
+  assert.strictEqual(confirmRes.status, 200);
+  assert.strictEqual(confirmRes.body.user.email, 'admin@learnspace.io');
+  assert.strictEqual(confirmRes.body.user.role, 'admin');
+  const cookies = confirmRes.headers['set-cookie'];
+  assert.ok(cookies && cookies.some((c) => c.includes('jwt=') && c.includes('HttpOnly')));
+});
+
+// ============================================================================
+// 30. Student is rejected by dedicated admin login flow (403 Forbidden)
+// ============================================================================
+test('30. Student is rejected by dedicated admin login flow (403 Forbidden)', async () => {
+  const student = createMockUserDoc({
+    name: 'Alice Student',
+    email: 'alice@student.org',
+    password: 'Password123',
+    role: 'student',
+    accountStatus: 'active',
+  });
+  mockUsers.push(student);
+
+  const res = await request(app).post('/api/auth/admin/login').send({
+    email: 'alice@student.org',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.body.error.includes('Access denied'));
+  assert.strictEqual(res.headers['set-cookie'], undefined);
+});
+
+// ============================================================================
+// 31. Instructor is rejected by dedicated admin login flow (403 Forbidden)
+// ============================================================================
+test('31. Instructor is rejected by dedicated admin login flow (403 Forbidden)', async () => {
+  const instructor = createMockUserDoc({
+    name: 'Bob Instructor',
+    email: 'bob@instructor.org',
+    password: 'Password123',
+    role: 'instructor',
+    accountStatus: 'active',
+  });
+  mockUsers.push(instructor);
+
+  const res = await request(app).post('/api/auth/admin/login').send({
+    email: 'bob@instructor.org',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.body.error.includes('Access denied'));
+  assert.strictEqual(res.headers['set-cookie'], undefined);
+});
+
+// ============================================================================
+// 32. Invalid credentials in admin login flow returns generic 401
+// ============================================================================
+test('32. Invalid credentials in admin login flow returns generic 401', async () => {
+  const admin = createMockUserDoc({
+    name: 'Platform Admin',
+    email: 'admin@learnspace.io',
+    password: 'Password123',
+    role: 'admin',
+    accountStatus: 'active',
+  });
+  mockUsers.push(admin);
+
+  const res = await request(app).post('/api/auth/admin/login').send({
+    email: 'admin@learnspace.io',
+    password: 'WrongPassword999',
+  });
+
+  assert.strictEqual(res.status, 401);
+  assert.strictEqual(res.body.error, 'Invalid email address or password.');
+});
+
+// ============================================================================
+// 33. Nonexistent account in admin login flow returns generic 401
+// ============================================================================
+test('33. Nonexistent account in admin login flow returns generic 401', async () => {
+  const res = await request(app).post('/api/auth/admin/login').send({
+    email: 'nonexistent-admin@learnspace.io',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 401);
+  assert.strictEqual(res.body.error, 'Invalid email address or password.');
+});
+
+// ============================================================================
+// 34. Suspended administrator is rejected by admin login flow (403 Forbidden)
+// ============================================================================
+test('34. Suspended administrator is rejected by admin login flow (403 Forbidden)', async () => {
+  const admin = createMockUserDoc({
+    name: 'Suspended Admin',
+    email: 'suspended-admin@learnspace.io',
+    password: 'Password123',
+    role: 'admin',
+    accountStatus: 'suspended',
+  });
+  mockUsers.push(admin);
+
+  const res = await request(app).post('/api/auth/admin/login').send({
+    email: 'suspended-admin@learnspace.io',
+    password: 'Password123',
+  });
+
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.body.error.includes('suspended'));
+  assert.strictEqual(res.headers['set-cookie'], undefined);
+});

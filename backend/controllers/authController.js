@@ -1,14 +1,31 @@
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const {
+  getJwtSecret,
   signToken,
   sendAuthCookie,
   clearAuthCookie,
   hashToken,
   sanitizeUser,
+  signPreAuthToken,
 } = require('../utils/authUtils');
+const {
+  createSession,
+  revokeSession,
+  revokeOtherSessions,
+  revokeAllSessions,
+  touchSession,
+} = require('../utils/sessionUtils');
+const { disconnectSessionSockets, disconnectUserSockets } = require('../services/socketService');
+const {
+  generateChallengeId,
+  generateNumericOtp,
+  hashOtp,
+} = require('../utils/cryptoUtils');
 const {
   sendPasswordResetEmail,
   sendVerificationEmail,
+  sendMfaEmailOtp,
 } = require('../services/emailService');
 const {
   uploadProfilePicture,
@@ -81,8 +98,9 @@ const register = async (req, res) => {
       });
     }
 
-    // For active accounts, issue authenticated session
-    const token = signToken(newUser);
+    // For active accounts, issue database-backed authenticated session
+    const session = await createSession({ user: newUser, req, role: assignedRole });
+    const token = signToken(newUser, session._id);
     sendAuthCookie(res, token);
 
     return res.status(201).json({
@@ -105,15 +123,19 @@ const register = async (req, res) => {
 };
 
 /**
- * Log in with email and password
- * POST /api/auth/login
+ * Internal shared authentication handler enforcing strict portal-role isolation
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {'common' | 'admin'} portal
  */
-const login = async (req, res) => {
+const processLogin = async (req, res, portal = 'common') => {
   try {
     const { email, password } = req.body;
 
-    // 1. Find user by normalized email and explicitly select password
-    const user = await User.findOne({ email }).select('+password');
+    // 1. Find user by normalized email and explicitly select password, TOTP secret, and challenges
+    const user = await User.findOne({ email }).select(
+      '+password +mfa.totp.secret +mfa.totp.verified +mfa.recoveryCodes.codeHash'
+    );
 
     // 2. Generic credentials verification to prevent user enumeration
     if (!user || !(await user.comparePassword(password))) {
@@ -122,7 +144,25 @@ const login = async (req, res) => {
       });
     }
 
-    // 3. Check account status
+    // 3. Enforce portal-role isolation based on verified database role
+    if (portal === 'admin') {
+      if (user.role !== 'admin') {
+        logger.warn(`Non-admin user (${user.email}, ${user.role}) attempted Admin Portal login`);
+        return res.status(403).json({
+          error: 'Access denied. This portal is strictly reserved for system administrators.',
+        });
+      }
+    } else {
+      // Common student/instructor portal
+      if (user.role === 'admin') {
+        logger.warn(`Admin user (${user.email}) attempted common login portal authentication`);
+        return res.status(403).json({
+          error: 'Administrator accounts must sign in through the Administrator Sign In portal.',
+        });
+      }
+    }
+
+    // 4. Check account status
     if (user.accountStatus === 'suspended') {
       return res.status(403).json({
         error: 'Your account has been suspended. Please contact platform support for assistance.',
@@ -135,15 +175,95 @@ const login = async (req, res) => {
       });
     }
 
-    // 4. Update last login timestamp
+    // 5. Enforce Two-Factor Authentication (2FA) policy
+    const isMfaActive = Boolean(user.mfa?.enabled);
+    const isAdmin = user.role === 'admin';
+
+    // 5A. Administrator flow (Mandatory TOTP)
+    if (isAdmin) {
+      const isTotpConfigured = Boolean(user.mfa?.totp?.verified && user.mfa?.totp?.secret);
+      const challengeId = generateChallengeId();
+
+      user.mfa = user.mfa || {};
+      user.mfa.currentChallenge = {
+        challengeId,
+        method: 'totp',
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes TTL
+        used: false,
+      };
+      await user.save({ validateBeforeSave: false });
+
+      if (!isTotpConfigured) {
+        logger.info(`Administrator ${user.email} password verified; initiating mandatory 2FA enrollment`);
+        const preAuthToken = signPreAuthToken(user, challengeId, 'totp', { mfaSetupRequired: true });
+        return res.status(200).json({
+          mfaRequired: true,
+          mfaSetupRequired: true,
+          preAuthToken,
+          method: 'totp',
+          role: 'admin',
+          message: 'Administrator 2FA enrollment is required. Please set up Google Authenticator.',
+        });
+      }
+
+      logger.info(`Administrator ${user.email} password verified; issued TOTP challenge`);
+      const preAuthToken = signPreAuthToken(user, challengeId, 'totp');
+      return res.status(200).json({
+        mfaRequired: true,
+        preAuthToken,
+        method: 'totp',
+        role: 'admin',
+        message: 'Please enter the 6-digit code from Google Authenticator.',
+      });
+    }
+
+    // 5B. Student / Instructor flow (User-configured MFA)
+    if (isMfaActive) {
+      const activeMethod = user.mfa?.preferredMethod || 'totp';
+      const challengeId = generateChallengeId();
+
+      if (activeMethod === 'email_otp') {
+        const otp = generateNumericOtp();
+        user.mfa = user.mfa || {};
+        user.mfa.emailOtp = user.mfa.emailOtp || {};
+        user.mfa.emailOtp.codeHash = hashOtp(otp);
+        user.mfa.emailOtp.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        user.mfa.emailOtp.lastSentAt = new Date();
+        await sendMfaEmailOtp({ to: user.email, name: user.name, otp });
+      }
+
+      user.mfa = user.mfa || {};
+      user.mfa.currentChallenge = {
+        challengeId,
+        method: activeMethod,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        used: false,
+      };
+      await user.save({ validateBeforeSave: false });
+
+      logger.info(`User ${user.email} (${user.role}) password verified; issued 2FA challenge via ${activeMethod}`);
+      const preAuthToken = signPreAuthToken(user, challengeId, activeMethod);
+      return res.status(200).json({
+        mfaRequired: true,
+        preAuthToken,
+        method: activeMethod,
+        role: user.role,
+        message: activeMethod === 'email_otp'
+          ? `A verification code has been dispatched to ${user.email}.`
+          : 'Please enter the 6-digit code from your authenticator app.',
+      });
+    }
+
+    // 6. Update last login timestamp for standard (non-MFA) logins
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
 
-    // 5. Issue session JWT in HttpOnly cookie
-    const token = signToken(user);
+    // 7. Issue database-backed session and JWT in HttpOnly cookie
+    const session = await createSession({ user, req, role: user.role });
+    const token = signToken(user, session._id);
     sendAuthCookie(res, token);
 
-    logger.info(`User logged in: ${user.email} (${user.role})`);
+    logger.info(`User logged in via ${portal} portal: ${user.email} (${user.role})`);
 
     return res.status(200).json({
       message: 'Logged in successfully.',
@@ -158,14 +278,56 @@ const login = async (req, res) => {
 };
 
 /**
- * Log out and clear session cookie
+ * Log in with email and password (Student and Instructor common portal)
+ * POST /api/auth/login
+ */
+const login = async (req, res) => processLogin(req, res, 'common');
+
+/**
+ * Log in with administrator credentials (Dedicated Admin portal)
+ * POST /api/auth/admin/login
+ */
+const adminLogin = async (req, res) => processLogin(req, res, 'admin');
+
+/**
+ * Log out and revoke active database session
  * POST /api/auth/logout
  */
-const logout = (req, res) => {
-  clearAuthCookie(res);
-  return res.status(200).json({
-    message: 'Logged out successfully.',
-  });
+const logout = async (req, res) => {
+  try {
+    let sessionId = req.sessionId || req.session?._id;
+    let userId = req.user?.id || req.user?._id;
+
+    if (!sessionId) {
+      let token = req.cookies?.jwt;
+      if (!token && req.headers?.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+      }
+      if (token) {
+        try {
+          const secret = getJwtSecret();
+          const decoded = jwt.verify(token, secret);
+          sessionId = decoded.sid || decoded.sessionId;
+          userId = decoded.id;
+        } catch {
+          // Token expired or invalid - ignore for logout
+        }
+      }
+    }
+
+    if (sessionId && userId) {
+      await revokeSession(sessionId, userId, 'logout');
+      disconnectSessionSockets(sessionId);
+      logger.info(`Session [${sessionId}] revoked upon user logout`);
+    }
+  } catch (err) {
+    logger.warn(`Error revoking session on logout: ${err.message}`);
+  } finally {
+    clearAuthCookie(res);
+    return res.status(200).json({
+      message: 'Logged out successfully.',
+    });
+  }
 };
 
 /**
@@ -249,6 +411,13 @@ const resetPassword = async (req, res) => {
       });
     }
 
+    // Check account status: suspended accounts cannot reset & authenticate
+    if (user.accountStatus === 'suspended') {
+      return res.status(403).json({
+        error: 'Your account has been suspended. Please contact platform support for assistance.',
+      });
+    }
+
     // Set new password
     user.password = newPassword;
     user.passwordResetTokenHash = undefined;
@@ -257,8 +426,32 @@ const resetPassword = async (req, res) => {
 
     logger.info(`Password successfully reset for: ${user.email}`);
 
-    // Automatically authenticate user with new session
-    const jwtToken = signToken(user);
+    // CRITICAL: Revoke all existing sessions across all devices for this user
+    await revokeAllSessions(user._id, 'password_changed');
+    disconnectUserSockets(user._id);
+
+    // If user has MFA enabled or enforced, or is an administrator, do not bypass second factor; prompt login
+    if (user.role === 'admin' || user.mfa?.enabled || user.mfa?.enforced) {
+      return res.status(200).json({
+        message: 'Your password has been reset successfully. Please sign in with your credentials and complete two-factor authentication.',
+        mfaRequired: true,
+        redirectToLogin: true,
+        role: user.role,
+      });
+    }
+
+    // If account is not active, do not issue authenticated session
+    if (user.accountStatus !== 'active') {
+      return res.status(200).json({
+        message: 'Your password has been reset successfully. Please sign in with your credentials.',
+        redirectToLogin: true,
+        role: user.role,
+      });
+    }
+
+    // Automatically authenticate non-MFA user with new database session
+    const session = await createSession({ user, req, role: user.role });
+    const jwtToken = signToken(user, session._id);
     sendAuthCookie(res, jwtToken);
 
     return res.status(200).json({
@@ -309,8 +502,21 @@ const changePassword = async (req, res) => {
 
     logger.info(`Password changed by user: ${user.email}`);
 
-    // Issue refreshed session cookie
-    const token = signToken(user);
+    // Revoke all other active sessions for this user across other devices
+    let currentSessionId = req.sessionId;
+    if (currentSessionId) {
+      await revokeOtherSessions(user._id, currentSessionId, 'password_changed');
+      disconnectUserSockets(user._id, currentSessionId);
+      if (req.session) {
+        await touchSession(req.session);
+      }
+    } else {
+      const newSession = await createSession({ user, req, role: user.role });
+      currentSessionId = newSession._id;
+    }
+
+    // Issue refreshed session cookie bound to current session
+    const token = signToken(user, currentSessionId);
     sendAuthCookie(res, token);
 
     return res.status(200).json({
@@ -479,7 +685,15 @@ const googleLogin = async (req, res) => {
       logger.info(`New user registered via Google: ${user.email} (${user.role})`);
     }
 
-    // 5. Enforce account status policies
+    // 5. Enforce portal-role isolation: Reject administrator accounts from common Google login flow
+    if (user.role === 'admin') {
+      logger.warn(`Admin user (${user.email}) attempted common Google login`);
+      return res.status(403).json({
+        error: 'Administrator accounts cannot sign in via Google. Please use the Administrator Sign In portal.',
+      });
+    }
+
+    // 6. Enforce account status policies
     if (user.accountStatus === 'suspended') {
       return res.status(403).json({
         error: 'Your account has been suspended. Please contact platform support for assistance.',
@@ -492,15 +706,53 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    // 6. Update last login timestamp
+    // 7. Enforce Two-Factor Authentication for Google logins if user has enabled MFA
+    if (user.mfa?.enabled) {
+      const activeMethod = user.mfa?.preferredMethod || 'totp';
+      const challengeId = generateChallengeId();
+
+      if (activeMethod === 'email_otp') {
+        const otp = generateNumericOtp();
+        user.mfa = user.mfa || {};
+        user.mfa.emailOtp = user.mfa.emailOtp || {};
+        user.mfa.emailOtp.codeHash = hashOtp(otp);
+        user.mfa.emailOtp.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        user.mfa.emailOtp.lastSentAt = new Date();
+        await sendMfaEmailOtp({ to: user.email, name: user.name, otp });
+      }
+
+      user.mfa = user.mfa || {};
+      user.mfa.currentChallenge = {
+        challengeId,
+        method: activeMethod,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        used: false,
+      };
+      await user.save({ validateBeforeSave: false });
+
+      logger.info(`Google user ${user.email} (${user.role}) issued 2FA challenge via ${activeMethod}`);
+      const preAuthToken = signPreAuthToken(user, challengeId, activeMethod);
+      return res.status(200).json({
+        mfaRequired: true,
+        preAuthToken,
+        method: activeMethod,
+        role: user.role,
+        message: activeMethod === 'email_otp'
+          ? `A verification code has been dispatched to ${user.email}.`
+          : 'Please enter the 6-digit code from your authenticator app.',
+      });
+    }
+
+    // 8. Update last login timestamp
     user.lastLoginAt = new Date();
     if (picture && (!user.avatar || !user.avatar.url)) {
-          user.avatar = { url: picture, publicId: null };
-        }
+      user.avatar = { url: picture, publicId: null };
+    }
     await user.save({ validateBeforeSave: false });
 
-    // 7. Issue standard LMS session JWT cookie
-    const token = signToken(user);
+    // 9. Issue standard LMS database session and JWT cookie
+    const session = await createSession({ user, req, role: user.role });
+    const token = signToken(user, session._id);
     sendAuthCookie(res, token);
 
     logger.info(`User logged in via Google: ${user.email} (${user.role})`);
@@ -516,7 +768,44 @@ const googleLogin = async (req, res) => {
       try {
         const existing = await User.findOne({ email: req.body?.email?.toLowerCase()?.trim() });
         if (existing) {
-          const token = signToken(existing);
+          if (existing.role === 'admin') {
+            return res.status(403).json({
+              error: 'Administrator accounts cannot sign in via Google. Please use the Administrator Sign In portal.',
+            });
+          }
+          if (existing.mfa?.enabled) {
+            const activeMethod = existing.mfa?.preferredMethod || 'totp';
+            const challengeId = generateChallengeId();
+            if (activeMethod === 'email_otp') {
+              const otp = generateNumericOtp();
+              existing.mfa = existing.mfa || {};
+              existing.mfa.emailOtp = existing.mfa.emailOtp || {};
+              existing.mfa.emailOtp.codeHash = hashOtp(otp);
+              existing.mfa.emailOtp.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+              existing.mfa.emailOtp.lastSentAt = new Date();
+              await sendMfaEmailOtp({ to: existing.email, name: existing.name, otp });
+            }
+            existing.mfa = existing.mfa || {};
+            existing.mfa.currentChallenge = {
+              challengeId,
+              method: activeMethod,
+              expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+              used: false,
+            };
+            await existing.save({ validateBeforeSave: false });
+            const preAuthToken = signPreAuthToken(existing, challengeId, activeMethod);
+            return res.status(200).json({
+              mfaRequired: true,
+              preAuthToken,
+              method: activeMethod,
+              role: existing.role,
+              message: activeMethod === 'email_otp'
+                ? `A verification code has been dispatched to ${existing.email}.`
+                : 'Please enter the 6-digit code from your authenticator app.',
+            });
+          }
+          const session = await createSession({ user: existing, req, role: existing.role });
+          const token = signToken(existing, session._id);
           sendAuthCookie(res, token);
           return res.status(200).json({
             message: 'Logged in successfully with Google.',
@@ -649,6 +938,7 @@ const deleteProfilePicture = async (req, res) => {
 module.exports = {
   register,
   login,
+  adminLogin,
   googleLogin,
   logout,
   getMe,

@@ -118,6 +118,7 @@ export default function DashboardLayout({
           unreadCount={unreadCount}
           onOpenPasswordModal={() => setPasswordModalOpen(true)}
           onOpenAvatarModal={() => setAvatarModalOpen(true)}
+          onSelectTab={onSelectTab}
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1280px] w-full mx-auto transition-all duration-300">

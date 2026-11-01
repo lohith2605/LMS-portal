@@ -22,13 +22,12 @@ import {
 export default function MobileNavigation({
   isOpen,
   onClose,
-  user,
+  user: _user,
   role,
   activeTab,
   onSelectTab,
   logout,
-  onOpenPasswordModal,
-  onOpenAvatarModal,
+  onOpenAvatarModal: _onOpenAvatarModal,
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -42,19 +41,20 @@ export default function MobileNavigation({
 
   if (!isOpen) return null;
 
-  const getNavItems = () => {
+  const getNavSections = () => {
+    let workspaceItems = [];
     switch (role) {
       case 'admin':
-        return [
+        workspaceItems = [
           { id: 'overview', label: 'Platform Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
           { id: 'approvals', label: 'Instructor Approvals', icon: ShieldAlert },
           { id: 'users', label: 'User Directory', icon: Users },
           { id: 'moderation', label: 'Course Moderation', icon: Library },
-          { id: 'security', label: 'Admin Security', icon: ShieldCheck },
         ];
+        break;
       case 'instructor':
-        return [
+        workspaceItems = [
           { id: 'overview', label: 'Teaching Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Course Analytics', icon: BarChart3 },
           { id: 'courses', label: 'My Courses', icon: Library },
@@ -63,11 +63,11 @@ export default function MobileNavigation({
           { id: 'assessments', label: 'Assessments & Quizzes', icon: ListChecks },
           { id: 'learners', label: 'Enrolled Learners', icon: Users },
           { id: 'announcements', label: 'Announcements', icon: Megaphone },
-          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
+        break;
       case 'student':
       default:
-        return [
+        workspaceItems = [
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'analytics', label: 'Learning Analytics', icon: BarChart3 },
           { id: 'learning', label: 'My Learning', icon: BookOpen },
@@ -76,30 +76,60 @@ export default function MobileNavigation({
           { id: 'assignments', label: 'Assignments', icon: ClipboardList },
           { id: 'calendar', label: 'Schedule & Calendar', icon: CalendarDays },
           { id: 'announcements', label: 'Announcements', icon: Megaphone },
-          { id: 'security', label: 'Account Security', icon: ShieldCheck },
         ];
+        break;
     }
+
+    const settingsItems = [
+      { id: 'security', label: 'Account Security', icon: ShieldCheck, badge: '2FA' },
+    ];
+
+    return { workspaceItems, settingsItems };
   };
 
-  const navItems = getNavItems();
+  const { workspaceItems, settingsItems } = getNavSections();
 
   const handleSelect = (id) => {
-    if (id === 'security') {
-      onOpenPasswordModal();
-    } else {
-      onSelectTab(id);
-    }
+    onSelectTab(id);
     onClose();
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : 'U';
+  const renderNavItem = (item) => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.id;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => handleSelect(item.id)}
+        aria-current={isActive ? 'page' : undefined}
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+          isActive
+            ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
+            : 'text-secondary hover:text-primary hover:bg-surface-subtle'
+        }`}
+      >
+        <div className="flex items-center gap-3 truncate">
+          <Icon
+            size={16}
+            className={`shrink-0 ${isActive ? 'text-white' : 'text-secondary'}`}
+          />
+          <span className="truncate">{item.label}</span>
+        </div>
+        {item.badge && (
+          <span
+            className={`text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded-md uppercase shrink-0 transition-colors ${
+              isActive
+                ? 'bg-white/20 text-white'
+                : 'bg-cobalt-soft text-cobalt border border-cobalt-border/60'
+            }`}
+          >
+            {item.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div
@@ -118,9 +148,9 @@ export default function MobileNavigation({
 
       {/* Drawer */}
       <div className="fixed inset-y-0 left-0 w-72 max-w-full bg-surface border-r border-border-subtle shadow-elevated flex flex-col justify-between z-10 animate-[modalSlideUp_0.15s_ease-out]">
-        <div>
+        <div className="overflow-y-auto flex-1">
           {/* Header */}
-          <div className="h-16 px-5 border-b border-border-subtle flex items-center justify-between">
+          <div className="h-16 px-5 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
             <BrandLogo
               to="/"
               onClick={onClose}
@@ -138,67 +168,32 @@ export default function MobileNavigation({
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <div className="p-4">
-            <span id="mobile-nav-title" className="text-[10px] font-bold uppercase tracking-wider text-tertiary px-3 mb-2 block">
-              Workspace Menu
-            </span>
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleSelect(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
-                      isActive
-                        ? 'bg-cobalt text-white shadow-xs shadow-cobalt/20'
-                        : 'text-secondary hover:text-primary hover:bg-surface-subtle'
-                    }`}
-                  >
-                    <Icon size={16} className={isActive ? 'text-white' : 'text-secondary'} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+          {/* Navigation Sections */}
+          <div className="p-4 space-y-5">
+            {/* WORKSPACE SECTION */}
+            <div>
+              <span id="mobile-nav-title" className="text-[10px] font-bold uppercase tracking-wider text-tertiary px-3 mb-2 block">
+                Workspace
+              </span>
+              <nav className="space-y-1" aria-label="Mobile workspace navigation">
+                {workspaceItems.map(renderNavItem)}
+              </nav>
+            </div>
+
+            {/* SETTINGS SECTION */}
+            <div className="pt-4 border-t border-border-subtle">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-tertiary px-3 mb-2 block">
+                Settings
+              </span>
+              <nav className="space-y-1" aria-label="Mobile settings navigation">
+                {settingsItems.map(renderNavItem)}
+              </nav>
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border-subtle bg-surface-subtle/60">
-          <div className="p-3 bg-surface border border-border-subtle rounded-2xl shadow-xs mb-3 flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                if (onOpenAvatarModal) onOpenAvatarModal();
-              }}
-              className="w-8 h-8 rounded-lg bg-cobalt text-white flex items-center justify-center text-xs font-bold overflow-hidden ring-1 ring-border-subtle cursor-pointer shrink-0"
-              title="Edit Profile Picture"
-            >
-              {user?.avatar?.url ? (
-                <img
-                  src={user.avatar.url}
-                  alt={user?.name || 'User avatar'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                initials
-              )}
-            </button>
-            <div className="overflow-hidden flex-1">
-              <span className="text-xs font-bold text-primary block truncate">
-                {user?.name}
-              </span>
-              <span className="text-[10px] text-secondary block truncate">
-                {user?.email}
-              </span>
-            </div>
-          </div>
-
+        <div className="p-4 border-t border-border-subtle bg-surface-subtle/60 shrink-0">
           <button
             type="button"
             onClick={() => {

@@ -14,6 +14,7 @@ export default function DashboardHeader({
   unreadCount = 0,
   onOpenPasswordModal,
   onOpenAvatarModal,
+  onSelectTab,
 }) {
   const toggleLabel = isDesktop
     ? (isCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar')
@@ -75,6 +76,7 @@ export default function DashboardHeader({
           logout={logout}
           onOpenPasswordModal={onOpenPasswordModal}
           onOpenAvatarModal={onOpenAvatarModal}
+          onSelectTab={onSelectTab}
         />
       </div>
     </header>

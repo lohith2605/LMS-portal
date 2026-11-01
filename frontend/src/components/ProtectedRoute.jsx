@@ -23,7 +23,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     const isTargetingAdmin =
       (allowedRoles && allowedRoles.includes('admin') && !allowedRoles.includes('student')) ||
       location.pathname.startsWith('/admin');
-    const loginPath = isTargetingAdmin ? '/login?role=admin' : '/login';
+    const loginPath = isTargetingAdmin ? '/admin/login' : '/login';
     return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 

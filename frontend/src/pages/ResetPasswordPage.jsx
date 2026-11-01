@@ -25,6 +25,7 @@ export default function ResetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [resetMeta, setResetMeta] = useState(null);
 
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
@@ -73,8 +74,12 @@ export default function ResetPasswordPage() {
 
     try {
       setSubmitting(true);
-      await authService.resetPassword({ token, newPassword: password });
-      await refreshUser();
+      const res = await authService.resetPassword({ token, newPassword: password });
+      const meta = res?.data || {};
+      setResetMeta(meta);
+      if (!meta.mfaRequired && !meta.redirectToLogin) {
+        await refreshUser();
+      }
       setSuccess(true);
     } catch (err) {
       setFormError(err.normalizedMessage || 'Password reset failed. The link may have expired.');
@@ -114,32 +119,42 @@ export default function ResetPasswordPage() {
   }
 
   if (success) {
+    const isMfa = Boolean(resetMeta?.mfaRequired);
+    const isAdmin = resetMeta?.role === 'admin';
+    const loginTarget = isAdmin ? '/admin/login' : '/login';
+
     return (
       <AuthLayout
         eyebrow="CREDENTIAL UPDATE"
         headline="Password updated successfully."
         description="Your new credentials are now active across your LearnSpace account."
         highlights={resetHighlights}
-        panelBadge="Success"
+        panelBadge={isMfa ? '2FA Required' : 'Success'}
         formTitle="Password Reset Complete"
-        formSubtitle="Your credentials have been securely updated and an active session established."
+        formSubtitle={
+          isMfa
+            ? 'Your credentials have been securely updated. Two-Factor Authentication is required to sign in.'
+            : 'Your credentials have been securely updated and an active session established.'
+        }
       >
         <div className="py-2 text-center">
           <div className="w-12 h-12 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xs">
             <CheckCircle2 size={24} />
           </div>
           <h3 className="text-base font-bold text-primary mb-2">
-            You are ready to go!
+            {isMfa ? 'Two-Factor Authentication Required' : 'You are ready to go!'}
           </h3>
           <p className="text-xs text-secondary leading-relaxed mb-6">
-            Your password was changed and an authenticated session has been established.
+            {isMfa
+              ? 'Your password was changed. Because Two-Factor Authentication is active on your account, please sign in with your credentials to complete verification.'
+              : 'Your password was changed and an authenticated session has been established.'}
           </p>
           <button
             type="button"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(isMfa || resetMeta?.redirectToLogin ? loginTarget : '/dashboard')}
             className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <span>Proceed to Dashboard</span>
+            <span>{isMfa || resetMeta?.redirectToLogin ? 'Proceed to Sign In' : 'Proceed to Dashboard'}</span>
             <ArrowRight size={14} />
           </button>
         </div>

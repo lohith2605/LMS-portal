@@ -204,7 +204,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
 
   const handleAdminLoginSelect = () => {
     setIsAdminMenuOpen(false);
-    navigate('/login?role=admin');
+    navigate('/admin/login');
   };
 
   const handleNavClick = (e, targetId) => {

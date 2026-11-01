@@ -29,6 +29,11 @@ const { logger } = require('./utils/logger');
 const app = express();
 const PORT = Number(process.env.PORT) || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// 1.5 Configure trusted proxy policy if enabled
+if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
+  app.set('trust proxy', 1);
+}
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const rawClientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : [];
 const defaultAllowedOrigins = [
@@ -132,8 +137,14 @@ const startServer = async () => {
       const registeredEndpoints = [
         { method: 'POST', path: '/api/auth/register', access: 'Public, Rate-limited' },
         { method: 'POST', path: '/api/auth/login', access: 'Public, Rate-limited' },
+        { method: 'POST', path: '/api/auth/admin/login', access: 'Public, Rate-limited, Admin Only' },
         { method: 'POST', path: '/api/auth/logout', access: 'Authenticated' },
         { method: 'GET', path: '/api/auth/me', access: 'Authenticated Session' },
+        { method: 'GET', path: '/api/auth/sessions', access: 'Authenticated Session' },
+        { method: 'GET', path: '/api/auth/sessions/current', access: 'Authenticated Session' },
+        { method: 'DELETE', path: '/api/auth/sessions/other', access: 'Authenticated Session' },
+        { method: 'POST', path: '/api/auth/sessions/refresh', access: 'Authenticated Session' },
+        { method: 'DELETE', path: '/api/auth/sessions/:sessionId', access: 'Authenticated Session' },
         { method: 'POST', path: '/api/auth/forgot-password', access: 'Public, Rate-limited' },
         { method: 'POST', path: '/api/auth/reset-password', access: 'Public, Rate-limited' },
         { method: 'PATCH', path: '/api/auth/change-password', access: 'Authenticated' },

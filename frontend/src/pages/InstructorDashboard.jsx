@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
   Users,
@@ -49,10 +50,27 @@ import AssignmentStudioModal from '../components/dashboard/AssignmentStudioModal
 import SubmissionGradingModal from '../components/dashboard/SubmissionGradingModal';
 import InstructorAnalyticsView from '../components/analytics/InstructorAnalyticsView';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
+import MfaSettingsCard from '../components/security/MfaSettingsCard';
+import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTabState, setActiveTabState] = useState(() => searchParams.get('tab') || 'overview');
+  const activeTab = searchParams.get('tab') || activeTabState;
+
+  const setActiveTab = useCallback((tabId) => {
+    setActiveTabState(tabId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tabId === 'overview') {
+        next.delete('tab');
+      } else {
+        next.set('tab', tabId);
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1846,6 +1864,16 @@ export default function InstructorDashboard() {
                     ← Return to Overview
                   </button>
                 </div>
+              </div>
+
+              {/* Two-Factor Authentication (2FA) */}
+              <div className="lg:col-span-2">
+                <MfaSettingsCard user={user} />
+              </div>
+
+              {/* Multi-Device Active Sessions */}
+              <div className="lg:col-span-2">
+                <ActiveSessionsCard />
               </div>
             </div>
           )}

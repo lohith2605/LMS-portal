@@ -30,7 +30,7 @@ export default function LandingPage() {
       return;
     }
     if (mode === 'admin') {
-      navigate('/login?role=admin');
+      navigate('/admin/login');
       return;
     }
     if (mode === 'register') {

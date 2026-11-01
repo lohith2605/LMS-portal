@@ -93,6 +93,91 @@ const userSchema = new mongoose.Schema(
         default: null,
       },
     },
+    mfa: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      enforced: {
+        type: Boolean,
+        default: false,
+      },
+      preferredMethod: {
+        type: String,
+        enum: ['totp', 'email_otp'],
+        default: 'totp',
+      },
+      totp: {
+        secret: {
+          type: String,
+          select: false, // Encrypted base32 secret
+        },
+        pendingSecret: {
+          type: String,
+          select: false, // Temporary encrypted secret during setup
+        },
+        verified: {
+          type: Boolean,
+          default: false,
+        },
+        verifiedAt: {
+          type: Date,
+        },
+        lastUsedTimeStep: {
+          type: Number,
+          select: false,
+        },
+      },
+      emailOtp: {
+        codeHash: {
+          type: String,
+          select: false,
+        },
+        expiresAt: {
+          type: Date,
+          select: false,
+        },
+        lastSentAt: {
+          type: Date,
+        },
+        verified: {
+          type: Boolean,
+          default: false,
+        },
+      },
+      recoveryCodes: [
+        {
+          codeHash: {
+            type: String,
+            select: false,
+          },
+          used: {
+            type: Boolean,
+            default: false,
+          },
+          usedAt: {
+            type: Date,
+          },
+        },
+      ],
+      currentChallenge: {
+        challengeId: {
+          type: String,
+          select: false,
+        },
+        method: {
+          type: String,
+        },
+        expiresAt: {
+          type: Date,
+          select: false,
+        },
+        used: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    },
   },
   {
     timestamps: true,
@@ -104,6 +189,26 @@ const userSchema = new mongoose.Schema(
         delete ret.emailVerificationTokenHash;
         delete ret.emailVerificationExpiresAt;
         delete ret.__v;
+
+        // Sanitize MFA internals
+        if (ret.mfa) {
+          if (ret.mfa.totp) {
+            delete ret.mfa.totp.secret;
+            delete ret.mfa.totp.pendingSecret;
+            delete ret.mfa.totp.lastUsedTimeStep;
+          }
+          if (ret.mfa.emailOtp) {
+            delete ret.mfa.emailOtp.codeHash;
+            delete ret.mfa.emailOtp.expiresAt;
+          }
+          if (Array.isArray(ret.mfa.recoveryCodes)) {
+            ret.mfa.recoveryCodesRemaining = ret.mfa.recoveryCodes.filter((rc) => !rc.used).length;
+            ret.mfa.totalRecoveryCodes = ret.mfa.recoveryCodes.length;
+            delete ret.mfa.recoveryCodes;
+          }
+          delete ret.mfa.currentChallenge;
+        }
+
         return ret;
       },
     },

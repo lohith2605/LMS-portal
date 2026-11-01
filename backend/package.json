@@ -30,6 +30,8 @@
     "mongoose": "^8.9.5",
     "multer": "^2.5.0",
     "nodemailer": "^10.2.1",
+    "otplib": "^13.6.0",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.4"
   },
   "devDependencies": {

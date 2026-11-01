@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LogOut, KeyRound, ExternalLink, ChevronDown, Camera } from 'lucide-react';
+import { LogOut, KeyRound, ShieldCheck, ExternalLink, ChevronDown, Camera } from 'lucide-react';
 
-export default function ProfileMenu({ user, logout, onOpenPasswordModal, onOpenAvatarModal }) {
+export default function ProfileMenu({
+  user,
+  logout,
+  onOpenPasswordModal,
+  onOpenAvatarModal,
+  onSelectTab,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -115,6 +121,21 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal, onOpenA
               <span>Edit Profile Picture</span>
             </button>
 
+            {onSelectTab && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setIsOpen(false);
+                  onSelectTab('security');
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
+              >
+                <ShieldCheck size={14} className="text-cobalt" />
+                <span className="font-semibold text-primary">Account Security & 2FA</span>
+              </button>
+            )}
+
             <button
               type="button"
               role="menuitem"
@@ -125,7 +146,7 @@ export default function ProfileMenu({ user, logout, onOpenPasswordModal, onOpenA
               className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
             >
               <KeyRound size={14} className="text-secondary" />
-              <span>Security & Password</span>
+              <span>Change Password</span>
             </button>
 
             <Link

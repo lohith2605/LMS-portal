@@ -298,9 +298,73 @@ const sendAssignmentDeadlineReminderEmail = async ({
   }
 };
 
+/**
+ * Send two-factor authentication email OTP
+ * @param {Object} options - { to, name, otp }
+ * @returns {Promise<boolean>}
+ */
+const sendMfaEmailOtp = async ({ to, name, otp }) => {
+  const mailTransporter = getTransporter();
+
+  const safeName = (name || 'Learner').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const subject = 'LearnSpace — Your Two-Factor Verification Code';
+  const text = `Hello ${safeName},\n\nYour LearnSpace two-factor verification code is: ${otp}\n\nThis code will expire in 10 minutes. If you did not request this sign-in attempt, please reset your password immediately.\n\n— The LearnSpace Security Team`;
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 540px; margin: 0 auto; padding: 28px; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; color: #0F172A;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+        <span style="font-size: 20px; font-weight: 800; color: #0F172A;">Learn<span style="color: #2563EB;">Space</span></span>
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: #EEF2FF; color: #4338CA; padding: 3px 10px; border-radius: 9999px; letter-spacing: 0.05em;">Security</span>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; color: #0F172A;">Two-Factor Authentication</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
+        Hello <strong>${safeName}</strong>,<br/>
+        Use the single-use verification code below to complete your sign-in to LearnSpace:
+      </p>
+      <div style="background-color: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 10px; padding: 18px; text-align: center; margin-bottom: 24px;">
+        <span style="font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1E293B; display: inline-block;">
+          ${otp}
+        </span>
+      </div>
+      <p style="font-size: 13px; line-height: 1.5; color: #64748B; margin-bottom: 24px;">
+        This code is valid for <strong>10 minutes</strong> and can only be used once. Never share this code with anyone.
+      </p>
+      <div style="background-color: #FFFBEB; border-left: 4px solid #F59E0B; padding: 12px 14px; border-radius: 4px; margin-bottom: 24px;">
+        <p style="font-size: 12px; color: #92400E; margin: 0; line-height: 1.5;">
+          If you did not initiate this authentication request, someone may know your password. We recommend resetting your password immediately.
+        </p>
+      </div>
+      <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 24px 0;" />
+      <p style="font-size: 11px; color: #94A3B8;">LearnSpace LMS Platform • Account Security & Protection</p>
+    </div>
+  `;
+
+  if (!mailTransporter) {
+    logger.info(`[Email Service Simulation] MFA OTP [${otp}] dispatched to ${to}. Email credentials not configured or operating in test mode.`);
+    return true; // Return true so flow succeeds in simulation / test environment
+  }
+
+  try {
+    const fromAddress = process.env.EMAIL_FROM || `"LearnSpace Security" <${process.env.EMAIL_USER}>`;
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+    });
+    logger.success(`MFA verification OTP email delivered to ${to}`);
+    return true;
+  } catch (error) {
+    logger.warn(`Failed to dispatch MFA OTP email to ${to}: ${error.message}`);
+    return false;
+  }
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendInstructorApprovalEmail,
   sendAssignmentDeadlineReminderEmail,
+  sendMfaEmailOtp,
 };

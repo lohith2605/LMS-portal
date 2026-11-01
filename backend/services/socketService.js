@@ -1,5 +1,8 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { getJwtSecret } = require('../utils/authUtils');
+const { validateSession } = require('../utils/sessionUtils');
 const { logger } = require('../utils/logger');
 
 let ioInstance = null;
@@ -8,6 +11,51 @@ const parseCookieToken = (cookieHeader) => {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(/(?:^|;\s*)jwt=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : null;
+};
+
+/**
+ * Verify socket token, purpose, database session, and account status
+ * @param {string} token
+ * @returns {Promise<{ id: string, role: string, sessionId?: string }>}
+ */
+const verifySocketToken = async (token) => {
+  if (!token) {
+    throw new Error('Authentication required for real-time notifications');
+  }
+
+  const secret = getJwtSecret();
+  const decoded = jwt.verify(token, secret);
+
+  // 1. Enforce purpose check: Reject MFA challenge / pre-auth tokens
+  if (decoded.purpose && decoded.purpose !== 'authenticated') {
+    throw new Error('Authentication failed: Pre-auth token cannot be used for persistent socket connection');
+  }
+
+  const userId = decoded.id ? decoded.id.toString() : '';
+  if (!userId) {
+    throw new Error('Invalid token payload');
+  }
+
+  // 2. Validate database-backed session if session ID is embedded
+  const sessionId = decoded.sid || decoded.sessionId;
+  if (sessionId) {
+    const sessionResult = await validateSession(sessionId, decoded.id);
+    if (!sessionResult.valid) {
+      throw new Error(
+        `Authentication failed: Session has been revoked or expired (${sessionResult.reason || 'revoked'})`
+      );
+    }
+  } else if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Authentication failed: Missing active session identifier');
+  }
+
+  // 3. Validate user account existence and status
+  const user = await User.findById(decoded.id);
+  if (!user || user.accountStatus !== 'active') {
+    throw new Error('Authentication failed: User account is inactive or suspended');
+  }
+
+  return { id: userId, role: decoded.role || 'student', sessionId: sessionId ? sessionId.toString() : null };
 };
 
 const initSocket = (httpServer) => {
@@ -41,7 +89,7 @@ const initSocket = (httpServer) => {
   });
 
   // Authenticate socket connections using HttpOnly JWT cookie or Authorization handshake
-  ioInstance.use((socket, next) => {
+  ioInstance.use(async (socket, next) => {
     try {
       let token = parseCookieToken(socket.request.headers.cookie);
 
@@ -54,23 +102,14 @@ const initSocket = (httpServer) => {
         }
       }
 
-      if (!token) {
-        return next(new Error('Authentication required for real-time notifications'));
-      }
-
-      const secret = process.env.JWT_SECRET || 'learnspace_development_jwt_secret_fallback_key';
-      const decoded = jwt.verify(token, secret);
-
-      socket.userId = decoded.id ? decoded.id.toString() : '';
-      socket.userRole = decoded.role || 'student';
-
-      if (!socket.userId) {
-        return next(new Error('Invalid token payload'));
-      }
+      const auth = await verifySocketToken(token);
+      socket.userId = auth.id;
+      socket.userRole = auth.role;
+      socket.sessionId = auth.sessionId;
 
       next();
     } catch (err) {
-      return next(new Error('Authentication failed: Invalid session credentials'));
+      return next(new Error(`Authentication failed: ${err.message || 'Invalid session credentials'}`));
     }
   });
 
@@ -100,9 +139,52 @@ const emitToUser = (userId, event, payload) => {
   }
 };
 
+/**
+ * Disconnect active socket connections for a revoked session
+ * @param {string} sessionId
+ */
+const disconnectSessionSockets = (sessionId) => {
+  if (!ioInstance || !sessionId) return;
+  try {
+    const sockets = ioInstance.sockets.sockets;
+    for (const [id, s] of sockets) {
+      if (s.sessionId === sessionId.toString()) {
+        s.emit('session_revoked', { message: 'Your session has been logged out.' });
+        s.disconnect(true);
+      }
+    }
+  } catch (err) {
+    logger.warn(`Error disconnecting sockets for session ${sessionId}: ${err.message}`);
+  }
+};
+
+/**
+ * Disconnect active socket connections for a user across all (or other) sessions
+ * @param {string} userId
+ * @param {string} [exceptSessionId]
+ */
+const disconnectUserSockets = (userId, exceptSessionId = null) => {
+  if (!ioInstance || !userId) return;
+  try {
+    const sockets = ioInstance.sockets.sockets;
+    for (const [id, s] of sockets) {
+      if (s.userId === userId.toString()) {
+        if (!exceptSessionId || s.sessionId !== exceptSessionId.toString()) {
+          s.emit('session_revoked', { message: 'Your session has been logged out.' });
+          s.disconnect(true);
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn(`Error disconnecting sockets for user ${userId}: ${err.message}`);
+  }
+};
+
 module.exports = {
   initSocket,
   getIO,
   emitToUser,
+  disconnectSessionSockets,
+  disconnectUserSockets,
+  verifySocketToken,
 };
-

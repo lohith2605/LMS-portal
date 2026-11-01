@@ -2,22 +2,41 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 /**
- * Sign JWT authentication token
+ * Centralized JWT signing secret retriever
+ * Enforces production security by failing fast if secret is missing in production
+ * @returns {string}
+ */
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production.');
+    }
+    return 'learnspace_development_jwt_secret_fallback_key';
+  }
+  return secret;
+};
+
+/**
+ * Sign JWT authentication token bound to user and database session
  * @param {Object} user - User document or object with _id and role
+ * @param {string|Object} [sessionId] - Optional database session identifier (sid)
  * @returns {string} Signed JWT
  */
-const signToken = (user) => {
-  const secret = process.env.JWT_SECRET || 'learnspace_development_jwt_secret_fallback_key';
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+const signToken = (user, sessionId = null) => {
+  const secret = getJwtSecret();
+  const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
 
-  return jwt.sign(
-    {
-      id: user._id ? user._id.toString() : user.id,
-      role: user.role,
-    },
-    secret,
-    { expiresIn }
-  );
+  const payload = {
+    id: user._id ? user._id.toString() : user.id,
+    role: user.role,
+  };
+
+  if (sessionId) {
+    payload.sid = sessionId._id ? sessionId._id.toString() : sessionId.toString();
+  }
+
+  return jwt.sign(payload, secret, { expiresIn });
 };
 
 /**
@@ -30,7 +49,7 @@ const getCookieOptions = () => {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    maxAge: 8 * 60 * 60 * 1000, // 8 hours in milliseconds (matches 8-hour absolute session lifetime)
     path: '/',
   };
 };
@@ -97,14 +116,78 @@ const sanitizeUser = (user) => {
     avatar: safeAvatar,
     createdAt: raw.createdAt,
     lastLoginAt: raw.lastLoginAt,
+    mfaEnabled: Boolean(raw.mfa?.enabled),
+    mfaMethod: raw.mfa?.preferredMethod || null,
   };
 };
 
+/**
+ * Sign restricted, short-lived pre-authentication token for MFA challenge
+ * @param {Object} user - User document or minimal identity
+ * @param {string} challengeId - Unique challenge ID
+ * @param {string} method - 'totp' | 'email_otp'
+ * @param {Object} [meta] - Optional metadata (e.g., mfaSetupRequired)
+ * @returns {string} Signed JWT
+ */
+const signPreAuthToken = (user, challengeId, method = 'totp', meta = {}) => {
+  const secret = getJwtSecret();
+
+  return jwt.sign(
+    {
+      id: user._id ? user._id.toString() : user.id,
+      role: user.role,
+      purpose: 'mfa_pending',
+      challengeId,
+      method,
+      mfaSetupRequired: Boolean(meta.mfaSetupRequired),
+    },
+    secret,
+    { expiresIn: '5m' }
+  );
+};
+
+/**
+ * Verify and decode a pre-authentication MFA token
+ * @param {string} token
+ * @returns {Object} Decoded payload
+ */
+const verifyPreAuthToken = (token) => {
+  if (!token) {
+    const error = new Error('Pre-authentication token is required');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const secret = getJwtSecret();
+
+  try {
+    const decoded = jwt.verify(token, secret);
+    if (decoded.purpose !== 'mfa_pending') {
+      const err = new Error('Invalid token purpose');
+      err.statusCode = 401;
+      throw err;
+    }
+    return decoded;
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      const error = new Error('Two-factor verification window has expired. Please sign in again.');
+      error.statusCode = 401;
+      throw error;
+    }
+    const error = new Error('Invalid two-factor session token. Please sign in again.');
+    error.statusCode = 401;
+    throw error;
+  }
+};
+
 module.exports = {
+  getJwtSecret,
   signToken,
   getCookieOptions,
   sendAuthCookie,
   clearAuthCookie,
   hashToken,
   sanitizeUser,
+  signPreAuthToken,
+  verifyPreAuthToken,
 };

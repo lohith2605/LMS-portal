@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ShieldAlert,
   Users,
@@ -19,9 +20,6 @@ import {
   MessageSquare,
   Presentation,
   Library,
-  Hourglass,
-  FileBarChart,
-  Settings2,
   ShieldCheck,
   GraduationCap,
 } from 'lucide-react';
@@ -34,6 +32,8 @@ import EmptyState from '../components/dashboard/EmptyState';
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import AdminAnalyticsView from '../components/analytics/AdminAnalyticsView';
+import MfaSettingsCard from '../components/security/MfaSettingsCard';
+import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 
 const ADMIN_ANNOUNCEMENTS = [
   {
@@ -47,7 +47,22 @@ const ADMIN_ANNOUNCEMENTS = [
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTabState, setActiveTabState] = useState(() => searchParams.get('tab') || 'overview');
+  const activeTab = searchParams.get('tab') || activeTabState;
+
+  const setActiveTab = useCallback((tabId) => {
+    setActiveTabState(tabId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tabId === 'overview') {
+        next.delete('tab');
+      } else {
+        next.set('tab', tabId);
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   // Overview metrics state
   const [metrics, setMetrics] = useState(null);
@@ -1556,6 +1571,16 @@ export default function AdminDashboard() {
                     ← Return to Platform Overview
                   </button>
                 </div>
+              </div>
+
+              {/* Two-Factor Authentication (2FA) */}
+              <div className="lg:col-span-2">
+                <MfaSettingsCard user={user} />
+              </div>
+
+              {/* Multi-Device Active Sessions */}
+              <div className="lg:col-span-2">
+                <ActiveSessionsCard />
               </div>
             </div>
           )}
