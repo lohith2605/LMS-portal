@@ -5,6 +5,7 @@ const Quiz = require('../models/Quiz');
 const QuizAttempt = require('../models/QuizAttempt');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
+const { getPublishedLessons } = require('../utils/courseHelper');
 const { logger } = require('../utils/logger');
 const notificationService = require('../services/notificationService');
 
@@ -59,13 +60,8 @@ const getCourseCompletionStatus = async (req, res) => {
     if (error) return res.status(status).json({ error });
 
     // 1. Audit published lessons
-    const validLessonIds = new Set(
-      (course.sections || []).flatMap((s) =>
-        (s.lessons || [])
-          .filter((l) => l.isPublished !== false)
-          .map((l) => l._id.toString())
-      )
-    );
+    const validLessons = getPublishedLessons(course);
+    const validLessonIds = new Set(validLessons.map((l) => (l._id ? l._id.toString() : '')));
     const totalLessons = validLessonIds.size;
     const completedLessonIds = (enrollment.completedLessons || []).filter((id) =>
       validLessonIds.has(id.toString())

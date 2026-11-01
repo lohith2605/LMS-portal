@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldAlert, ArrowLeft, Home, LogOut, ShieldCheck, UserCheck } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, Home, LogOut, ShieldCheck, UserCheck, Mail } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import AuthLayout from '../layouts/AuthLayout';
 
@@ -9,7 +9,8 @@ export default function UnauthorizedPage() {
   const location = useLocation();
 
   const reason = location.state?.reason;
-  const isPending = reason === 'pending' || (user && user.accountStatus === 'pending');
+  const isSuspended = reason === 'suspended' || (user && user.accountStatus === 'suspended');
+  const isPending = !isSuspended && (reason === 'pending' || (user && user.accountStatus === 'pending'));
 
   const authHighlights = [
     {
@@ -43,22 +44,37 @@ export default function UnauthorizedPage() {
       description="LearnSpace enforces strict permission boundaries to protect student records, cohort management, and curriculum publishing."
       highlights={authHighlights}
       panelBadge="Security"
-      formTitle={isPending ? 'Approval Pending' : 'Access Restricted'}
+      formTitle={isSuspended ? 'Account Suspended' : isPending ? 'Approval Pending' : 'Access Restricted'}
       formSubtitle={
-        isPending
+        isSuspended
+          ? 'Your account access has been restricted by an administrator.'
+          : isPending
           ? 'Your instructor application is currently under review by our administration team.'
           : 'You do not have the required permissions to access this specific area.'
       }
     >
       <div className="py-2">
-        <div className="w-12 h-12 bg-amber-50 text-amber-600 border border-amber-200 rounded-2xl flex items-center justify-center mb-4 shadow-2xs">
+        <div
+          className={`w-12 h-12 border rounded-2xl flex items-center justify-center mb-4 shadow-2xs ${
+            isSuspended
+              ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50'
+              : 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50'
+          }`}
+        >
           <ShieldAlert size={24} />
         </div>
 
-        <p className="text-xs sm:text-sm text-[#686868] leading-relaxed mb-6">
-          {isPending
+        <p className="text-xs sm:text-sm text-secondary leading-relaxed mb-4">
+          {isSuspended
+            ? 'Your account has been suspended by an administrator. You cannot access dashboard areas or learning materials while suspended. If you believe this is an error, please contact our support team.'
+            : isPending
             ? 'Your instructor profile has been submitted and is currently pending review by a system administrator. You will be granted full access as soon as your credentials are verified.'
             : 'Your current account does not have sufficient clearance to view or interact with this resource. Please navigate to an authorized view or contact support.'}
+        </p>
+
+        <p className="text-xs text-secondary mb-6 flex items-center gap-1.5">
+          <Mail size={13} className="text-cobalt shrink-0" />
+          <span>Need help? Contact support at <a href="mailto:support@learnspace.io" className="text-cobalt hover:underline font-semibold">support@learnspace.io</a></span>
         </p>
 
         {user && (
@@ -70,7 +86,11 @@ export default function UnauthorizedPage() {
             <div className="text-secondary">
               Role: <span className="capitalize font-semibold text-primary">{user.role}</span>
               {user.accountStatus && (
-                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cobalt-soft text-cobalt border border-cobalt-border">
+                <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  isSuspended
+                    ? 'bg-rose-500/10 text-rose-600 border border-rose-200 dark:border-rose-800'
+                    : 'bg-cobalt-soft text-cobalt border border-cobalt-border'
+                }`}>
                   {user.accountStatus}
                 </span>
               )}
@@ -79,13 +99,15 @@ export default function UnauthorizedPage() {
         )}
 
         <div className="flex flex-col gap-2.5">
-          <Link
-            to={getDestinationPath()}
-            className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-2"
-          >
-            <Home size={14} />
-            <span>Go to My Dashboard</span>
-          </Link>
+          {!isSuspended && (
+            <Link
+              to={getDestinationPath()}
+              className="w-full h-11 px-4 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition-all inline-flex items-center justify-center gap-2"
+            >
+              <Home size={14} />
+              <span>Go to My Dashboard</span>
+            </Link>
+          )}
 
           <Link
             to="/"

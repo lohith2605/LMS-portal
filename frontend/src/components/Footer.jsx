@@ -67,16 +67,14 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
                         href={social.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title={`${social.name}: ${social.handle || social.name}`}
-                        aria-label={`${social.ariaLabel}${social.handle ? ` (${social.handle})` : ''}`}
+                        title={social.name}
+                        aria-label={social.ariaLabel}
                         className="group relative w-8 h-8 rounded-xl bg-surface-subtle border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:border-primary/40 hover:bg-surface-elevated transition-all shadow-2xs hover-lift focus:outline-none focus:ring-2 focus:ring-accent"
                       >
                         <SocialIcon platform={social.id} size={15} />
-                        {social.handle && (
-                          <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-neutral-900 text-white text-[10px] font-medium py-0.5 px-2 rounded-md whitespace-nowrap shadow-md z-20">
-                            {social.handle}
-                          </span>
-                        )}
+                        <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-neutral-900 text-white text-[10px] font-medium py-0.5 px-2 rounded-md whitespace-nowrap shadow-md z-20">
+                          {social.name}
+                        </span>
                       </a>
                     );
                   }
