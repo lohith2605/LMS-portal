@@ -78,8 +78,11 @@ export default function BrandLogo({
   subtitle,
   size = 'md',
   onClick,
+  onKeyDown,
   className = '',
   ariaLabel,
+  ariaExpanded,
+  ariaHasPopup,
 }) {
   const sizeMap = {
     sm: {
@@ -163,6 +166,9 @@ export default function BrandLogo({
       <Link
         to={to}
         onClick={onClick}
+        onKeyDown={onKeyDown}
+        aria-expanded={ariaExpanded}
+        aria-haspopup={ariaHasPopup}
         className="no-underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4 rounded-xl"
         aria-label={ariaLabel || `${brandName} Home`}
       >
@@ -174,8 +180,11 @@ export default function BrandLogo({
   return (
     <div
       onClick={onClick}
+      onKeyDown={onKeyDown}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      aria-expanded={ariaExpanded}
+      aria-haspopup={ariaHasPopup}
       aria-label={ariaLabel || brandName}
     >
       {content}

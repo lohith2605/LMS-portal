@@ -20,7 +20,11 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   // 2. Unauthenticated: redirect to login and preserve intended path
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const isTargetingAdmin =
+      (allowedRoles && allowedRoles.includes('admin') && !allowedRoles.includes('student')) ||
+      location.pathname.startsWith('/admin');
+    const loginPath = isTargetingAdmin ? '/login?role=admin' : '/login';
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 
   // 3. Pending status check

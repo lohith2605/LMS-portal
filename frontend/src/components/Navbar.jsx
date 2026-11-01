@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, ArrowUpRight, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import ThemeToggle from './ThemeToggle';
 import BrandLogo from './ui/BrandLogo';
@@ -8,8 +8,16 @@ import BrandLogo from './ui/BrandLogo';
 export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [_clickCount, setClickCount] = useState(0);
+  const clickTimestampsRef = useRef([]);
+  const resetTimerRef = useRef(null);
+  const adminMenuRef = useRef(null);
+  const firstMenuItemRef = useRef(null);
+
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const getDashboardPath = () => {
     if (!user) return '/dashboard';
@@ -89,23 +97,115 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [activeSection]);
 
-  // Clean up timer on unmount
+  // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
     };
   }, []);
 
-  // Close mobile drawer on Escape key
+  // Close mobile drawer and admin menu on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && mobileMenuOpen) {
-        setMobileMenuOpen(false);
+      if (e.key === 'Escape') {
+        if (mobileMenuOpen) setMobileMenuOpen(false);
+        if (isAdminMenuOpen) {
+          setIsAdminMenuOpen(false);
+          adminMenuRef.current?.querySelector('a')?.focus();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, isAdminMenuOpen]);
+
+  // Close admin menu when clicking outside
+  useEffect(() => {
+    if (!isAdminMenuOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (adminMenuRef.current && !adminMenuRef.current.contains(e.target)) {
+        setIsAdminMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isAdminMenuOpen]);
+
+  // Close admin menu and reset click state when route changes
+  useEffect(() => {
+    setIsAdminMenuOpen(false);
+    setClickCount(0);
+    clickTimestampsRef.current = [];
+  }, [location.pathname, location.search]);
+
+  // Auto-focus first menu item for keyboard accessibility when opened
+  useEffect(() => {
+    if (isAdminMenuOpen && firstMenuItemRef.current) {
+      firstMenuItemRef.current.focus();
+    }
+  }, [isAdminMenuOpen]);
+
+  const handleLogoClick = (e) => {
+    // If admin menu is already open, clicking the logo closes it
+    if (isAdminMenuOpen) {
+      setIsAdminMenuOpen(false);
+      setClickCount(0);
+      clickTimestampsRef.current = [];
+      return;
+    }
+
+    const now = Date.now();
+    // Keep only timestamps within rolling 3-second (3000ms) window
+    const recentClicks = clickTimestampsRef.current.filter((t) => now - t < 3000);
+    recentClicks.push(now);
+    clickTimestampsRef.current = recentClicks;
+    setClickCount(recentClicks.length);
+
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
+
+    if (recentClicks.length >= 5) {
+      // 5 clicks within 3 seconds reached: prevent default navigation and reveal admin menu
+      if (e && e.preventDefault) {
+        e.preventDefault();
+      }
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+      setIsAdminMenuOpen(true);
+      setClickCount(0);
+      clickTimestampsRef.current = [];
+      resetTimerRef.current = null;
+    } else {
+      // Set timer to reset sequence after the 3-second window expires
+      const timeRemaining = Math.max(0, 3000 - (now - recentClicks[0]));
+      resetTimerRef.current = setTimeout(() => {
+        setClickCount(0);
+        clickTimestampsRef.current = [];
+        resetTimerRef.current = null;
+      }, timeRemaining);
+    }
+  };
+
+  const handleLogoKeyDown = (e) => {
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      handleLogoClick(e);
+    }
+  };
+
+  const handleAdminLoginSelect = () => {
+    setIsAdminMenuOpen(false);
+    navigate('/login?role=admin');
+  };
 
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
@@ -141,14 +241,51 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
       }`}
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
-        {/* Brand */}
-        <BrandLogo
-          to="/"
-          size="md"
-          brandName={brandName}
-          badge="Platform"
-          ariaLabel={`${brandName} Home`}
-        />
+        {/* Brand with Discreet Admin Trigger */}
+        <div className="relative inline-flex items-center" ref={adminMenuRef}>
+          <BrandLogo
+            to="/"
+            size="md"
+            brandName={brandName}
+            badge="Platform"
+            ariaLabel={`${brandName} Home`}
+            onClick={handleLogoClick}
+            onKeyDown={handleLogoKeyDown}
+            ariaExpanded={isAdminMenuOpen}
+            ariaHasPopup="menu"
+          />
+
+          {/* Discreet Admin Login Dropdown Menu */}
+          {isAdminMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Admin Access"
+              className="absolute left-0 top-full mt-2.5 z-50 w-52 p-1.5 rounded-2xl bg-surface border border-border-subtle shadow-elevated animate-[modalFadeIn_150ms_ease-out] backdrop-blur-md"
+            >
+              <div className="px-3 py-1.5 mb-1 border-b border-border-subtle flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
+                  Restricted Access
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cobalt animate-pulse" />
+              </div>
+              <button
+                ref={firstMenuItemRef}
+                type="button"
+                role="menuitem"
+                onClick={handleAdminLoginSelect}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-primary hover:bg-cobalt-soft hover:text-cobalt active:bg-cobalt/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:bg-cobalt-soft focus-visible:text-cobalt transition-colors cursor-pointer text-left"
+              >
+                <div className="w-6 h-6 rounded-lg bg-cobalt-soft text-cobalt flex items-center justify-center shrink-0 border border-cobalt-border/30">
+                  <ShieldCheck size={14} className="text-cobalt" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold leading-tight">Admin Login</span>
+                  <span className="text-[10px] text-secondary font-normal">Platform governance</span>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Desktop Nav Items with Silky-Smooth Gliding Indicator */}
         <nav aria-label="Main Navigation">
@@ -219,14 +356,6 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50/90 hover:bg-rose-100 border border-rose-200/90 px-3 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
-                onClick={() => navigate('/login?role=admin')}
-              >
-                <ShieldCheck size={14} className="text-rose-600" />
-                <span>Admin Login</span>
-              </button>
               <button
                 type="button"
                 className="hidden md:inline-flex text-sm font-semibold text-secondary hover:text-primary hover:bg-black/5 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
@@ -325,17 +454,6 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      navigate('/login?role=admin');
-                    }}
-                  >
-                    <ShieldCheck size={16} className="text-rose-600" />
-                    <span>Admin Login</span>
-                  </button>
                   <button
                     type="button"
                     className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-surface text-primary border border-border-subtle hover:bg-surface-subtle shadow-xs transition-all text-center cursor-pointer"

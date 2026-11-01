@@ -41,7 +41,11 @@ function GoogleIcon({ className = 'w-4 h-4' }) {
 export default function LoginPage() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const isAdminRole = searchParams.get('role') === 'admin';
+  const fromAdminPath = Boolean(location.state?.from?.pathname?.startsWith('/admin'));
+  const isAdminRole =
+    searchParams.get('role') === 'admin' ||
+    location.pathname === '/admin/login' ||
+    fromAdminPath;
 
   const [email, setEmail] = useState(() => (isAdminRole ? 'admin@learnspace.io' : ''));
   const [password, setPassword] = useState('');
@@ -49,6 +53,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -71,6 +76,24 @@ export default function LoginPage() {
       icon: Layers,
       title: 'Skills built through practice',
       desc: 'Hands-on projects and guided exercises verified by expert mentors.'
+    }
+  ];
+
+  const adminHighlights = [
+    {
+      icon: ShieldCheck,
+      title: 'Platform Governance',
+      desc: 'Oversee system operations, configure application settings, and audit health metrics.'
+    },
+    {
+      icon: Target,
+      title: 'Curriculum & Review Queues',
+      desc: 'Evaluate instructor course submissions and enforce verified pedagogical standards.'
+    },
+    {
+      icon: Layers,
+      title: 'Role & User Authorization',
+      desc: 'Approve educator credentials, manage account lifecycles, and enforce security policies.'
     }
   ];
 
@@ -166,11 +189,23 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      eyebrow="WELCOME BACK"
-      headline="Your next breakthrough starts here."
-      description="Return to your courses, continue building practical skills, and keep your learning journey moving forward."
-      highlights={loginHighlights}
-      quote="Learn with purpose. Progress with confidence."
+      eyebrow={isAdminRole ? 'ADMINISTRATIVE PORTAL' : 'WELCOME BACK'}
+      headline={
+        isAdminRole
+          ? 'Platform Governance & Console'
+          : 'Your next breakthrough starts here.'
+      }
+      description={
+        isAdminRole
+          ? 'Sign in with verified administrator credentials to access platform governance, manage curriculum review queues, and oversee user roles.'
+          : 'Return to your courses, continue building practical skills, and keep your learning journey moving forward.'
+      }
+      highlights={isAdminRole ? adminHighlights : loginHighlights}
+      quote={
+        isAdminRole
+          ? 'Secure platform stewardship with accountability and precision.'
+          : 'Learn with purpose. Progress with confidence.'
+      }
       panelBadge={isAdminRole ? 'Admin Portal' : 'Sign In'}
       formTitle={isAdminRole ? 'Administrator Sign In' : 'Welcome back'}
       formSubtitle={
@@ -266,55 +301,74 @@ export default function LoginPage() {
           {submitting ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Signing in...</span>
+              <span>{isAdminRole ? 'Authenticating Admin...' : 'Signing in...'}</span>
             </>
           ) : (
             <>
-              <span>Sign In</span>
+              {isAdminRole && <ShieldCheck size={16} aria-hidden="true" />}
+              <span>{isAdminRole ? 'Sign In as Administrator' : 'Sign In'}</span>
               <ArrowRight size={15} aria-hidden="true" />
             </>
           )}
         </button>
 
-        {/* Divider */}
-        <div className="relative my-4 flex items-center justify-center">
-          <div className="border-t border-divider w-full" />
-          <span className="bg-surface px-3 text-xs uppercase tracking-wider text-tertiary font-medium absolute">
-            or
-          </span>
-        </div>
+        {!isAdminRole ? (
+          <>
+            {/* Divider */}
+            <div className="relative my-4 flex items-center justify-center">
+              <div className="border-t border-divider w-full" />
+              <span className="bg-surface px-3 text-xs uppercase tracking-wider text-tertiary font-medium absolute">
+                or
+              </span>
+            </div>
 
-        {/* Google Sign-In Button */}
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={submitting || googleSubmitting}
-          aria-label="Continue with Google"
-          className="w-full h-11 sm:h-12 px-4 rounded-xl border border-border-subtle bg-surface text-sm font-semibold text-primary hover:bg-surface-subtle hover:border-border-medium active:bg-surface transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
-        >
-          {googleSubmitting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-cobalt/30 border-t-cobalt rounded-full animate-spin" />
-              <span>Connecting to Google...</span>
-            </>
-          ) : (
-            <>
-              <GoogleIcon className="w-4 h-4 shrink-0" />
-              <span>Continue with Google</span>
-            </>
-          )}
-        </button>
+            {/* Google Sign-In Button */}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={submitting || googleSubmitting}
+              aria-label="Continue with Google"
+              className="w-full h-11 sm:h-12 px-4 rounded-xl border border-border-subtle bg-surface text-sm font-semibold text-primary hover:bg-surface-subtle hover:border-border-medium active:bg-surface transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
+            >
+              {googleSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-cobalt/30 border-t-cobalt rounded-full animate-spin" />
+                  <span>Connecting to Google...</span>
+                </>
+              ) : (
+                <>
+                  <GoogleIcon className="w-4 h-4 shrink-0" />
+                  <span>Continue with Google</span>
+                </>
+              )}
+            </button>
 
-        {/* Switch to Register */}
-        <div className="text-center pt-3 border-t border-divider text-xs text-secondary">
-          Don't have an account yet?{' '}
-          <Link
-            to="/register"
-            className="font-semibold text-cobalt hover:text-cobalt-hover hover:underline"
-          >
-            Create an account
-          </Link>
-        </div>
+            {/* Switch to Register */}
+            <div className="text-center pt-3 border-t border-divider text-xs text-secondary">
+              Don't have an account yet?{' '}
+              <Link
+                to="/register"
+                className="font-semibold text-cobalt hover:text-cobalt-hover hover:underline"
+              >
+                Create an account
+              </Link>
+            </div>
+          </>
+        ) : (
+          <div className="pt-4 border-t border-divider space-y-3">
+            <p className="text-center text-[11px] text-secondary leading-normal">
+              Protected administrative environment. All authentication attempts are logged for security compliance.
+            </p>
+            <div className="text-center">
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-cobalt hover:text-cobalt-hover hover:underline"
+              >
+                <span>← Return to Student &amp; Instructor Sign In</span>
+              </Link>
+            </div>
+          </div>
+        )}
       </form>
     </AuthLayout>
   );

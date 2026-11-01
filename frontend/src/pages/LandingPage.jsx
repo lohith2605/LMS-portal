@@ -29,6 +29,10 @@ export default function LandingPage() {
       navigate('/login');
       return;
     }
+    if (mode === 'admin') {
+      navigate('/login?role=admin');
+      return;
+    }
     if (mode === 'register') {
       navigate('/register');
       return;
