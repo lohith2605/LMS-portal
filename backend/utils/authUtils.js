@@ -105,17 +105,27 @@ const sanitizeUser = (user) => {
     safeAvatar = { url: raw.avatar.url, publicId: raw.avatar.publicId || null };
   }
 
+  const skills = Array.isArray(raw.skills)
+    ? raw.skills.filter((s) => typeof s === 'string' && s.trim().length > 0).map((s) => s.trim())
+    : [];
+
   return {
     id,
     _id: id,
     name: raw.name,
     email: raw.email,
     role: raw.role,
+    headline: typeof raw.headline === 'string' ? raw.headline : '',
+    bio: typeof raw.bio === 'string' ? raw.bio : '',
+    skills,
+    education: typeof raw.education === 'string' ? raw.education : '',
+    experience: typeof raw.experience === 'string' ? raw.experience : '',
     accountStatus: raw.accountStatus,
     emailVerified: Boolean(raw.emailVerified),
     avatar: safeAvatar,
     createdAt: raw.createdAt,
     lastLoginAt: raw.lastLoginAt,
+    timezone: raw.timezone || 'Asia/Kolkata',
     mfaEnabled: Boolean(raw.mfa?.enabled),
     mfaMethod: raw.mfa?.preferredMethod || null,
   };

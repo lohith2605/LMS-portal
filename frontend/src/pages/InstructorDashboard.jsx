@@ -54,6 +54,8 @@ import AssignmentStudioModal from '../components/dashboard/AssignmentStudioModal
 import SubmissionGradingModal from '../components/dashboard/SubmissionGradingModal';
 import InstructorAnalyticsView from '../components/analytics/InstructorAnalyticsView';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
+import ProfileEditModal from '../components/profile/ProfileEditModal';
+import ProfileCompletionCard from '../components/dashboard/ProfileCompletionCard';
 import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 
@@ -79,6 +81,13 @@ export default function InstructorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileModalField, setProfileModalField] = useState('headline');
+
+  const handleOpenEditProfile = (field = 'headline') => {
+    setProfileModalField(field || 'headline');
+    setIsProfileModalOpen(true);
+  };
 
   // Phase 4 Course Creation Studio State
   const [courseStudioModalOpen, setCourseStudioModalOpen] = useState(false);
@@ -490,6 +499,7 @@ export default function InstructorDashboard() {
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={data?.announcements || []}
+      onOpenProfileModal={handleOpenEditProfile}
     >
       {loading ? (
         <LoadingState message="Loading instructor teaching metrics..." cardsCount={4} />
@@ -564,6 +574,13 @@ export default function InstructorDashboard() {
                   </button>
                 </div>
               </div>
+
+              {/* Profile Completion Experience */}
+              <ProfileCompletionCard
+                user={user}
+                onOpenEditProfile={handleOpenEditProfile}
+                onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+              />
 
               {/* Key Metrics */}
               <div>
@@ -825,7 +842,7 @@ export default function InstructorDashboard() {
           )}
 
           {/* TAB: TEACHING ANALYTICS */}
-          {activeTab === 'analytics' && <InstructorAnalyticsView />}
+          {activeTab === 'analytics' && <InstructorAnalyticsView onSelectDashboardTab={setActiveTab} />}
 
           {/* TAB: MY COURSES */}
           {activeTab === 'courses' && (
@@ -2222,6 +2239,14 @@ export default function InstructorDashboard() {
       <ProfilePictureModal
         isOpen={isAvatarModalOpen}
         onClose={() => setIsAvatarModalOpen(false)}
+      />
+
+      {/* Profile Edit Details Modal */}
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        initialField={profileModalField}
+        onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
       />
     </DashboardLayout>
   );

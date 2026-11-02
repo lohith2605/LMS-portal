@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ThemeContext } from './themeContextInstance';
+import { isCategoryAllowed, onConsentChange } from '../utils/cookieConsent';
 
 const STORAGE_KEY = 'learnspace-theme';
 
@@ -21,7 +22,9 @@ export function ThemeProvider({ children }) {
     const validTheme = newTheme === 'dark' ? 'dark' : 'light';
     setThemeState(validTheme);
     try {
-      localStorage.setItem(STORAGE_KEY, validTheme);
+      if (isCategoryAllowed('preferences')) {
+        localStorage.setItem(STORAGE_KEY, validTheme);
+      }
     } catch {
       // ignore
     }
@@ -57,6 +60,20 @@ export function ThemeProvider({ children }) {
       return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
     }
   }, [theme, applyTheme]);
+
+  // Listen for consent change: if preferences are rejected, clean up saved theme key from storage
+  useEffect(() => {
+    const unsubscribe = onConsentChange((consent) => {
+      if (consent && !consent.categories?.preferences) {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const value = useMemo(
     () => ({

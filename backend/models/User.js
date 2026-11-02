@@ -112,6 +112,34 @@ const userSchema = new mongoose.Schema(
         default: null,
       },
     },
+    headline: {
+      type: String,
+      trim: true,
+      maxlength: [140, 'Headline cannot exceed 140 characters'],
+      default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [1500, 'Biography cannot exceed 1500 characters'],
+      default: '',
+    },
+    skills: {
+      type: [String],
+      default: [],
+    },
+    education: {
+      type: String,
+      trim: true,
+      maxlength: [240, 'Education cannot exceed 240 characters'],
+      default: '',
+    },
+    experience: {
+      type: String,
+      trim: true,
+      maxlength: [240, 'Experience cannot exceed 240 characters'],
+      default: '',
+    },
     mfa: {
       enabled: {
         type: Boolean,

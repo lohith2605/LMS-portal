@@ -1,15 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Clock } from 'lucide-react';
+import { Mail, Clock, SlidersHorizontal, Cookie } from 'lucide-react';
 import BrandLogo from './ui/BrandLogo';
 import { SocialIcon } from './ui/SocialIcons';
 import { SOCIAL_LINKS, CONTACT_INFO } from '../config/socialLinks';
+import { useCookieConsent } from '../context/CookieConsentContext';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const { openPreferences } = useCookieConsent();
 
   const scrollToSection = (e, sectionId) => {
     if (!isHomePage) return; // Allow normal link navigation when not on home page
@@ -153,7 +155,7 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
               <li>
                 <button
                   type="button"
-                  onClick={() => onOpenAuth ? onOpenAuth('login') : null}
+                  onClick={() => (onOpenAuth ? onOpenAuth('login') : null)}
                   className="text-xs text-secondary hover:text-primary transition-colors bg-transparent border-none p-0 text-left cursor-pointer"
                 >
                   Student Login
@@ -162,7 +164,7 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
               <li>
                 <button
                   type="button"
-                  onClick={() => onOpenAuth ? onOpenAuth('register') : null}
+                  onClick={() => (onOpenAuth ? onOpenAuth('register') : null)}
                   className="text-xs text-secondary hover:text-primary transition-colors bg-transparent border-none p-0 text-left cursor-pointer"
                 >
                   Student Registration
@@ -171,7 +173,7 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
               <li>
                 <button
                   type="button"
-                  onClick={() => onOpenAuth ? onOpenAuth('instructor') : null}
+                  onClick={() => (onOpenAuth ? onOpenAuth('instructor') : null)}
                   className="text-xs text-secondary hover:text-primary transition-colors bg-transparent border-none p-0 text-left cursor-pointer"
                 >
                   Instructor Cohort Access
@@ -209,6 +211,25 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
               </li>
               <li>
                 <Link
+                  to="/cookies"
+                  className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Cookie size={13} className="text-secondary shrink-0" />
+                  <span>Cookie Policy</span>
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={openPreferences}
+                  className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 bg-transparent border-none p-0 text-left"
+                >
+                  <SlidersHorizontal size={13} className="text-secondary shrink-0" />
+                  <span>Cookie Settings</span>
+                </button>
+              </li>
+              <li>
+                <Link
                   to="/contact"
                   className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
@@ -239,7 +260,7 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
           <div className="text-center sm:text-left">
             &copy; {CURRENT_YEAR} {brandName}. All rights reserved. Built for structured, verified learning.
           </div>
-          <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex items-center gap-3 sm:gap-4 text-[11px] flex-wrap justify-center">
             <Link to="/terms" className="hover:text-primary transition-colors">
               Terms
             </Link>
@@ -247,6 +268,18 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
             <Link to="/privacy" className="hover:text-primary transition-colors">
               Privacy
             </Link>
+            <span>&bull;</span>
+            <Link to="/cookies" className="hover:text-primary transition-colors">
+              Cookies
+            </Link>
+            <span>&bull;</span>
+            <button
+              type="button"
+              onClick={openPreferences}
+              className="hover:text-primary text-tertiary transition-colors cursor-pointer bg-transparent border-none p-0"
+            >
+              Cookie Settings
+            </button>
             <span>&bull;</span>
             <Link to="/contact" className="hover:text-primary transition-colors">
               Contact

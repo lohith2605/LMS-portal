@@ -19,8 +19,13 @@ import CoursePlayerPage from './pages/CoursePlayerPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
 import ContactPage from './pages/ContactPage';
 import NotFoundPage from './pages/NotFoundPage';
+
+// Cookie Consent System
+import CookieConsentBanner from './components/cookie/CookieConsentBanner';
+import CookiePreferencesModal from './components/cookie/CookiePreferencesModal';
 
 function DashboardRedirect() {
   const { user, isLoading } = useAuth();
@@ -50,83 +55,90 @@ function DashboardRedirect() {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public Pages */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/admin/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/contact" element={<ContactPage />} />
+    <>
+      <Routes>
+        {/* Public Pages */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/cookies" element={<CookiePolicyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
 
-      {/* Course Discovery & Player Pages */}
-      <Route path="/courses/:idOrSlug" element={<CourseDetailsPage />} />
-      <Route
-        path="/courses/:idOrSlug/learn"
-        element={
-          <ProtectedRoute>
-            <CoursePlayerPage />
-          </ProtectedRoute>
-        }
-      />
+        {/* Course Discovery & Player Pages */}
+        <Route path="/courses/:idOrSlug" element={<CourseDetailsPage />} />
+        <Route
+          path="/courses/:idOrSlug/learn"
+          element={
+            <ProtectedRoute>
+              <CoursePlayerPage />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Public Certificate Verification */}
-      <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
-      <Route path="/certificates/:certificateId" element={<CertificateVerifyPage />} />
+        {/* Public Certificate Verification */}
+        <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
+        <Route path="/certificates/:certificateId" element={<CertificateVerifyPage />} />
 
-      {/* Role-Adaptive Dashboard Dispatcher */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardRedirect />
-          </ProtectedRoute>
-        }
-      />
+        {/* Role-Adaptive Dashboard Dispatcher */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardRedirect />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Role-Protected Dashboard Views */}
-      <Route
-        path="/student/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['student', 'admin']}>
-            <StudentDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/progress"
-        element={<Navigate to="/student/dashboard?tab=analytics" replace />}
-      />
-      <Route
-        path="/student/analytics"
-        element={<Navigate to="/student/dashboard?tab=analytics" replace />}
-      />
+        {/* Role-Protected Dashboard Views */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['student', 'admin']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/progress"
+          element={<Navigate to="/student/dashboard?tab=analytics" replace />}
+        />
+        <Route
+          path="/student/analytics"
+          element={<Navigate to="/student/dashboard?tab=analytics" replace />}
+        />
 
-      <Route
-        path="/instructor/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['instructor', 'admin']}>
-            <InstructorDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/instructor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['instructor', 'admin']}>
+              <InstructorDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* 404 Catch-All */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        {/* 404 Catch-All */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+
+      {/* Global Cookie Consent Banner & Preferences Modal */}
+      <CookieConsentBanner />
+      <CookiePreferencesModal />
+    </>
   );
 }

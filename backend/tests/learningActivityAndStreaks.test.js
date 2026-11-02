@@ -962,4 +962,152 @@ test('31. GET /api/learning-activity/summary returns todayQualifyingCount accura
   assert.strictEqual(res.body.todayStudySeconds, 2400);
   assert.strictEqual(res.body.todayQualifyingCount, 3);
   assert.strictEqual(res.body.todayQualified, true);
+  assert.strictEqual(res.body.isGoalCompleted, true);
+  assert.strictEqual(res.body.dailyGoalSeconds, 900);
+  assert.strictEqual(res.body.dailyGoalMinutes, 15);
+});
+
+test('32. Active study time reaching 15 minutes (900s) qualifies today without lesson completion', async () => {
+  resetTestDb();
+  const student = createStudent();
+  const session = await createActiveSession(student);
+  const token = makeAuthCookie(student, session);
+  const todayKey = streakService.getLocalDateKey(new Date(), 'Asia/Kolkata');
+
+  // Study time reaches 900 seconds (15 minutes), with 0 completed lessons
+  mockDailyStudySummaries.push({
+    _id: makeObjectId(),
+    student: student._id,
+    dateKey: todayKey,
+    activeStudySeconds: 900,
+    qualifyingActivitiesCount: 0,
+  });
+
+  const res = await request(app)
+    .get('/api/learning-activity/summary')
+    .set('Cookie', [`jwt=${token}`]);
+
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.todayStudySeconds, 900);
+  assert.strictEqual(res.body.todayQualifyingCount, 0);
+  assert.strictEqual(res.body.isGoalCompleted, true);
+  assert.strictEqual(res.body.todayQualified, true);
+  assert.strictEqual(res.body.currentStreak, 1);
+});
+
+test('33. Study time under 15 minutes (e.g. 480s / 8 min) keeps flame muted and goal in-progress', async () => {
+  resetTestDb();
+  const student = createStudent();
+  const session = await createActiveSession(student);
+  const token = makeAuthCookie(student, session);
+  const todayKey = streakService.getLocalDateKey(new Date(), 'Asia/Kolkata');
+
+  // 480 seconds (8 mins), 0 qualifying activities
+  mockDailyStudySummaries.push({
+    _id: makeObjectId(),
+    student: student._id,
+    dateKey: todayKey,
+    activeStudySeconds: 480,
+    qualifyingActivitiesCount: 0,
+  });
+
+  const res = await request(app)
+    .get('/api/learning-activity/summary')
+    .set('Cookie', [`jwt=${token}`]);
+
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.todayStudySeconds, 480);
+  assert.strictEqual(res.body.isGoalCompleted, false);
+  assert.strictEqual(res.body.todayQualified, false);
+  assert.strictEqual(res.body.currentStreak, 0);
+});
+
+test('34. Returning student with streak from yesterday retains streak count today while goal is in progress', async () => {
+  resetTestDb();
+  const student = createStudent();
+  const session = await createActiveSession(student);
+  const token = makeAuthCookie(student, session);
+  const todayKey = streakService.getLocalDateKey(new Date(), 'Asia/Kolkata');
+  const yesterdayKey = streakService.getOffsetDateKey(todayKey, -1);
+  const twoDaysAgoKey = streakService.getOffsetDateKey(todayKey, -2);
+
+  // Student qualified 2 days ago and yesterday (2-day streak). Today has 300s (5m) study time, not yet 15m
+  mockDailyStudySummaries.push(
+    {
+      _id: makeObjectId(),
+      student: student._id,
+      dateKey: twoDaysAgoKey,
+      activeStudySeconds: 1200,
+      qualifyingActivitiesCount: 1,
+    },
+    {
+      _id: makeObjectId(),
+      student: student._id,
+      dateKey: yesterdayKey,
+      activeStudySeconds: 1000,
+      qualifyingActivitiesCount: 1,
+    },
+    {
+      _id: makeObjectId(),
+      student: student._id,
+      dateKey: todayKey,
+      activeStudySeconds: 300,
+      qualifyingActivitiesCount: 0,
+    }
+  );
+
+  const res = await request(app)
+    .get('/api/learning-activity/summary')
+    .set('Cookie', [`jwt=${token}`]);
+
+  assert.strictEqual(res.status, 200);
+  // Current streak is preserved as 2 (consecutive from yesterday)
+  assert.strictEqual(res.body.currentStreak, 2);
+  // Goal is in-progress, not completed yet
+  assert.strictEqual(res.body.todayStudySeconds, 300);
+  assert.strictEqual(res.body.isGoalCompleted, false);
+  assert.strictEqual(res.body.todayQualified, false);
+});
+
+test('35. Completing goal today advances returning student streak from 2 to 3', async () => {
+  resetTestDb();
+  const student = createStudent();
+  const session = await createActiveSession(student);
+  const token = makeAuthCookie(student, session);
+  const todayKey = streakService.getLocalDateKey(new Date(), 'Asia/Kolkata');
+  const yesterdayKey = streakService.getOffsetDateKey(todayKey, -1);
+  const twoDaysAgoKey = streakService.getOffsetDateKey(todayKey, -2);
+
+  mockDailyStudySummaries.push(
+    {
+      _id: makeObjectId(),
+      student: student._id,
+      dateKey: twoDaysAgoKey,
+      activeStudySeconds: 1200,
+      qualifyingActivitiesCount: 1,
+    },
+    {
+      _id: makeObjectId(),
+      student: student._id,
+      dateKey: yesterdayKey,
+      activeStudySeconds: 1000,
+      qualifyingActivitiesCount: 1,
+    },
+    {
+      _id: makeObjectId(),
+      student: student._id,
+      dateKey: todayKey,
+      activeStudySeconds: 950, // Reached 15 minutes!
+      qualifyingActivitiesCount: 0,
+    }
+  );
+
+  const res = await request(app)
+    .get('/api/learning-activity/summary')
+    .set('Cookie', [`jwt=${token}`]);
+
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.currentStreak, 3);
+  assert.strictEqual(res.body.isGoalCompleted, true);
+  assert.strictEqual(res.body.todayQualified, true);
 });

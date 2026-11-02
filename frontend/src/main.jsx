@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { CookieConsentProvider } from './context/CookieConsentContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 import App from './App.jsx';
@@ -13,11 +14,13 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter>
         <ThemeProvider>
-          <AuthProvider>
-            <NotificationProvider>
-              <App />
-            </NotificationProvider>
-          </AuthProvider>
+          <CookieConsentProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <App />
+              </NotificationProvider>
+            </AuthProvider>
+          </CookieConsentProvider>
         </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>

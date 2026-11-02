@@ -935,6 +935,112 @@ const deleteProfilePicture = async (req, res) => {
   }
 };
 
+/**
+ * Update authenticated user's profile information (name, headline, bio, skills, education, experience)
+ * PATCH /api/auth/profile
+ */
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.id || req.user._id) : null;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    const { name, headline, bio, skills, education, experience } = req.body;
+
+    if (name !== undefined) {
+      const trimmedName = typeof name === 'string' ? name.trim() : '';
+      if (!trimmedName || trimmedName.length < 2) {
+        return res.status(400).json({ error: 'Name must be at least 2 characters long.' });
+      }
+      if (trimmedName.length > 100) {
+        return res.status(400).json({ error: 'Name cannot exceed 100 characters.' });
+      }
+      user.name = trimmedName;
+    }
+
+    if (headline !== undefined) {
+      user.headline = typeof headline === 'string' ? headline.trim().slice(0, 140) : '';
+    }
+
+    if (bio !== undefined) {
+      user.bio = typeof bio === 'string' ? bio.trim().slice(0, 1500) : '';
+    }
+
+    if (skills !== undefined) {
+      if (Array.isArray(skills)) {
+        user.skills = skills
+          .map((s) => (typeof s === 'string' ? s.trim() : ''))
+          .filter((s) => s.length > 0)
+          .slice(0, 20);
+      } else if (typeof skills === 'string') {
+        user.skills = skills
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0)
+          .slice(0, 20);
+      }
+    }
+
+    if (education !== undefined) {
+      user.education = typeof education === 'string' ? education.trim().slice(0, 240) : '';
+    }
+
+    if (experience !== undefined) {
+      user.experience = typeof experience === 'string' ? experience.trim().slice(0, 240) : '';
+    }
+
+    await user.save();
+
+    logger.info(`Profile details updated for user ${user.email} (${user._id})`);
+
+    return res.status(200).json({
+      message: 'Profile updated successfully.',
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    logger.error(`Profile update error: ${error.message}`);
+    return res.status(500).json({
+      error: 'Failed to update profile. Please try again.',
+    });
+  }
+};
+
+/**
+ * Get profile completion status for authenticated user
+ * GET /api/auth/profile-completion
+ */
+const getProfileCompletionEndpoint = async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.id || req.user._id) : null;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    const { calculateProfileCompletion } = require('../utils/profileCompletion');
+    const completion = calculateProfileCompletion(sanitizeUser(user));
+
+    return res.status(200).json({
+      completion,
+    });
+  } catch (error) {
+    logger.error(`Profile completion error: ${error.message}`);
+    return res.status(500).json({
+      error: 'Failed to retrieve profile completion status.',
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -949,5 +1055,7 @@ module.exports = {
   resendVerification,
   updateProfilePicture,
   deleteProfilePicture,
+  updateProfile,
+  getProfileCompletionEndpoint,
 };
 

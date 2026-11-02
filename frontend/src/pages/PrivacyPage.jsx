@@ -118,7 +118,7 @@ export default function PrivacyPage() {
                   <strong>Interactive Content:</strong> Course reviews and star ratings, questions submitted in course discussion threads, and direct support inquiries.
                 </li>
                 <li>
-                  <strong>Technical Data:</strong> IP address, device browser type, and secure HttpOnly cookie tokens used solely for maintaining your authenticated session.
+                  <strong>Technical Data:</strong> IP address, device browser type, and secure HttpOnly cookie tokens used solely for maintaining your authenticated session. Details regarding cookie categories and preference management are available in our <Link to="/cookies" className="text-cobalt font-semibold hover:underline">Cookie Policy</Link>.
                 </li>
               </ul>
             </section>

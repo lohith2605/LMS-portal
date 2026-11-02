@@ -7,11 +7,14 @@ import MobileNavigation from '../components/dashboard/MobileNavigation';
 import NotificationDrawer from '../components/dashboard/NotificationDrawer';
 import ChangePasswordModal from '../components/dashboard/ChangePasswordModal';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
+import ProfileEditModal from '../components/profile/ProfileEditModal';
+import { isCategoryAllowed, onConsentChange } from '../utils/cookieConsent';
 
 export default function DashboardLayout({
   activeTab = 'overview',
   onSelectTab = () => {},
   announcements = [],
+  onOpenProfileModal: externalOpenProfileModal,
   children,
 }) {
   const { user, logout } = useAuth();
@@ -20,6 +23,17 @@ export default function DashboardLayout({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileModalField, setProfileModalField] = useState('headline');
+
+  const handleOpenProfileModal = (field = 'headline') => {
+    if (externalOpenProfileModal) {
+      externalOpenProfileModal(field);
+    } else {
+      setProfileModalField(field);
+      setProfileModalOpen(true);
+    }
+  };
 
   // Desktop sidebar collapsed state with localStorage persistence
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -56,7 +70,9 @@ export default function DashboardLayout({
           setSidebarCollapsed((prev) => {
             const next = !prev;
             try {
-              localStorage.setItem('learnspace_sidebar_collapsed', String(next));
+              if (isCategoryAllowed('preferences')) {
+                localStorage.setItem('learnspace_sidebar_collapsed', String(next));
+              }
             } catch {
               // Ignore storage write errors (e.g. private browsing)
             }
@@ -71,12 +87,28 @@ export default function DashboardLayout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isDesktop]);
 
+  // Clean up storage key if preferences consent is withdrawn
+  useEffect(() => {
+    const unsubscribe = onConsentChange((consent) => {
+      if (consent && !consent.categories?.preferences) {
+        try {
+          localStorage.removeItem('learnspace_sidebar_collapsed');
+        } catch {
+          // Ignore
+        }
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   const handleToggleSidebar = () => {
     if (isDesktop) {
       setSidebarCollapsed((prev) => {
         const next = !prev;
         try {
-          localStorage.setItem('learnspace_sidebar_collapsed', String(next));
+          if (isCategoryAllowed('preferences')) {
+            localStorage.setItem('learnspace_sidebar_collapsed', String(next));
+          }
         } catch {
           // Ignore storage write errors
         }
@@ -118,6 +150,7 @@ export default function DashboardLayout({
           unreadCount={unreadCount}
           onOpenPasswordModal={() => setPasswordModalOpen(true)}
           onOpenAvatarModal={() => setAvatarModalOpen(true)}
+          onOpenProfileModal={() => handleOpenProfileModal('headline')}
           onSelectTab={onSelectTab}
         />
 
@@ -157,6 +190,16 @@ export default function DashboardLayout({
         isOpen={avatarModalOpen}
         onClose={() => setAvatarModalOpen(false)}
       />
+
+      {/* Profile Edit Modal (Global fallback if not managed directly by page) */}
+      {!externalOpenProfileModal && (
+        <ProfileEditModal
+          isOpen={profileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          initialField={profileModalField}
+          onOpenAvatarModal={() => setAvatarModalOpen(true)}
+        />
+      )}
     </div>
   );
 }

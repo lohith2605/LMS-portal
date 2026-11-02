@@ -7,6 +7,7 @@ const User = require('../models/User');
 const { logger } = require('../utils/logger');
 
 const DEFAULT_TIMEZONE = 'Asia/Kolkata';
+const DEFAULT_DAILY_GOAL_SECONDS = 15 * 60; // 15 minutes of validated active learning
 const MAX_INTERVAL_SECONDS = 300; // Maximum allowed single study heartbeat duration (5 mins)
 const MIN_INTERVAL_SECONDS = 1;
 
@@ -179,15 +180,17 @@ const calculateStudentStreaks = async (userId, timeZone = DEFAULT_TIMEZONE) => {
   const validTz = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIMEZONE;
   const todayDateKey = getLocalDateKey(new Date(), validTz);
 
-  // Fetch all summaries for this student that have at least 1 qualifying activity
-  const summaries = await DailyStudySummary.find({
-    student: userId,
-    qualifyingActivitiesCount: { $gt: 0 },
-  })
-    .select('dateKey qualifyingActivitiesCount')
-    .lean();
+  // Fetch all summaries for this student that have qualifying activities or met daily active study goal
+  const summaries = await DailyStudySummary.find({ student: userId }).lean();
 
-  const qualifyingDates = summaries.map((s) => s.dateKey);
+  const qualifyingDates = summaries
+    .filter(
+      (s) =>
+        (s.qualifyingActivitiesCount || 0) > 0 ||
+        (s.activeStudySeconds || 0) >= DEFAULT_DAILY_GOAL_SECONDS
+    )
+    .map((s) => s.dateKey);
+
   return computeStreaksFromDates(qualifyingDates, todayDateKey);
 };
 
@@ -313,12 +316,33 @@ const recordActiveStudyTime = async ({
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
+  const isGoalCompleted =
+    (summary.activeStudySeconds || 0) >= DEFAULT_DAILY_GOAL_SECONDS ||
+    (summary.qualifyingActivitiesCount || 0) > 0;
+
+  // If this study interval meets or crosses the daily goal, update the cached streak on User
+  if (isGoalCompleted) {
+    const streakData = await calculateStudentStreaks(userId, validTz);
+    await User.findByIdAndUpdate(userId, {
+      timezone: validTz,
+      learningStreak: {
+        currentStreak: streakData.currentStreak,
+        longestStreak: streakData.longestStreak,
+        lastQualifiedDate: streakData.lastQualifiedDate,
+      },
+    }).catch((uErr) => {
+      logger.warn(`Could not update user streak cache on study goal: ${uErr.message}`);
+    });
+  }
+
   return {
     success: true,
     activityId: activity._id.toString(),
     durationSeconds: duration,
     localDateKey,
     activeStudySecondsToday: summary.activeStudySeconds,
+    dailyGoalSeconds: DEFAULT_DAILY_GOAL_SECONDS,
+    isGoalCompleted,
   };
 };
 
@@ -522,7 +546,11 @@ const getLearningSummary = async (userId, requestedTimeZone = null) => {
   const allSummaries = await DailyStudySummary.find({ student: userId }).lean();
 
   const qualifyingDates = allSummaries
-    .filter((s) => s.qualifyingActivitiesCount > 0)
+    .filter(
+      (s) =>
+        (s.qualifyingActivitiesCount || 0) > 0 ||
+        (s.activeStudySeconds || 0) >= DEFAULT_DAILY_GOAL_SECONDS
+    )
     .map((s) => s.dateKey);
 
   const streakData = computeStreaksFromDates(qualifyingDates, todayDateKey);
@@ -569,13 +597,21 @@ const getLearningSummary = async (userId, requestedTimeZone = null) => {
     });
   }
 
+  const dailyGoalSeconds = DEFAULT_DAILY_GOAL_SECONDS;
+  const isGoalCompleted =
+    todayStudySeconds >= dailyGoalSeconds || todayQualifyingCount > 0;
+  const todayQualified = streakData.todayQualified || isGoalCompleted;
+
   return {
     currentStreak: streakData.currentStreak,
     longestStreak: streakData.longestStreak,
     todayStudySeconds,
-    weekStudySeconds,
-    todayQualified: streakData.todayQualified,
+    dailyGoalSeconds,
+    dailyGoalMinutes: Math.round(dailyGoalSeconds / 60),
+    isGoalCompleted,
+    todayQualified,
     todayQualifyingCount,
+    weekStudySeconds,
     lastQualifiedDate: streakData.lastQualifiedDate,
     timezone: timeZone,
     dailySummaries: weekDays,
@@ -629,6 +665,7 @@ const getMonthlyActivity = async (userId, yearMonth, requestedTimeZone = null) =
 
 module.exports = {
   DEFAULT_TIMEZONE,
+  DEFAULT_DAILY_GOAL_SECONDS,
   MAX_INTERVAL_SECONDS,
   MIN_INTERVAL_SECONDS,
   isValidTimeZone,

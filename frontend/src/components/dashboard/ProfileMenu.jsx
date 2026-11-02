@@ -1,16 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LogOut, KeyRound, ShieldCheck, ExternalLink, ChevronDown, Camera } from 'lucide-react';
+import { LogOut, KeyRound, ShieldCheck, ExternalLink, ChevronDown, Camera, User, Cookie } from 'lucide-react';
+import { useCookieConsent } from '../../context/CookieConsentContext';
 
 export default function ProfileMenu({
   user,
   logout,
   onOpenPasswordModal,
   onOpenAvatarModal,
+  onOpenProfileModal,
   onSelectTab,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
+  const { openPreferences } = useCookieConsent();
 
   // Close when clicking outside
   useEffect(() => {
@@ -108,6 +111,21 @@ export default function ProfileMenu({
 
           {/* Menu Items */}
           <div className="py-1">
+            {onOpenProfileModal && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenProfileModal('headline');
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
+              >
+                <User size={14} className="text-secondary" />
+                <span>Edit Profile Details</span>
+              </button>
+            )}
+
             <button
               type="button"
               role="menuitem"
@@ -147,6 +165,19 @@ export default function ProfileMenu({
             >
               <KeyRound size={14} className="text-secondary" />
               <span>Change Password</span>
+            </button>
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                openPreferences();
+              }}
+              className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
+            >
+              <Cookie size={14} className="text-secondary" />
+              <span>Cookie Settings</span>
             </button>
 
             <Link

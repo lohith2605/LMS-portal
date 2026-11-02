@@ -27,6 +27,7 @@ import {
   quizService,
   certificateService,
   assignmentService,
+  learningActivityService,
 } from '../services/api';
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
 import { useAuth } from '../context/useAuth';
@@ -238,10 +239,42 @@ export default function CoursePlayerPage() {
       setIsLessonCompleted(res.isCompleted);
       setCompletedLessonIds(res.completedLessons || []);
       fetchQuizzesAndCompletion();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('learnspace:activity-updated'));
+      }
     } catch (err) {
       alert(err.normalizedMessage || 'Failed to update lesson completion status.');
     }
   };
+
+  // Active study interval heartbeat (records 60s of validated study while page is active)
+  useEffect(() => {
+    if (!course?._id || !activeLesson?._id) return;
+
+    const INTERVAL_SECONDS = 60;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        const timeSlot = Math.floor(Date.now() / (INTERVAL_SECONDS * 1000));
+        learningActivityService
+          .sendHeartbeat({
+            courseId: course._id,
+            lessonId: activeLesson._id,
+            durationSeconds: INTERVAL_SECONDS,
+            idempotencyKey: `hb_${course._id}_${activeLesson._id}_${timeSlot}`,
+          })
+          .then(() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('learnspace:activity-updated'));
+            }
+          })
+          .catch(() => {
+            // Background tracking fallback
+          });
+      }
+    }, INTERVAL_SECONDS * 1000);
+
+    return () => clearInterval(interval);
+  }, [course?._id, activeLesson?._id]);
 
   // Next / Prev Lesson Navigation
   const currentFlatIndex = flatLessons.findIndex(

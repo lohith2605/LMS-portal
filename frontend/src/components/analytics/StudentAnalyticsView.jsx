@@ -68,19 +68,7 @@ export default function StudentAnalyticsView({ user }) {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight">
-            Learning Progress & Analytics
-          </h1>
-          <p className="text-xs text-secondary mt-1">
-            Track your daily learning consistency, active study time, milestone achievements, and academic performance
-          </p>
-        </div>
-      </div>
-
-      {/* Learning Consistency, Streaks & Study Time (Phase 3) */}
+      {/* Learning Consistency, Streaks & Study Time */}
       <LearningStreakSection user={user} />
 
       {/* Academic Performance & Course Mastery Overview */}

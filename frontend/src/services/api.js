@@ -138,6 +138,23 @@ export const authService = {
     const res = await api.delete('/auth/profile-picture');
     return res.data;
   },
+
+  /**
+   * Update authenticated user profile details
+   * @param {Object} profileData - { name, headline, bio, skills, education, experience }
+   */
+  updateProfile: async (profileData) => {
+    const res = await api.patch('/auth/profile', profileData);
+    return res.data;
+  },
+
+  /**
+   * Fetch authenticated user profile completion metrics
+   */
+  getProfileCompletion: async () => {
+    const res = await api.get('/auth/profile-completion');
+    return res.data;
+  },
 };
 
 export const dashboardService = {

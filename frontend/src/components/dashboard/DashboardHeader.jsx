@@ -14,6 +14,7 @@ export default function DashboardHeader({
   unreadCount = 0,
   onOpenPasswordModal,
   onOpenAvatarModal,
+  onOpenProfileModal,
   onSelectTab,
 }) {
   const toggleLabel = isDesktop
@@ -76,6 +77,7 @@ export default function DashboardHeader({
           logout={logout}
           onOpenPasswordModal={onOpenPasswordModal}
           onOpenAvatarModal={onOpenAvatarModal}
+          onOpenProfileModal={onOpenProfileModal}
           onSelectTab={onSelectTab}
         />
       </div>

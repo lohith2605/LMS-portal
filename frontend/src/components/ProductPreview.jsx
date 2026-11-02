@@ -134,7 +134,7 @@ export default function ProductPreview() {
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="bg-surface rounded-2xl sm:rounded-3xl border border-border-subtle shadow-elevated overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] [transform-style:preserve-3d] will-change-transform"
+        className="bg-surface/92 dark:bg-surface/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/70 dark:border-white/10 shadow-2xl overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] [transform-style:preserve-3d] will-change-transform"
         style={{
           transform: `translateY(${translateY}px) scale(${scale}) rotateX(${finalRotateX}deg) rotateY(${finalRotateY}deg)`,
           opacity: opacity,
@@ -150,7 +150,7 @@ export default function ProductPreview() {
         />
 
         {/* Top Workspace Context Header */}
-        <div className="bg-surface-subtle border-b border-border-subtle px-5 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-surface-subtle/80 border-b border-border-subtle/70 px-4 sm:px-5 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           {/* Active Course Identity */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-cobalt text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-cobalt/20">
@@ -187,11 +187,11 @@ export default function ProductPreview() {
         </div>
 
         {/* Horizontal 3-Column Product Showcase Body */}
-        <div className="p-5 sm:p-6 lg:p-7">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-stretch">
+        <div className="p-3.5 sm:p-4.5 lg:p-5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 lg:gap-4 items-stretch">
             {/* Column 1: Overall Progress & Competency Gauge (4 cols) */}
             <div
-              className="group md:col-span-4 rounded-xl border border-border-subtle bg-surface-subtle p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
+              className="group md:col-span-4 rounded-xl border border-border-subtle/70 bg-surface-subtle/70 p-3 sm:p-3.5 flex flex-col justify-between gap-2.5 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
               style={{
                 transform: `translateY(${card1TranslateY}px)`,
                 opacity: 0.4 + p1 * 0.6,
@@ -234,7 +234,7 @@ export default function ProductPreview() {
 
             {/* Column 2: Next Interactive Lesson (4 cols) */}
             <div
-              className="group md:col-span-4 rounded-xl border border-border-subtle bg-surface p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
+              className="group md:col-span-4 rounded-xl border border-border-subtle/70 bg-surface/80 p-3 sm:p-3.5 flex flex-col justify-between gap-2.5 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
               style={{
                 transform: `translateY(${card2TranslateY}px)`,
                 opacity: 0.4 + p2 * 0.6,
@@ -273,7 +273,7 @@ export default function ProductPreview() {
 
             {/* Column 3: Upcoming Checkpoint & Rubric Status (4 cols) */}
             <div
-              className="group md:col-span-4 rounded-xl border border-border-subtle bg-surface p-4 sm:p-5 flex flex-col justify-between gap-4 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
+              className="group md:col-span-4 rounded-xl border border-border-subtle/70 bg-surface/80 p-3 sm:p-3.5 flex flex-col justify-between gap-2.5 hover:border-border-medium hover-lift transition-all duration-300 will-change-transform"
               style={{
                 transform: `translateY(${card3TranslateY}px)`,
                 opacity: 0.4 + p3 * 0.6,
@@ -309,7 +309,7 @@ export default function ProductPreview() {
 
           {/* Bottom Milestone Ribbon */}
           <div
-            className="mt-5 pt-4 border-t border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs transition-all duration-300 will-change-transform"
+            className="mt-3.5 pt-3 border-t border-border-subtle/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs transition-all duration-300 will-change-transform"
             style={{
               transform: `translateY(${ribbonTranslateY}px)`,
               opacity: 0.4 + p4 * 0.6,

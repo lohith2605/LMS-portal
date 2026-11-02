@@ -34,7 +34,6 @@ import {
   Library,
   BookOpenCheck,
   Camera,
-  Flame,
 } from 'lucide-react';
 import IconChip from '../components/ui/IconChip';
 import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
@@ -57,8 +56,10 @@ import AcademicCalendar from '../components/dashboard/AcademicCalendar';
 import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
+import ProfileEditModal from '../components/profile/ProfileEditModal';
+import ProfileCompletionCard from '../components/dashboard/ProfileCompletionCard';
 import StudentAnalyticsView from '../components/analytics/StudentAnalyticsView';
-import OverviewStreakCard from '../components/dashboard/learningStreak/OverviewStreakCard';
+import StudentStreakWidget from '../components/dashboard/learningStreak/StudentStreakWidget';
 
 
 const EXPLORE_CATEGORIES = ['All', 'Development', 'Design', 'Data', 'Business', 'Other'];
@@ -132,6 +133,13 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileModalField, setProfileModalField] = useState('headline');
+
+  const handleOpenEditProfile = (field = 'headline') => {
+    setProfileModalField(field || 'headline');
+    setIsProfileModalOpen(true);
+  };
 
   // Phase 9: Course Discovery & Explore Catalog State
   const [exploreCourses, setExploreCourses] = useState([]);
@@ -362,6 +370,7 @@ export default function StudentDashboard() {
       activeTab={activeTab}
       onSelectTab={setActiveTab}
       announcements={data?.announcements || []}
+      onOpenProfileModal={handleOpenEditProfile}
     >
       {loading ? (
         <LoadingState message="Loading your student learning records..." cardsCount={4} />
@@ -468,49 +477,55 @@ export default function StudentDashboard() {
                         <Compass size={14} strokeWidth={1.75} className="group-hover-wobble" />
                         <span>Explore Courses</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('analytics')}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle text-xs font-semibold text-primary transition-all cursor-pointer shadow-xs"
-                      >
-                        <Flame size={13} className="text-amber-500 fill-amber-500" />
-                        <span>Learning Progress</span>
-                      </button>
                     </div>
                   </div>
 
-                  <div className="hidden lg:flex items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsAvatarModalOpen(true)}
-                      title="Click to edit profile picture"
-                      className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-2xl"
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
-                        {user?.avatar?.url ? (
-                          <img
-                            src={user.avatar.url}
-                            alt={user?.name || 'Profile'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          user?.name
-                            ? user.name
-                                .split(' ')
-                                .map((n) => n[0])
-                                .slice(0, 2)
-                                .join('')
-                                .toUpperCase()
-                            : 'U'
-                        )}
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
-                        <Camera size={12} />
-                      </div>
-                    </button>
+                  <div className="flex flex-col sm:flex-row lg:flex-row items-start sm:items-center gap-4 self-start lg:self-center shrink-0">
+                    <StudentStreakWidget
+                      timezone={user?.timezone}
+                      onNavigate={() => setActiveTab('analytics')}
+                    />
+
+                    <div className="hidden lg:flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => setIsAvatarModalOpen(true)}
+                        title="Click to edit profile picture"
+                        className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-2xl"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-base overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
+                          {user?.avatar?.url ? (
+                            <img
+                              src={user.avatar.url}
+                              alt={user?.name || 'Profile'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            user?.name
+                              ? user.name
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .slice(0, 2)
+                                  .join('')
+                                  .toUpperCase()
+                              : 'U'
+                          )}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
+                          <Camera size={12} />
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Profile Completion Experience */}
+              <ProfileCompletionCard
+                user={user}
+                onOpenEditProfile={handleOpenEditProfile}
+                onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+              />
 
               {/* Learning Overview Metrics */}
               <div>
@@ -556,12 +571,6 @@ export default function StudentDashboard() {
                   />
                 </div>
               </div>
-
-              {/* Compact Learning Streak Strip */}
-              <OverviewStreakCard
-                onNavigateToProgress={() => setActiveTab('analytics')}
-                timezone={user?.timezone}
-              />
 
               {/* Continue Learning Section */}
               <div className="space-y-4">
@@ -1855,6 +1864,14 @@ export default function StudentDashboard() {
       <ProfilePictureModal
         isOpen={isAvatarModalOpen}
         onClose={() => setIsAvatarModalOpen(false)}
+      />
+
+      {/* Profile Edit Details Modal */}
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        initialField={profileModalField}
+        onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
       />
     </DashboardLayout>
   );

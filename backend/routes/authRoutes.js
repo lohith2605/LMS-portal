@@ -15,6 +15,8 @@ const {
   resendVerification,
   updateProfilePicture,
   deleteProfilePicture,
+  updateProfile,
+  getProfileCompletionEndpoint,
 } = require('../controllers/authController');
 
 const {
@@ -75,6 +77,8 @@ router.post('/mfa/admin-confirm-setup', authLimiter, confirmAdminTotpSetup);
 
 // Protected User Endpoints (Requires valid session)
 router.get('/me', protect, getMe);
+router.patch('/profile', protect, updateProfile);
+router.get('/profile-completion', protect, getProfileCompletionEndpoint);
 router.patch('/change-password', protect, validateChangePassword, changePassword);
 router.post('/resend-verification', protect, resendVerification);
 router.patch('/profile-picture', protect, uploadAvatar, updateProfilePicture);
