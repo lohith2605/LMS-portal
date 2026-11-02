@@ -41,6 +41,7 @@ const createCourse = async (req, res) => {
       intendedAudience,
       estimatedDuration,
       language,
+      sections,
     } = req.body;
 
     if (!title || !title.trim()) {
@@ -54,6 +55,30 @@ const createCourse = async (req, res) => {
     }
 
     const slug = await Course.generateSlug(title);
+
+    let sanitizedSections = [];
+    if (Array.isArray(sections) && sections.length > 0) {
+      sanitizedSections = sections.map((sec, sIdx) => ({
+        _id: sec._id && !sec._id.toString().startsWith('temp_') ? sec._id : new mongoose.Types.ObjectId(),
+        title: (sec.title || `Section ${sIdx + 1}`).trim(),
+        description: (sec.description || '').trim(),
+        sortOrder: typeof sec.sortOrder === 'number' ? sec.sortOrder : sIdx,
+        lessons: Array.isArray(sec.lessons)
+          ? sec.lessons.map((les, lIdx) => ({
+              _id: les._id && !les._id.toString().startsWith('temp_') ? les._id : new mongoose.Types.ObjectId(),
+              title: (les.title || `Lesson ${lIdx + 1}`).trim(),
+              description: (les.description || '').trim(),
+              contentType: ['video', 'text', 'document'].includes(les.contentType) ? les.contentType : 'video',
+              videoUrl: (les.videoUrl || '').trim(),
+              textContent: (les.textContent || '').trim(),
+              attachmentUrl: (les.attachmentUrl || '').trim(),
+              duration: (les.duration || '10 mins').trim(),
+              sortOrder: typeof les.sortOrder === 'number' ? les.sortOrder : lIdx,
+              isPublished: les.isPublished !== undefined ? Boolean(les.isPublished) : true,
+            }))
+          : [],
+      }));
+    }
 
     const newCourse = await Course.create({
       title: title.trim(),
@@ -70,7 +95,7 @@ const createCourse = async (req, res) => {
       estimatedDuration: estimatedDuration || '4 weeks',
       language: language || 'English',
       status: 'draft',
-      sections: [],
+      sections: sanitizedSections,
     });
 
     logger.success(`Course created by ${req.user.email}: ${newCourse.title} (${newCourse._id})`);
@@ -217,6 +242,7 @@ const updateCourse = async (req, res) => {
       intendedAudience,
       estimatedDuration,
       language,
+      sections,
     } = req.body;
 
     if (title && title.trim() !== course.title) {
@@ -236,6 +262,44 @@ const updateCourse = async (req, res) => {
     if (intendedAudience !== undefined) course.intendedAudience = intendedAudience.trim();
     if (estimatedDuration !== undefined) course.estimatedDuration = estimatedDuration.trim();
     if (language !== undefined) course.language = language.trim();
+
+    if (Array.isArray(sections)) {
+      course.sections = sections.map((sec, sIdx) => {
+        const secId =
+          sec._id && !sec._id.toString().startsWith('temp_')
+            ? sec._id
+            : new mongoose.Types.ObjectId();
+        return {
+          _id: secId,
+          title: (sec.title || `Section ${sIdx + 1}`).trim(),
+          description: (sec.description || '').trim(),
+          sortOrder: typeof sec.sortOrder === 'number' ? sec.sortOrder : sIdx,
+          lessons: Array.isArray(sec.lessons)
+            ? sec.lessons.map((les, lIdx) => {
+                const lesId =
+                  les._id && !les._id.toString().startsWith('temp_')
+                    ? les._id
+                    : new mongoose.Types.ObjectId();
+                return {
+                  _id: lesId,
+                  title: (les.title || `Lesson ${lIdx + 1}`).trim(),
+                  description: (les.description || '').trim(),
+                  contentType: ['video', 'text', 'document'].includes(les.contentType)
+                    ? les.contentType
+                    : 'video',
+                  videoUrl: (les.videoUrl || '').trim(),
+                  textContent: (les.textContent || '').trim(),
+                  attachmentUrl: (les.attachmentUrl || '').trim(),
+                  duration: (les.duration || '10 mins').trim(),
+                  sortOrder: typeof les.sortOrder === 'number' ? les.sortOrder : lIdx,
+                  isPublished:
+                    les.isPublished !== undefined ? Boolean(les.isPublished) : true,
+                };
+              })
+            : [],
+        };
+      });
+    }
 
     // If course was rejected and is being updated, return it to draft
     if (course.status === 'rejected') {
@@ -322,6 +386,18 @@ const submitForReview = async (req, res) => {
       req.user.role
     );
     if (error) return res.status(status).json({ error });
+
+    if (course.status === 'published') {
+      return res.status(400).json({
+        error: 'This course is already published.',
+      });
+    }
+
+    if (course.status === 'archived') {
+      return res.status(400).json({
+        error: 'Archived courses cannot be submitted for review.',
+      });
+    }
 
     // Validation checks for submission
     if (!course.title || !course.summary || !course.description) {

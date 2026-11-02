@@ -20,7 +20,12 @@ const isBackgroundPolling = (req) => {
     return true;
   }
   const url = req.originalUrl || req.url || '';
-  if (url.includes('/notifications/unread-count') || url.includes('/health')) {
+  if (
+    url.includes('/notifications/unread-count') ||
+    url.includes('/health') ||
+    url.includes('/learning-activity/heartbeat') ||
+    url.includes('/learning-activity/active-time')
+  ) {
     return true;
   }
   return false;

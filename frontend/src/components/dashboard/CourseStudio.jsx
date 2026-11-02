@@ -267,6 +267,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
         prerequisites: formData.prerequisites,
         intendedAudience: formData.intendedAudience,
         estimatedDuration: formData.estimatedDuration,
+        sections: formData.sections || [],
       };
 
       let savedCourse;
@@ -276,34 +277,24 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
       } else {
         const res = await instructorCourseService.createCourse(payload);
         savedCourse = res.course;
-        setFormData((prev) => ({ ...prev, _id: savedCourse._id }));
       }
 
-      // Sync sections & lessons if any were added
-      if (formData.sections && formData.sections.length > 0) {
-        // Sync each section
-        for (const sec of formData.sections) {
-          if (sec._id.toString().startsWith('temp_')) {
-            const secRes = await instructorCourseService.addSection(savedCourse._id, {
-              title: sec.title,
-              description: sec.description,
-            });
-            const createdSec = secRes.section;
-
-            // Sync lessons under this section
-            if (sec.lessons && sec.lessons.length > 0) {
-              for (const les of sec.lessons) {
-                await instructorCourseService.addLesson(savedCourse._id, createdSec._id, les);
-              }
-            }
-          }
-        }
+      if (savedCourse) {
+        setFormData((prev) => ({
+          ...prev,
+          _id: savedCourse._id,
+          slug: savedCourse.slug || prev.slug,
+          status: savedCourse.status || prev.status,
+          sections: savedCourse.sections || prev.sections,
+        }));
       }
 
       setSuccessMessage('Course draft saved successfully.');
       if (onSaved) onSaved(savedCourse);
+      return savedCourse;
     } catch (err) {
-      setError(err.normalizedMessage || 'Failed to save course draft.');
+      setError(err.normalizedMessage || err.message || 'Failed to save course draft.');
+      return null;
     } finally {
       setSaving(false);
     }
@@ -347,20 +338,25 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
 
     setSubmitting(true);
     try {
-      // First save draft state
-      await handleSaveDraft();
+      // First save draft state atomically
+      const savedCourse = await handleSaveDraft();
+      const courseIdToSubmit = savedCourse?._id || formData._id;
 
-      const courseIdToSubmit = formData._id;
       if (!courseIdToSubmit) {
-        throw new Error('Course must be created before review submission.');
+        throw new Error('Course must be saved before review submission.');
       }
 
       const res = await instructorCourseService.submitForReview(courseIdToSubmit);
-      setFormData((prev) => ({ ...prev, status: 'pending_review' }));
-      setSuccessMessage(res.message || 'Course submitted for review successfully!');
-      if (onSaved) onSaved(res.course);
+      setFormData((prev) => ({
+        ...prev,
+        _id: res.course?._id || courseIdToSubmit,
+        status: 'pending_review',
+        sections: res.course?.sections || prev.sections,
+      }));
+      setSuccessMessage(res.message || 'Course submitted for review successfully! An administrator will evaluate your curriculum.');
+      if (onSaved) onSaved(res.course || savedCourse);
     } catch (err) {
-      setError(err.normalizedMessage || 'Failed to submit course for review.');
+      setError(err.normalizedMessage || err.message || 'Failed to submit course for review.');
     } finally {
       setSubmitting(false);
     }

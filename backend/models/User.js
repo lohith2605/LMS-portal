@@ -83,6 +83,25 @@ const userSchema = new mongoose.Schema(
     lastLoginAt: {
       type: Date,
     },
+    timezone: {
+      type: String,
+      default: 'Asia/Kolkata',
+      trim: true,
+    },
+    learningStreak: {
+      currentStreak: {
+        type: Number,
+        default: 0,
+      },
+      longestStreak: {
+        type: Number,
+        default: 0,
+      },
+      lastQualifiedDate: {
+        type: String,
+        default: null,
+      },
+    },
     avatar: {
       url: {
         type: String,

@@ -69,7 +69,7 @@ export default function MobileNavigation({
       default:
         workspaceItems = [
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-          { id: 'analytics', label: 'Learning Analytics', icon: BarChart3 },
+          { id: 'analytics', label: 'Learning Progress', icon: BarChart3 },
           { id: 'learning', label: 'My Learning', icon: BookOpen },
           { id: 'certificates', label: 'Earned Certificates', icon: Award },
           { id: 'explore', label: 'Explore Courses', icon: Compass },
@@ -96,7 +96,7 @@ export default function MobileNavigation({
 
   const renderNavItem = (item) => {
     const Icon = item.icon;
-    const isActive = activeTab === item.id;
+    const isActive = activeTab === item.id || (item.id === 'analytics' && activeTab === 'progress');
     return (
       <button
         key={item.id}

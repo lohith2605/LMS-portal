@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const reviewService = require('../services/reviewService');
+const streakService = require('../services/streakService');
 const { logger } = require('../utils/logger');
 
 /**
@@ -406,6 +407,20 @@ const toggleLessonComplete = async (req, res) => {
     }
 
     await enrollment.save();
+
+    if (completed) {
+      streakService
+        .recordQualifyingActivity({
+          userId,
+          courseId,
+          lessonId,
+          activityType: 'lesson_completion',
+          timeZone: req.headers['x-timezone'] || req.body.timezone || req.user?.timezone,
+        })
+        .catch((streakErr) => {
+          logger.warn(`Streak record on lesson complete warning: ${streakErr.message}`);
+        });
+    }
 
     return res.status(200).json({
       message: completed ? 'Lesson marked as completed' : 'Lesson marked as incomplete',

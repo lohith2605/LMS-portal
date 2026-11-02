@@ -16,6 +16,12 @@ const {
   getStudentGrades,
 } = require('../controllers/assignmentController');
 const { getStudentAnalytics } = require('../controllers/analyticsController');
+const {
+  getLearningSummary,
+  getMonthlyActivity,
+  recordHeartbeat,
+  recordCompletionActivity,
+} = require('../controllers/learningActivityController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { uploadSingle } = require('../middleware/uploadMiddleware');
 
@@ -25,6 +31,13 @@ router.use(restrictTo('student', 'admin'));
 
 // Phase 13: Learning Analytics
 router.get('/analytics', getStudentAnalytics);
+
+// Learning Engagement & Streaks (Phases 1 & 2)
+router.get('/learning-activity/summary', getLearningSummary);
+router.get('/learning-activity/monthly', getMonthlyActivity);
+router.post('/learning-activity/heartbeat', recordHeartbeat);
+router.post('/learning-activity/active-time', recordHeartbeat);
+router.post('/learning-activity/complete', recordCompletionActivity);
 
 router.get('/enrollments', getStudentEnrollments);
 router.get('/courses/:courseId', getStudentCourse);

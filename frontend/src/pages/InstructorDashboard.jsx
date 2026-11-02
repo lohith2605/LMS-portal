@@ -11,7 +11,6 @@ import {
   Layers,
   X,
   KeyRound,
-  GraduationCap,
   Award,
   Trash2,
   Edit3,
@@ -1741,7 +1740,7 @@ export default function InstructorDashboard() {
               </div>
 
               {/* Password update form */}
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
+              <div className="lg:col-span-2 bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
                 <div className="flex items-center gap-2.5 mb-2">
                   <KeyRound size={18} className="text-cobalt" />
                   <h2 className="text-base font-bold text-primary">Change Password</h2>
@@ -1818,52 +1817,6 @@ export default function InstructorDashboard() {
                     {pwLoading ? 'Updating Password...' : 'Save Password'}
                   </button>
                 </form>
-              </div>
-
-              {/* Instructor Account Details */}
-              <div className="bg-surface-subtle border border-border-subtle rounded-2xl p-6 sm:p-8 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <GraduationCap size={18} className="text-accent-sage-dark" />
-                    <h3 className="text-sm font-bold text-primary">Educator Account Status</h3>
-                  </div>
-                  <p className="text-xs text-secondary leading-relaxed mb-4">
-                    Your account has educator permissions under LearnSpace role-based access control.
-                  </p>
-
-                  <div className="space-y-3 bg-white p-4 rounded-xl border border-border-subtle text-xs">
-                    <div className="flex justify-between py-1 border-b border-border-subtle">
-                      <span className="text-secondary">Educator Name</span>
-                      <span className="font-semibold text-primary">{user?.name}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-border-subtle">
-                      <span className="text-secondary">Email Address</span>
-                      <span className="font-semibold text-primary">{user?.email}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-border-subtle">
-                      <span className="text-secondary">Role</span>
-                      <span className="font-semibold text-primary capitalize">{user?.role}</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span className="text-secondary">Approval Status</span>
-                      <span className={`font-semibold uppercase text-[11px] ${
-                        isApproved ? 'text-accent-sage-dark' : 'text-amber-700'
-                      }`}>
-                        {user?.accountStatus}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-border-subtle">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('overview')}
-                    className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                  >
-                    ← Return to Overview
-                  </button>
-                </div>
               </div>
 
               {/* Two-Factor Authentication (2FA) */}

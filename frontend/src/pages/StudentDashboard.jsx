@@ -34,6 +34,7 @@ import {
   Library,
   BookOpenCheck,
   Camera,
+  Flame,
 } from 'lucide-react';
 import IconChip from '../components/ui/IconChip';
 import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
@@ -57,6 +58,7 @@ import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
 import StudentAnalyticsView from '../components/analytics/StudentAnalyticsView';
+import OverviewStreakCard from '../components/dashboard/learningStreak/OverviewStreakCard';
 
 
 const EXPLORE_CATEGORIES = ['All', 'Development', 'Design', 'Data', 'Business', 'Other'];
@@ -70,17 +72,23 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTabState, setActiveTabState] = useState(() => searchParams.get('tab') || 'overview');
-  const activeTab = searchParams.get('tab') || activeTabState;
+  const [activeTabState, setActiveTabState] = useState(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'progress') return 'analytics';
+    return tab || 'overview';
+  });
+  const rawTab = searchParams.get('tab');
+  const activeTab = rawTab === 'progress' ? 'analytics' : (rawTab || activeTabState);
 
   const setActiveTab = useCallback((tabId) => {
-    setActiveTabState(tabId);
+    const targetTab = tabId === 'progress' ? 'analytics' : tabId;
+    setActiveTabState(targetTab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (tabId === 'overview') {
+      if (targetTab === 'overview') {
         next.delete('tab');
       } else {
-        next.set('tab', tabId);
+        next.set('tab', targetTab);
       }
       return next;
     }, { replace: true });
@@ -365,68 +373,6 @@ export default function StudentDashboard() {
         />
       ) : (
         <div className="space-y-8">
-          {/* Welcome Banner */}
-          <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-blue-dark mb-2">
-                  <IconChip icon={Sparkles} tone="accent" size="sm" animate />
-                  <span>Personalized Learning Workspace</span>
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-                  Welcome back, {firstName}
-                </h1>
-
-                <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
-                  Pick up where you left off and keep your learning moving forward.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 mt-5">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('explore')}
-                    className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition-all cursor-pointer shadow-sm shadow-cobalt/20"
-                  >
-                    <Compass size={14} strokeWidth={1.75} className="group-hover-wobble" />
-                    <span>Explore Courses</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="hidden lg:flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAvatarModalOpen(true)}
-                  title="Click to edit profile picture"
-                  className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-2xl"
-                >
-                  <div className="w-16 h-16 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
-                    {user?.avatar?.url ? (
-                      <img
-                        src={user.avatar.url}
-                        alt={user?.name || 'Profile'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      user?.name
-                        ? user.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join('')
-                            .toUpperCase()
-                        : 'U'
-                    )}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
-                    <Camera size={12} />
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Email Verification Banner (if unverified) */}
           {user && !user.emailVerified && !bannerDismissed && (
             <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-4 sm:p-5 text-amber-950 shadow-xs relative">
@@ -496,6 +442,76 @@ export default function StudentDashboard() {
           {/* TAB: OVERVIEW */}
           {activeTab === 'overview' && (
             <>
+              {/* Welcome Banner */}
+              <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-blue-dark mb-2">
+                      <IconChip icon={Sparkles} tone="accent" size="sm" animate />
+                      <span>Personalized Learning Workspace</span>
+                    </div>
+
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                      Welcome back, {firstName}
+                    </h1>
+
+                    <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
+                      Pick up where you left off and keep your learning moving forward.
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-5">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('explore')}
+                        className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition-all cursor-pointer shadow-sm shadow-cobalt/20"
+                      >
+                        <Compass size={14} strokeWidth={1.75} className="group-hover-wobble" />
+                        <span>Explore Courses</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('analytics')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border-subtle bg-surface hover:bg-surface-subtle text-xs font-semibold text-primary transition-all cursor-pointer shadow-xs"
+                      >
+                        <Flame size={13} className="text-amber-500 fill-amber-500" />
+                        <span>Learning Progress</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarModalOpen(true)}
+                      title="Click to edit profile picture"
+                      className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-2xl"
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
+                        {user?.avatar?.url ? (
+                          <img
+                            src={user.avatar.url}
+                            alt={user?.name || 'Profile'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          user?.name
+                            ? user.name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .slice(0, 2)
+                                .join('')
+                                .toUpperCase()
+                            : 'U'
+                        )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
+                        <Camera size={12} />
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Learning Overview Metrics */}
               <div>
                 <h2 className="text-xs font-bold uppercase tracking-wider text-secondary mb-3">
@@ -540,6 +556,12 @@ export default function StudentDashboard() {
                   />
                 </div>
               </div>
+
+              {/* Compact Learning Streak Strip */}
+              <OverviewStreakCard
+                onNavigateToProgress={() => setActiveTab('analytics')}
+                timezone={user?.timezone}
+              />
 
               {/* Continue Learning Section */}
               <div className="space-y-4">
@@ -699,8 +721,10 @@ export default function StudentDashboard() {
             </>
           )}
 
-          {/* TAB: LEARNING ANALYTICS */}
-          {activeTab === 'analytics' && <StudentAnalyticsView />}
+          {/* TAB: LEARNING PROGRESS & ANALYTICS */}
+          {(activeTab === 'analytics' || activeTab === 'progress') && (
+            <StudentAnalyticsView user={user} />
+          )}
 
           {/* TAB: MY LEARNING */}
           {activeTab === 'learning' && (

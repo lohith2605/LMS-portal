@@ -98,6 +98,14 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/student/progress"
+        element={<Navigate to="/student/dashboard?tab=analytics" replace />}
+      />
+      <Route
+        path="/student/analytics"
+        element={<Navigate to="/student/dashboard?tab=analytics" replace />}
+      />
 
       <Route
         path="/instructor/dashboard"

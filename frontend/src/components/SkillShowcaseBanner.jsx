@@ -26,39 +26,49 @@ function SkillSticker({
   className = '',
 }) {
   const toneMap = {
-    amber: 'ring-amber-400/30 shadow-amber-500/20 text-amber-200',
-    cyan: 'ring-cyan-400/30 shadow-cyan-500/20 text-cyan-200',
-    purple: 'ring-purple-400/30 shadow-purple-500/20 text-purple-200',
-    blue: 'ring-blue-400/30 shadow-blue-500/20 text-blue-200',
-    emerald: 'ring-emerald-400/30 shadow-emerald-500/20 text-emerald-200',
-    sage: 'ring-[#9FB895]/30 shadow-[#9FB895]/20 text-[#D2E0CB]',
+    amber: {
+      ring: 'ring-amber-400/40 shadow-amber-500/20 text-amber-200',
+      glow: 'bg-amber-400',
+    },
+    cyan: {
+      ring: 'ring-cyan-400/40 shadow-cyan-500/20 text-cyan-200',
+      glow: 'bg-cyan-400',
+    },
+    purple: {
+      ring: 'ring-purple-400/40 shadow-purple-500/20 text-purple-200',
+      glow: 'bg-purple-400',
+    },
+    blue: {
+      ring: 'ring-blue-400/40 shadow-blue-500/20 text-blue-200',
+      glow: 'bg-blue-400',
+    },
+    emerald: {
+      ring: 'ring-emerald-400/40 shadow-emerald-500/20 text-emerald-200',
+      glow: 'bg-emerald-400',
+    },
+    sage: {
+      ring: 'ring-[#9FB895]/40 shadow-[#9FB895]/20 text-[#D2E0CB]',
+      glow: 'bg-[#9FB895]',
+    },
   };
 
   const selectedTone = toneMap[glowTone] || toneMap.blue;
 
   return (
     <div
-      className={`group/sticker relative ${animationClass} ${className}`}
+      className={`group/sticker absolute ${className} ${animationClass} w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full`}
       tabIndex={0}
       role="tooltip"
       aria-label={`${title}: ${subtitle}`}
     >
-      {/* Ambient background glow ring */}
+      {/* Ambient background glow ring strictly bounded to the circular sticker disc */}
       <div
-        className={`absolute inset-0 rounded-full blur-md opacity-40 group-hover/sticker:opacity-80 transition-opacity duration-300 pointer-events-none ${
-          glowTone === 'amber'
-            ? 'bg-amber-400'
-            : glowTone === 'cyan'
-            ? 'bg-cyan-400'
-            : glowTone === 'emerald'
-            ? 'bg-emerald-400'
-            : 'bg-indigo-400'
-        }`}
+        className={`absolute -inset-1 rounded-full blur-sm opacity-25 group-hover/sticker:opacity-60 transition-opacity duration-300 pointer-events-none ${selectedTone.glow}`}
       />
 
       {/* Glassmorphic Sticker Disc */}
       <div
-        className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full glass-sticker flex items-center justify-center ring-2 sm:ring-4 cursor-pointer select-none ${selectedTone}`}
+        className={`relative w-full h-full rounded-full glass-sticker flex items-center justify-center ring-2 sm:ring-4 cursor-pointer select-none ${selectedTone.ring}`}
       >
         <Icon
           size={24}
@@ -125,23 +135,23 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           subtitle: 'LLMs & Diffusion',
           glowTone: 'amber',
           animationClass: 'animate-float-sticker-a',
-          position: 'top-2 right-4 sm:top-4 sm:right-6',
-        },
-        {
-          icon: Brain,
-          title: 'Neural Networks',
-          subtitle: 'Deep Learning',
-          glowTone: 'cyan',
-          animationClass: 'animate-float-sticker-b',
-          position: 'top-1/2 -translate-y-1/2 -right-1 sm:right-2',
+          position: 'top-3 -left-3 sm:top-5 sm:-left-5',
         },
         {
           icon: Cpu,
           title: 'Applied AI',
           subtitle: 'Model Fine-Tuning',
           glowTone: 'purple',
+          animationClass: 'animate-float-sticker-b',
+          position: 'top-1/2 -translate-y-1/2 -left-3 sm:-left-5',
+        },
+        {
+          icon: Brain,
+          title: 'Neural Networks',
+          subtitle: 'Deep Learning',
+          glowTone: 'cyan',
           animationClass: 'animate-float-sticker-c',
-          position: 'bottom-3 right-5 sm:bottom-6 sm:right-8',
+          position: 'bottom-3 -left-3 sm:bottom-5 sm:-left-5',
         },
       ],
     },
@@ -165,7 +175,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           subtitle: 'React & Node.js',
           glowTone: 'blue',
           animationClass: 'animate-float-sticker-a',
-          position: 'top-3 right-4 sm:top-5 sm:right-6',
+          position: 'top-3 -left-3 sm:top-5 sm:-left-5',
         },
         {
           icon: TrendingUp,
@@ -173,7 +183,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           subtitle: 'Skill Benchmarks',
           glowTone: 'emerald',
           animationClass: 'animate-float-sticker-b',
-          position: 'top-1/2 -translate-y-1/2 -right-1 sm:right-2',
+          position: 'top-1/2 -translate-y-1/2 -left-3 sm:-left-5',
         },
         {
           icon: Award,
@@ -181,7 +191,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           subtitle: 'Academic Credential',
           glowTone: 'amber',
           animationClass: 'animate-float-sticker-c',
-          position: 'bottom-4 right-5 sm:bottom-6 sm:right-8',
+          position: 'bottom-3 -left-3 sm:bottom-5 sm:-left-5',
         },
       ],
     },
@@ -205,23 +215,23 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           subtitle: 'Terminal Labs',
           glowTone: 'emerald',
           animationClass: 'animate-float-sticker-a',
-          position: 'top-2 right-4 sm:top-4 sm:right-6',
-        },
-        {
-          icon: Layers,
-          title: 'Microservices',
-          subtitle: 'Distributed Systems',
-          glowTone: 'sage',
-          animationClass: 'animate-float-sticker-b',
-          position: 'top-1/2 -translate-y-1/2 -right-1 sm:right-2',
+          position: 'top-3 -left-3 sm:top-5 sm:-left-5',
         },
         {
           icon: ShieldCheck,
           title: 'Cloud Security',
           subtitle: 'Zero-Trust Protocol',
           glowTone: 'cyan',
+          animationClass: 'animate-float-sticker-b',
+          position: 'top-1/2 -translate-y-1/2 -left-3 sm:-left-5',
+        },
+        {
+          icon: Layers,
+          title: 'Microservices',
+          subtitle: 'Distributed Systems',
+          glowTone: 'sage',
           animationClass: 'animate-float-sticker-c',
-          position: 'bottom-3 right-5 sm:bottom-6 sm:right-8',
+          position: 'bottom-3 -left-3 sm:bottom-5 sm:-left-5',
         },
       ],
     },
@@ -374,14 +384,16 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
                 <button
                   type="button"
                   onClick={activeSlide === 1 ? onGetStarted : onExploreCourses}
-                  className="px-6 py-3 rounded-full bg-white text-neutral-900 hover:bg-neutral-100 font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-card hover-lift btn-press cursor-pointer group/cta transition-all focus:outline-none focus:ring-2 focus:ring-white"
+                  className="px-6 py-3 rounded-full !bg-white !text-neutral-900 hover:!bg-neutral-100 font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-card hover-lift btn-press cursor-pointer group/cta transition-all focus:outline-none focus:ring-2 focus:ring-white"
+                  style={{ backgroundColor: '#ffffff', color: '#171717' }}
                   aria-label={current.cta}
                 >
-                  <span>{current.cta}</span>
+                  <span style={{ color: '#171717' }}>{current.cta}</span>
                   <ArrowRight
                     size={16}
                     strokeWidth={2}
                     className="transition-transform duration-200 group-hover/cta:translate-x-1"
+                    style={{ color: '#171717' }}
                     aria-hidden="true"
                   />
                 </button>
@@ -495,7 +507,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
                     subtitle={sticker.subtitle}
                     glowTone={sticker.glowTone}
                     animationClass={sticker.animationClass}
-                    className={`absolute ${sticker.position}`}
+                    className={sticker.position}
                   />
                 ))}
               </div>

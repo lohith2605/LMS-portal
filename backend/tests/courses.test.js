@@ -184,6 +184,7 @@ test.beforeEach(() => {
     const found = mockCourses.find((c) => c._id.toString() === (id ? id.toString() : ''));
     const p = Promise.resolve(found || null);
     p.populate = () => p;
+    p.select = () => p;
     return p;
   };
 
@@ -242,9 +243,9 @@ test.beforeEach(() => {
     const queryObj = {
       populate: (path) => {
         list = list.map((c) => {
-          if (path === 'instructor') {
-            const inst = mockUsers.find((u) => u._id.toString() === c.instructor.toString());
-            return { ...c, instructor: inst || { _id: c.instructor, name: 'Instructor' } };
+          if (path.startsWith('instructor')) {
+            const inst = mockUsers.find((u) => u._id.toString() === (c.instructor ? (c.instructor._id || c.instructor).toString() : ''));
+            return { ...c, instructor: inst || { _id: c.instructor, name: 'Instructor', email: 'instructor@example.com' } };
           }
           return c;
         });
@@ -269,6 +270,8 @@ test.beforeEach(() => {
             res.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
           } else if (sortObj.createdAt === -1) {
             res.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (sortObj.updatedAt === -1) {
+            res.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
           }
         }
         return Promise.resolve(res.slice(skipVal, skipVal + limitVal));
@@ -784,4 +787,229 @@ test('16. GET /api/courses returns empty results and never leaks unpublished cou
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body.courses.length, 0);
   assert.strictEqual(res.body.pagination.total, 0);
+});
+
+test('17. Instructor creates course with curriculum sections as draft; draft is excluded from admin pending queue', async () => {
+  const instructor = createMockUser({ name: 'Curriculum Author', email: 'author@example.com', role: 'instructor' });
+  const admin = createMockUser({ name: 'Admin Overseer', email: 'admin@learnspace.io', role: 'admin' });
+  const instructorToken = makeToken(instructor);
+  const adminToken = makeToken(admin);
+
+  // Instructor creates course with atomic sections
+  const createRes = await request(app)
+    .post('/api/instructor/courses')
+    .set('Authorization', `Bearer ${instructorToken}`)
+    .send({
+      title: 'Distributed Systems & Cloud Patterns',
+      summary: 'Production architectures and resilient cloud design',
+      description: 'Comprehensive guide covering microservices, consensus, and event streaming.',
+      category: 'Cloud Computing',
+      level: 'Advanced',
+      sections: [
+        {
+          title: 'Module 1: Distributed Fundamentals',
+          description: 'CAP Theorem and Consensus Protocols',
+          lessons: [
+            {
+              title: 'Lesson 1.1: Raft and Paxos',
+              contentType: 'video',
+              videoUrl: 'https://example.com/raft.mp4',
+              duration: '15 mins',
+            },
+          ],
+        },
+      ],
+    });
+
+  assert.strictEqual(createRes.statusCode, 201);
+  assert.strictEqual(createRes.body.course.status, 'draft');
+  assert.strictEqual(createRes.body.course.sections.length, 1);
+  assert.strictEqual(createRes.body.course.sections[0].lessons.length, 1);
+
+  // Admin pending queue must be empty
+  const pendingRes = await request(app)
+    .get('/api/admin/courses/pending')
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  assert.strictEqual(pendingRes.statusCode, 200);
+  assert.strictEqual(pendingRes.body.pendingCourses.length, 0);
+  assert.strictEqual(pendingRes.body.count, 0);
+});
+
+test('18. Instructor submits course for review via POST /api/instructor/courses/:id/submit-for-review', async () => {
+  const instructor = createMockUser({ name: 'Curriculum Author', email: 'author@example.com', role: 'instructor' });
+  const token = makeToken(instructor);
+
+  const course = createMockCourse({
+    title: 'Modern React Architecture',
+    summary: 'Design systems and performance tuning in React 19',
+    description: 'Learn modern React with concurrent mode, suspense, and server components.',
+    instructor: instructor._id,
+    status: 'draft',
+    sections: [
+      {
+        title: 'Section 1: Foundations',
+        lessons: [
+          { title: 'Lesson 1: React 19 Compiler', duration: '12 mins' },
+        ],
+      },
+    ],
+  });
+
+  const submitRes = await request(app)
+    .post(`/api/instructor/courses/${course._id}/submit-for-review`)
+    .set('Authorization', `Bearer ${token}`);
+
+  assert.strictEqual(submitRes.statusCode, 200);
+  assert.strictEqual(submitRes.body.course.status, 'pending_review');
+  assert.strictEqual(submitRes.body.course.rejectionReason, '');
+});
+
+test('19. Admin GET /api/admin/courses/pending returns submitted course with populated instructor and counts', async () => {
+  const instructor = createMockUser({ name: 'Prof. Ada Lovelace', email: 'ada@computing.org', role: 'instructor' });
+  const admin = createMockUser({ name: 'Platform Admin', email: 'admin@learnspace.io', role: 'admin' });
+  const adminToken = makeToken(admin);
+
+  createMockCourse({
+    title: 'Algorithms and Data Structures',
+    summary: 'Essential computer science algorithms',
+    description: 'Master binary search trees, graph theory, and dynamic programming.',
+    category: 'Computer Science',
+    level: 'Intermediate',
+    instructor: instructor._id,
+    status: 'pending_review',
+    sections: [
+      {
+        title: 'Graphs & Shortest Paths',
+        lessons: [
+          { title: 'Dijkstra and A* Search', duration: '20 mins' },
+          { title: 'Bellman-Ford Algorithm', duration: '15 mins' },
+        ],
+      },
+    ],
+  });
+
+  const res = await request(app)
+    .get('/api/admin/courses/pending')
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.body.count, 1);
+  assert.strictEqual(res.body.pendingCourses.length, 1);
+
+  const pending = res.body.pendingCourses[0];
+  assert.strictEqual(pending.title, 'Algorithms and Data Structures');
+  assert.strictEqual(pending.status, 'pending_review');
+  assert.strictEqual(pending.totalSections, 1);
+  assert.strictEqual(pending.totalLessons, 2);
+  assert.strictEqual(pending.instructor.name, 'Prof. Ada Lovelace');
+  assert.strictEqual(pending.instructor.email, 'ada@computing.org');
+  assert(Array.isArray(pending.sections));
+});
+
+test('20. Non-admin calling GET /api/admin/courses/pending is rejected with 403 Forbidden', async () => {
+  const student = createMockUser({ name: 'Regular Learner', email: 'learner@example.com', role: 'student' });
+  const studentToken = makeToken(student);
+
+  const res = await request(app)
+    .get('/api/admin/courses/pending')
+    .set('Authorization', `Bearer ${studentToken}`);
+
+  assert.strictEqual(res.statusCode, 403);
+});
+
+test('21. Admin approves course -> status becomes published and leaves pending queue', async () => {
+  const instructor = createMockUser({ name: 'Instructor Bob', email: 'bob@example.com', role: 'instructor' });
+  const admin = createMockUser({ name: 'Super Admin', email: 'admin@learnspace.io', role: 'admin' });
+  const adminToken = makeToken(admin);
+
+  const course = createMockCourse({
+    title: 'Zero-Trust Security Systems',
+    summary: 'Enterprise identity and network security',
+    description: 'Practical implementation of mutual TLS, OAuth 2.1, and micro-segmentation.',
+    instructor: instructor._id,
+    status: 'pending_review',
+    sections: [
+      {
+        title: 'Identity Provider Setup',
+        lessons: [{ title: 'Configuring OIDC and PKCE', duration: '18 mins' }],
+      },
+    ],
+  });
+
+  // Admin approves course
+  const approveRes = await request(app)
+    .patch(`/api/admin/courses/${course._id}/approve`)
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  assert.strictEqual(approveRes.statusCode, 200);
+  assert.strictEqual(approveRes.body.course.status, 'published');
+  assert(approveRes.body.course.publishedAt);
+
+  // Verify pending queue is now empty
+  const pendingRes = await request(app)
+    .get('/api/admin/courses/pending')
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  assert.strictEqual(pendingRes.statusCode, 200);
+  assert.strictEqual(pendingRes.body.pendingCourses.length, 0);
+  assert.strictEqual(pendingRes.body.count, 0);
+});
+
+test('22. Admin rejects course with feedback -> status becomes rejected; instructor edits and resubmits', async () => {
+  const instructor = createMockUser({ name: 'Instructor Carol', email: 'carol@example.com', role: 'instructor' });
+  const admin = createMockUser({ name: 'Super Admin', email: 'admin@learnspace.io', role: 'admin' });
+  const instructorToken = makeToken(instructor);
+  const adminToken = makeToken(admin);
+
+  const course = createMockCourse({
+    title: 'Introductory Python Course',
+    summary: 'Beginner Python scripting',
+    description: 'Learn variables, loops, and functions in Python.',
+    instructor: instructor._id,
+    status: 'pending_review',
+    sections: [
+      {
+        title: 'Getting Started',
+        lessons: [{ title: 'Hello World in Python', duration: '5 mins' }],
+      },
+    ],
+  });
+
+  // Admin rejects course
+  const rejectRes = await request(app)
+    .patch(`/api/admin/courses/${course._id}/reject`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ rejectionReason: 'Please add more comprehensive coding exercises and video explanations.' });
+
+  assert.strictEqual(rejectRes.statusCode, 200);
+  assert.strictEqual(rejectRes.body.course.status, 'rejected');
+  assert.strictEqual(rejectRes.body.course.rejectionReason, 'Please add more comprehensive coding exercises and video explanations.');
+
+  // Instructor edits course -> status returns to draft and clears rejectionReason
+  const updateRes = await request(app)
+    .patch(`/api/instructor/courses/${course._id}`)
+    .set('Authorization', `Bearer ${instructorToken}`)
+    .send({ summary: 'Updated beginner Python course with hands-on coding exercises' });
+
+  assert.strictEqual(updateRes.statusCode, 200);
+  assert.strictEqual(updateRes.body.course.status, 'draft');
+  assert.strictEqual(updateRes.body.course.rejectionReason, '');
+
+  // Instructor resubmits for review -> status returns to pending_review
+  const resubmitRes = await request(app)
+    .post(`/api/instructor/courses/${course._id}/submit-for-review`)
+    .set('Authorization', `Bearer ${instructorToken}`);
+
+  assert.strictEqual(resubmitRes.statusCode, 200);
+  assert.strictEqual(resubmitRes.body.course.status, 'pending_review');
+
+  // Admin sees it back in pending courses
+  const pendingRes = await request(app)
+    .get('/api/admin/courses/pending')
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  assert.strictEqual(pendingRes.statusCode, 200);
+  assert.strictEqual(pendingRes.body.pendingCourses.length, 1);
+  assert.strictEqual(pendingRes.body.pendingCourses[0].title, 'Introductory Python Course');
 });

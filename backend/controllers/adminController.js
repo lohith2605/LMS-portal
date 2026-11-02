@@ -266,19 +266,21 @@ const getPendingCourses = async (req, res) => {
         title: c.title,
         slug: c.slug,
         summary: c.summary,
+        description: c.description || '',
         category: c.category,
         level: c.level,
         thumbnail: c.thumbnail,
         status: c.status,
         totalSections: (c.sections || []).length,
         totalLessons,
-        instructor: c.instructor
+        sections: c.sections || [],
+        instructor: c.instructor && c.instructor._id
           ? {
               id: c.instructor._id.toString(),
               name: c.instructor.name,
               email: c.instructor.email,
             }
-          : { id: '', name: 'Instructor' },
+          : { id: '', name: 'Instructor', email: '' },
         updatedAt: c.updatedAt,
         createdAt: c.createdAt,
       };

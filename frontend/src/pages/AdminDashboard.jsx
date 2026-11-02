@@ -7,7 +7,6 @@ import {
   Clock,
   KeyRound,
   AlertTriangle,
-  Activity,
   UserCheck,
   UserX,
   Search,
@@ -328,6 +327,16 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  // Phase 12 & Course Moderation: Refresh queue when switching to moderation tab
+  useEffect(() => {
+    if (activeTab === 'moderation') {
+      fetchPendingCourses();
+      if (moderationSubTab === 'reviews') {
+        fetchAdminReviews(adminReviewPage, adminReviewsFilter);
+      }
+    }
+  }, [activeTab, moderationSubTab, fetchPendingCourses, fetchAdminReviews, adminReviewPage, adminReviewsFilter]);
+
   // Handle Approve / Reject action
   const handleExecuteAction = async () => {
     const { action, applicant } = confirmDialog;
@@ -457,6 +466,18 @@ export default function AdminDashboard() {
                   >
                     <ShieldAlert size={14} strokeWidth={1.75} />
                     <span>Review Instructor Queue ({pendingInstructors.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('moderation');
+                      setModerationSubTab('courses');
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all cursor-pointer"
+                  >
+                    <BookOpen size={14} strokeWidth={1.75} />
+                    <span>Review Course Submissions ({pendingCourses.length})</span>
                   </button>
 
                   <button
@@ -671,76 +692,6 @@ export default function AdminDashboard() {
                     onAction={() => setActiveTab('users')}
                   />
                 )}
-              </div>
-
-              {/* System Architecture & Security Policy */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border-subtle">
-                    <ShieldAlert size={18} className="text-rose-600" />
-                    <h3 className="text-sm font-bold text-primary">
-                      Role-Based Access Enforcement
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3 text-xs text-secondary leading-relaxed">
-                    <div className="p-3 bg-surface-subtle rounded-xl border border-border-subtle">
-                      <strong className="text-primary block mb-0.5">Admin Offline Provisioning</strong>
-                      Admins are created only via secure CLI tools: <code className="bg-white px-1.5 py-0.5 rounded border border-border-subtle text-primary">npm run provision:admin</code>. Public creation is rejected by backend middleware.
-                    </div>
-                    <div className="p-3 bg-surface-subtle rounded-xl border border-border-subtle">
-                      <strong className="text-primary block mb-0.5">Zero Privilege Escalation</strong>
-                      Client requests mutating roles to 'admin' are dropped by validation middleware before saving to MongoDB Atlas.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
-                    <div className="flex items-center gap-2">
-                      <Activity size={18} className="text-accent-blue-dark" />
-                      <h3 className="text-sm font-bold text-primary">Platform Health Telemetry</h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={fetchHealth}
-                      className="text-[11px] font-semibold text-secondary hover:text-primary cursor-pointer"
-                    >
-                      Refresh
-                    </button>
-                  </div>
-
-                  {healthData ? (
-                    <div className="space-y-3 text-xs">
-                      <div className="flex justify-between p-2.5 bg-surface-subtle rounded-xl border border-border-subtle">
-                        <span className="text-secondary">Server Status</span>
-                        <span className="font-bold text-emerald-700 capitalize">
-                          {healthData.status} ({healthData.server?.status})
-                        </span>
-                      </div>
-                      <div className="flex justify-between p-2.5 bg-surface-subtle rounded-xl border border-border-subtle">
-                        <span className="text-secondary">Database Status</span>
-                        <span className="font-bold text-emerald-700 capitalize">
-                          {healthData.database?.status} (ReadyState: {healthData.database?.readyState})
-                        </span>
-                      </div>
-                      <div className="flex justify-between p-2.5 bg-surface-subtle rounded-xl border border-border-subtle">
-                        <span className="text-secondary">Server Port</span>
-                        <span className="font-semibold text-primary">{healthData.server?.port}</span>
-                      </div>
-                      <div className="flex justify-between p-2.5 bg-surface-subtle rounded-xl border border-border-subtle">
-                        <span className="text-secondary">Uptime</span>
-                        <span className="font-semibold text-primary">
-                          {healthData.uptimeSeconds} seconds
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-secondary py-4 text-center">
-                      Health telemetry unavailable.
-                    </p>
-                  )}
-                </div>
               </div>
             </>
           )}
@@ -1450,7 +1401,7 @@ export default function AdminDashboard() {
           {activeTab === 'security' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Password update form */}
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
+              <div className="lg:col-span-2 bg-white border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-xs">
                 <div className="flex items-center gap-2 mb-2">
                   <KeyRound size={18} className="text-rose-600" />
                   <h2 className="text-base font-bold text-primary">Admin Password Management</h2>
@@ -1527,50 +1478,6 @@ export default function AdminDashboard() {
                     {pwLoading ? 'Updating Password...' : 'Save Password'}
                   </button>
                 </form>
-              </div>
-
-              {/* Security Policy Details */}
-              <div className="bg-surface-subtle border border-border-subtle rounded-2xl p-6 sm:p-8 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <ShieldAlert size={18} className="text-rose-600" />
-                    <h3 className="text-sm font-bold text-primary">Administrator Session Security</h3>
-                  </div>
-                  <p className="text-xs text-secondary leading-relaxed mb-4">
-                    Privileged administrator credentials govern platform configuration, instructor authorization, and role management.
-                  </p>
-
-                  <div className="space-y-3 bg-white p-4 rounded-xl border border-border-subtle text-xs">
-                    <div className="flex justify-between py-1 border-b border-border-subtle">
-                      <span className="text-secondary">Admin Name</span>
-                      <span className="font-semibold text-primary">{user?.name}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-border-subtle">
-                      <span className="text-secondary">Admin Email</span>
-                      <span className="font-semibold text-primary">{user?.email}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-border-subtle">
-                      <span className="text-secondary">Role</span>
-                      <span className="font-semibold text-rose-700 capitalize">{user?.role}</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span className="text-secondary">Status</span>
-                      <span className="font-semibold text-emerald-700 uppercase text-[11px]">
-                        {user?.accountStatus}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-border-subtle">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('overview')}
-                    className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                  >
-                    ← Return to Platform Overview
-                  </button>
-                </div>
               </div>
 
               {/* Two-Factor Authentication (2FA) */}

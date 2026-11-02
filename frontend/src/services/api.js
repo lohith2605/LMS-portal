@@ -990,4 +990,43 @@ export const sessionService = {
   },
 };
 
+export const learningActivityService = {
+  /**
+   * Fetch authenticated student streak stats, current week summary, and today metrics
+   * Uses x-background-request: true to prevent resetting session idle timeout
+   */
+  getSummary: async (timezone) => {
+    const params = timezone ? { timezone } : {};
+    const res = await api.get('/learning-activity/summary', {
+      params,
+      headers: { 'x-background-request': 'true' },
+    });
+    return res.data;
+  },
+
+  /**
+   * Fetch monthly activity records for calendar and activity heatmap view
+   */
+  getMonthlyActivity: async (month, timezone) => {
+    const params = {};
+    if (month) params.month = month;
+    if (timezone) params.timezone = timezone;
+    const res = await api.get('/learning-activity/monthly', {
+      params,
+      headers: { 'x-background-request': 'true' },
+    });
+    return res.data;
+  },
+
+  /**
+   * Send active study heartbeat
+   */
+  sendHeartbeat: async (data) => {
+    const res = await api.post('/learning-activity/heartbeat', data, {
+      headers: { 'x-background-request': 'true', 'x-learner-activity': 'false' },
+    });
+    return res.data;
+  },
+};
+
 export default api;

@@ -4,14 +4,14 @@ import {
   BookOpen,
   Award,
   FileText,
-  Clock,
   AlertCircle,
   HelpCircle,
   RefreshCw,
 } from 'lucide-react';
 import { analyticsService } from '../../services/api';
+import LearningStreakSection from '../dashboard/learningStreak/LearningStreakSection';
 
-export default function StudentAnalyticsView() {
+export default function StudentAnalyticsView({ user }) {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,68 +64,91 @@ export default function StudentAnalyticsView() {
 
   if (!analytics) return null;
 
-  const { overview, courses, assignments, quizzes, certificates, recentActivities } = analytics;
+  const { overview, courses, assignments, quizzes, certificates } = analytics;
 
   return (
     <div className="space-y-8">
-      {/* Overview Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-secondary mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Active Learning</span>
-            <BookOpen size={16} className="text-accent-blue-dark" />
-          </div>
-          <div className="text-2xl font-extrabold text-primary">
-            {overview.activeCourses}
-            <span className="text-xs font-normal text-secondary ml-1.5">
-              / {overview.totalEnrolled} total
-            </span>
-          </div>
-          <p className="text-[11px] text-tertiary mt-1">
-            {overview.completedCourses} completed courses
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight">
+            Learning Progress & Analytics
+          </h1>
+          <p className="text-xs text-secondary mt-1">
+            Track your daily learning consistency, active study time, milestone achievements, and academic performance
           </p>
         </div>
+      </div>
 
-        <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-secondary mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Avg Progress</span>
-            <TrendingUp size={16} className="text-emerald-600" />
-          </div>
-          <div className="text-2xl font-extrabold text-primary">
-            {overview.averageCourseProgress}%
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${overview.averageCourseProgress}%` }}
-            />
-          </div>
+      {/* Learning Consistency, Streaks & Study Time (Phase 3) */}
+      <LearningStreakSection user={user} />
+
+      {/* Academic Performance & Course Mastery Overview */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-secondary">
+            Academic Performance Overview
+          </h2>
         </div>
 
-        <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-secondary mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Assignments</span>
-            <FileText size={16} className="text-indigo-600" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-secondary mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Active Learning</span>
+              <BookOpen size={16} className="text-accent-blue-dark" />
+            </div>
+            <div className="text-2xl font-extrabold text-primary">
+              {overview.activeCourses}
+              <span className="text-xs font-normal text-secondary ml-1.5">
+                / {overview.totalEnrolled} total
+              </span>
+            </div>
+            <p className="text-[11px] text-tertiary mt-1">
+              {overview.completedCourses} completed courses
+            </p>
           </div>
-          <div className="text-2xl font-extrabold text-primary">
-            {assignments.submissionRate}%
-          </div>
-          <p className="text-[11px] text-tertiary mt-1">
-            {assignments.submittedCount} submitted • Avg grade {assignments.averageGrade}%
-          </p>
-        </div>
 
-        <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-secondary mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Certificates</span>
-            <Award size={16} className="text-amber-600" />
+          <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-secondary mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Avg Progress</span>
+              <TrendingUp size={16} className="text-emerald-600" />
+            </div>
+            <div className="text-2xl font-extrabold text-primary">
+              {overview.averageCourseProgress}%
+            </div>
+            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div
+                className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${overview.averageCourseProgress}%` }}
+              />
+            </div>
           </div>
-          <div className="text-2xl font-extrabold text-primary">
-            {certificates.total}
+
+          <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-secondary mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Assignments</span>
+              <FileText size={16} className="text-indigo-600" />
+            </div>
+            <div className="text-2xl font-extrabold text-primary">
+              {assignments.submissionRate}%
+            </div>
+            <p className="text-[11px] text-tertiary mt-1">
+              {assignments.submittedCount} submitted • Avg grade {assignments.averageGrade}%
+            </p>
           </div>
-          <p className="text-[11px] text-tertiary mt-1">
-            Official verified credentials
-          </p>
+
+          <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-secondary mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Certificates</span>
+              <Award size={16} className="text-amber-600" />
+            </div>
+            <div className="text-2xl font-extrabold text-primary">
+              {certificates.total}
+            </div>
+            <p className="text-[11px] text-tertiary mt-1">
+              Official verified credentials
+            </p>
+          </div>
         </div>
       </div>
 
@@ -283,57 +306,6 @@ export default function StudentAnalyticsView() {
             <span className="font-semibold text-primary">{quizzes.totalAttempts}</span>
           </div>
         </div>
-      </div>
-
-      {/* Authentic Recent Activity Timeline */}
-      <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-xs">
-        <h3 className="text-sm font-bold text-primary mb-1 flex items-center gap-2">
-          <Clock size={16} className="text-secondary" />
-          <span>Recent Learning Activity</span>
-        </h3>
-        <p className="text-xs text-secondary mb-6">
-          Real-time record of your course progress, submissions, quiz attempts, and certificates
-        </p>
-
-        {recentActivities.length === 0 ? (
-          <div className="text-center py-6 text-xs text-secondary">
-            No learning activity recorded yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {recentActivities.map((act) => (
-              <div
-                key={act.id}
-                className="flex items-start gap-3 p-3 rounded-xl border border-border-subtle bg-slate-50/40"
-              >
-                <div className="p-2 rounded-lg bg-white border border-border-subtle text-primary shrink-0 mt-0.5">
-                  {act.type === 'course_access' && <BookOpen size={14} className="text-accent-blue" />}
-                  {act.type === 'assignment_submission' && <FileText size={14} className="text-indigo-600" />}
-                  {act.type === 'quiz_completion' && <HelpCircle size={14} className="text-amber-600" />}
-                  {act.type === 'certificate_earned' && <Award size={14} className="text-emerald-600" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-primary">{act.title}</span>
-                    <span className="text-[11px] text-tertiary">
-                      {new Date(act.date).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                  {act.metadata?.percentage !== undefined && (
-                    <span className="text-[11px] text-secondary">
-                      Score: {act.metadata.percentage}% • {act.metadata.passed ? 'Passed' : 'Needs Review'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
