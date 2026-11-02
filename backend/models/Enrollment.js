@@ -53,6 +53,36 @@ const enrollmentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    enrollmentType: {
+      type: String,
+      enum: ['free', 'paid'],
+      default: 'free',
+      index: true,
+    },
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
+      default: null,
+    },
+    amountPaid: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    instructorNotificationSent: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    instructorNotificationSentAt: {
+      type: Date,
+      default: null,
+    },
+    instructorNotificationError: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: true,

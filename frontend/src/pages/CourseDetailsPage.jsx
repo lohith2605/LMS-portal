@@ -16,8 +16,9 @@ import {
   UserCheck,
   MessageSquare,
   Star,
+  AlertCircle,
 } from 'lucide-react';
-import { courseService } from '../services/api';
+import { courseService, paymentService } from '../services/api';
 import { useAuth } from '../context/useAuth';
 import CourseReviewsSection from '../components/reviews/CourseReviewsSection';
 import ThemeToggle from '../components/ThemeToggle';
@@ -79,6 +80,28 @@ export default function CourseDetailsPage() {
     }));
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const existingScript = document.getElementById('razorpay-checkout-js');
+      if (existingScript) {
+        existingScript.onload = () => resolve(true);
+        existingScript.onerror = () => resolve(false);
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'razorpay-checkout-js';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleEnroll = async () => {
     if (!isAuthenticated) {
       navigate(`/login?redirect=/courses/${idOrSlug}`);
@@ -90,18 +113,96 @@ export default function CourseDetailsPage() {
       return;
     }
 
+    const price = Number(course?.price || 0);
+
+    // Free course enrollment flow
+    if (price <= 0) {
+      try {
+        setEnrolling(true);
+        setError(null);
+        setEnrollSuccessMessage(null);
+        const res = await courseService.enrollInCourse(course._id);
+        setIsEnrolled(true);
+        setHasFullAccess(true);
+        setEnrollment(res.enrollment);
+        setEnrollSuccessMessage(res.message || 'Successfully enrolled! You now have full access.');
+      } catch (err) {
+        setError(err.normalizedMessage || 'Failed to process enrollment.');
+      } finally {
+        setEnrolling(false);
+      }
+      return;
+    }
+
+    // Paid course checkout flow with Razorpay
     try {
       setEnrolling(true);
       setError(null);
-      const res = await courseService.enrollInCourse(course._id);
-      setIsEnrolled(true);
-      setHasFullAccess(true);
-      setEnrollment(res.enrollment);
-      setEnrollSuccessMessage(res.message || 'Successfully enrolled! You now have full access.');
+      setEnrollSuccessMessage(null);
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Could not load Razorpay payment gateway. Please check your network connection.');
+      }
+
+      // Step 1: Request order creation from server using database price
+      const orderData = await paymentService.createOrder(course._id);
+
+      // Step 2: Open Razorpay checkout modal
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'LearnSpace LMS',
+        description: course.title,
+        image: course.thumbnail || undefined,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            setEnrolling(true);
+            setEnrollSuccessMessage('Verifying payment and confirming enrollment...');
+            // Step 3: Verify signature securely on backend
+            const verifyRes = await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              courseId: course._id,
+            });
+
+            setIsEnrolled(true);
+            setHasFullAccess(true);
+            setEnrollment(verifyRes.enrollment);
+            setEnrollSuccessMessage(verifyRes.message || 'Payment confirmed! Course access unlocked.');
+          } catch (verifyErr) {
+            setError(verifyErr.normalizedMessage || 'Payment verification failed. Please contact support.');
+            setEnrollSuccessMessage(null);
+          } finally {
+            setEnrolling(false);
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#1E3A8A', // Cobalt Blue
+        },
+        modal: {
+          ondismiss: function () {
+            setEnrolling(false);
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (resp) {
+        setEnrolling(false);
+        setError(resp.error?.description || 'Payment was declined or failed.');
+      });
+      rzp.open();
     } catch (err) {
-      setError(err.normalizedMessage || 'Failed to process enrollment.');
-    } finally {
       setEnrolling(false);
+      setError(err.normalizedMessage || err.message || 'Failed to initiate checkout.');
     }
   };
 
@@ -427,6 +528,23 @@ export default function CourseDetailsPage() {
                 )}
               </div>
 
+              {/* Feedback messages */}
+              {enrollSuccessMessage && (
+                <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-start gap-2">
+                  <CheckCircle size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed font-medium">{enrollSuccessMessage}</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start gap-2">
+                  <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="leading-relaxed font-medium">{error}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Status & Enrollment CTA */}
               {isEnrolled || hasFullAccess ? (
                 <div className="space-y-4">
@@ -463,22 +581,40 @@ export default function CourseDetailsPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-2xl font-bold text-primary">Free</span>
-                    <span className="text-xs text-secondary">Full Lifetime Access</span>
+                    <div>
+                      {Number(course.price || 0) > 0 ? (
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-2xl font-black text-primary tracking-tight">
+                            ₹{Number(course.price).toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">INR</span>
+                        </div>
+                      ) : (
+                        <span className="text-2xl font-extrabold text-primary">Free</span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-semibold text-secondary px-2 py-0.5 rounded-full bg-surface-subtle border border-border-subtle">
+                      {Number(course.price || 0) > 0 ? 'Paid Course' : 'Free Lifetime Access'}
+                    </span>
                   </div>
 
                   <button
                     type="button"
                     onClick={handleEnroll}
                     disabled={enrolling}
-                    className="w-full py-3.5 px-4 rounded-xl bg-accent-blue hover:bg-accent-blue-dark text-white text-sm font-semibold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-xl bg-cobalt hover:bg-cobalt-hover active:bg-cobalt-pressed text-white text-sm font-semibold transition flex items-center justify-center gap-2 shadow-sm shadow-cobalt/20 disabled:opacity-50 cursor-pointer"
                   >
                     {enrolling ? (
-                      <span>Enrolling...</span>
-                    ) : isAuthenticated ? (
-                      <span>Enroll in Course</span>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Processing...</span>
+                      </span>
+                    ) : !isAuthenticated ? (
+                      <span>Log in to {Number(course.price || 0) > 0 ? 'Enroll' : 'Enroll Free'}</span>
+                    ) : Number(course.price || 0) > 0 ? (
+                      <span>Buy Course • ₹{Number(course.price).toLocaleString('en-IN')}</span>
                     ) : (
-                      <span>Log in to Enroll</span>
+                      <span>Enroll in Course (Free)</span>
                     )}
                   </button>
 

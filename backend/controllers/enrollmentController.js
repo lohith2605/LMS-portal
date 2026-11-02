@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const User = require('../models/User');
+const { sendInstructorEnrollmentNotificationEmail } = require('../services/emailService');
 const { logger } = require('../utils/logger');
 
 /**
@@ -31,6 +33,16 @@ const enrollInCourse = async (req, res) => {
     if (course.instructor.toString() === studentId) {
       return res.status(400).json({
         error: 'Instructors cannot enroll in their own courses.',
+      });
+    }
+
+    // Free course enrollment check: paid courses require checkout payment
+    if (course.price && course.price > 0) {
+      return res.status(400).json({
+        error: 'This is a paid course. Please complete payment checkout to enroll.',
+        isPaid: true,
+        price: course.price,
+        currency: course.currency || 'INR',
       });
     }
 
@@ -79,7 +91,56 @@ const enrollInCourse = async (req, res) => {
       status: 'active',
       completedLessons: [],
       lastAccessedAt: new Date(),
+      enrollmentType: 'free',
+      amountPaid: 0,
     });
+
+    // Trigger instructor notification email for free enrollment (duplicate-protected)
+    if (!enrollment.instructorNotificationSent) {
+      try {
+        const instructor = await User.findById(course.instructor).select('name email');
+        const student = await User.findById(studentId).select('name email');
+
+        if (instructor && instructor.email) {
+          try {
+            const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+            const dashboardUrl = `${clientBaseUrl}/instructor/dashboard`;
+
+            const sent = await sendInstructorEnrollmentNotificationEmail({
+              to: instructor.email,
+              instructorName: instructor.name,
+              studentName: (student && student.name) || req.user.name || 'Student',
+              studentEmail: (student && student.email) || req.user.email || '',
+              courseTitle: course.title,
+              enrollmentDate: enrollment.enrolledAt,
+              enrollmentType: 'free',
+              amount: 0,
+              currency: course.currency || 'INR',
+              dashboardUrl,
+            });
+
+            if (sent) {
+              enrollment.instructorNotificationSent = true;
+              enrollment.instructorNotificationSentAt = new Date();
+              enrollment.instructorNotificationError = null;
+            } else {
+              enrollment.instructorNotificationError = 'Email service not configured or simulation mode';
+            }
+          } catch (mailErr) {
+            logger.warn(`Failed to dispatch instructor notification email to ${instructor.email}: ${mailErr.message}`);
+            enrollment.instructorNotificationSent = false;
+            enrollment.instructorNotificationError = mailErr.message;
+          }
+        } else {
+          logger.warn(`Instructor email not available for course ${course._id}; skipping instructor notification.`);
+          enrollment.instructorNotificationError = 'Instructor email not available';
+        }
+
+        await enrollment.save();
+      } catch (notifErr) {
+        logger.warn(`Notification processing error for free enrollment ${enrollment._id}: ${notifErr.message}`);
+      }
+    }
 
     logger.success(`Student ${req.user.email} enrolled in course: ${course.title} (${course._id})`);
 

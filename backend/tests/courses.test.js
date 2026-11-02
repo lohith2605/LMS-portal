@@ -98,6 +98,8 @@ const createMockCourse = (data) => {
     intendedAudience: data.intendedAudience || '',
     estimatedDuration: data.estimatedDuration || '4 weeks',
     language: data.language || 'English',
+    price: data.price !== undefined ? data.price : 0,
+    currency: data.currency || 'INR',
     status: data.status || 'draft',
     rejectionReason: data.rejectionReason || '',
     publishedAt: data.status === 'published' ? new Date() : null,
@@ -251,6 +253,7 @@ test.beforeEach(() => {
         });
         return queryObj;
       },
+      select: () => queryObj,
       sort: (s) => {
         sortObj = s;
         return queryObj;
@@ -331,10 +334,37 @@ test.beforeEach(() => {
   Enrollment.find = (query = {}) => {
     let list = [...mockEnrollments];
     if (query.student) list = list.filter((e) => e.student.toString() === query.student.toString());
-    if (query.status) list = list.filter((e) => e.status === query.status);
+    if (query.course) {
+      if (typeof query.course === 'object' && Array.isArray(query.course.$in)) {
+        list = list.filter((e) => query.course.$in.some((id) => id.toString() === e.course.toString()));
+      } else {
+        list = list.filter((e) => e.course.toString() === query.course.toString());
+      }
+    }
+    if (query.status) {
+      if (typeof query.status === 'object' && Array.isArray(query.status.$in)) {
+        list = list.filter((e) => query.status.$in.includes(e.status));
+      } else {
+        list = list.filter((e) => e.status === query.status);
+      }
+    }
 
     const queryObj = {
-      populate: () => queryObj,
+      populate: (path) => {
+        list = list.map((e) => {
+          const cloned = { ...e };
+          if (path === 'student') {
+            const st = mockUsers.find((u) => u._id.toString() === (e.student._id || e.student).toString());
+            cloned.student = st || { _id: e.student, name: 'Student', email: 'student@example.com' };
+          }
+          if (path === 'course') {
+            const cr = mockCourses.find((c) => c._id.toString() === (e.course._id || e.course).toString());
+            cloned.course = cr || { _id: e.course, title: 'Course', sections: [] };
+          }
+          return cloned;
+        });
+        return queryObj;
+      },
       sort: () => queryObj,
       lean: () => Promise.resolve(list),
       then: (resolve) => Promise.resolve(list).then(resolve),
@@ -1012,4 +1042,52 @@ test('22. Admin rejects course with feedback -> status becomes rejected; instruc
   assert.strictEqual(pendingRes.statusCode, 200);
   assert.strictEqual(pendingRes.body.pendingCourses.length, 1);
   assert.strictEqual(pendingRes.body.pendingCourses[0].title, 'Introductory Python Course');
+});
+
+test('23. Instructor can fetch enrolled learners directory via GET /api/instructor/learners', async () => {
+  const instructor = createMockUser({ name: 'Professor Turing', email: 'turing@univ.edu', role: 'instructor' });
+  const student = createMockUser({ name: 'Enrolled Learner', email: 'learner@school.edu', role: 'student' });
+  const instructorToken = makeToken(instructor);
+
+  const course = createMockCourse({
+    title: 'Theoretical Computer Science',
+    instructor: instructor._id,
+    status: 'published',
+    sections: [
+      {
+        title: 'Section 1',
+        lessons: [{ title: 'Lesson 1', duration: '10 mins' }],
+      },
+    ],
+  });
+
+  // Create active enrollment for this course
+  await Enrollment.create({
+    student: student._id,
+    course: course._id,
+    status: 'active',
+    enrollmentType: 'free',
+  });
+
+  const res = await request(app)
+    .get('/api/instructor/learners')
+    .set('Authorization', `Bearer ${instructorToken}`);
+
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.body.count, 1);
+  assert.strictEqual(res.body.learners.length, 1);
+  assert.strictEqual(res.body.learners[0].student.email, 'learner@school.edu');
+  assert.strictEqual(res.body.learners[0].student.name, 'Enrolled Learner');
+  assert.strictEqual(res.body.learners[0].course.title, 'Theoretical Computer Science');
+});
+
+test('24. Non-instructor calling GET /api/instructor/learners is rejected with 403 Forbidden', async () => {
+  const student = createMockUser({ name: 'Student Hacker', email: 'hacker@school.edu', role: 'student' });
+  const studentToken = makeToken(student);
+
+  const res = await request(app)
+    .get('/api/instructor/learners')
+    .set('Authorization', `Bearer ${studentToken}`);
+
+  assert.strictEqual(res.statusCode, 403);
 });

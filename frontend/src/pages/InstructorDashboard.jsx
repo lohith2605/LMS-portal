@@ -28,6 +28,11 @@ import {
   ListChecks,
   MessageSquareText,
   Camera,
+  Search,
+  GraduationCap,
+  Mail,
+  Calendar,
+  DollarSign,
 } from 'lucide-react';
 import IconChip from '../components/ui/IconChip';
 import { useAuth } from '../context/useAuth';
@@ -108,6 +113,13 @@ export default function InstructorDashboard() {
   const [submissionsList, setSubmissionsList] = useState([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [selectedSubmissionFilter, setSelectedSubmissionFilter] = useState('all');
+
+  // Enrolled Learners State
+  const [learnersList, setLearnersList] = useState([]);
+  const [learnersSummary, setLearnersSummary] = useState(null);
+  const [learnersLoading, setLearnersLoading] = useState(false);
+  const [selectedLearnerCourse, setSelectedLearnerCourse] = useState('all');
+  const [learnerSearchQuery, setLearnerSearchQuery] = useState('');
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -202,6 +214,27 @@ export default function InstructorDashboard() {
     }
   }, []);
 
+  const fetchLearners = useCallback(async (courseIdToFetch, searchQuery) => {
+    try {
+      setLearnersLoading(true);
+      const params = {};
+      if (courseIdToFetch && courseIdToFetch !== 'all') {
+        params.courseId = courseIdToFetch;
+      }
+      if (searchQuery && searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      const res = await instructorCourseService.getLearners(params);
+      setLearnersList(res?.learners || []);
+      setLearnersSummary(res?.summary || null);
+    } catch (err) {
+      console.error('Failed to load enrolled learners:', err);
+      setLearnersList([]);
+    } finally {
+      setLearnersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     dashboardService
@@ -242,8 +275,18 @@ export default function InstructorDashboard() {
     }
   }, [activeTab, data?.courses, fetchSubmissions]);
 
+  useEffect(() => {
+    if (activeTab === 'learners') {
+      fetchLearners(selectedLearnerCourse, learnerSearchQuery);
+    }
+  }, [activeTab, selectedLearnerCourse, learnerSearchQuery, fetchLearners]);
+
   const firstName = user?.name ? user.name.split(' ')[0] : 'Educator';
   const isApproved = user?.accountStatus === 'active' && data?.isApproved !== false;
+  const draftCourses = (data?.courses || []).filter((c) => c.status === 'draft');
+  const rejectedCourses = (data?.courses || []).filter((c) => c.status === 'rejected');
+  const pendingReviewsCount = data?.overview?.pendingReviewsCount ?? 0;
+  const hasAttentionItems = !isApproved || pendingReviewsCount > 0 || rejectedCourses.length > 0 || draftCourses.length > 0;
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -458,275 +501,327 @@ export default function InstructorDashboard() {
         />
       ) : (
         <div className="space-y-8">
-          {/* Approval Status Alert: If Pending */}
-          {!isApproved && (
-            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 sm:p-8 shadow-xs">
-              <div className="flex flex-col sm:flex-row items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                  <AlertTriangle size={24} />
-                </div>
-                <div className="space-y-2 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
-                      Approval Pending
-                    </span>
-                    <h2 className="text-base sm:text-lg font-bold text-amber-950">
-                      Instructor Credentials Under Review
-                    </h2>
-                  </div>
-                  <p className="text-xs sm:text-sm text-amber-900/90 leading-relaxed max-w-3xl">
-                    Your educator account is currently in <strong>pending</strong> status. An administrator must review your application and approve your profile before course publishing, cohort management, and student assignment grading are unlocked.
-                  </p>
-                  <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-amber-900 font-medium">
-                    <span>Applicant: <strong>{user?.email}</strong></span>
-                    <span>•</span>
-                    <span>Status: <strong className="uppercase">{user?.accountStatus}</strong></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Welcome Banner */}
-          {activeTab === 'overview' && (
-            <div className="bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-sage-dark mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-sage-dark" />
-                  <span>Instructor Teaching Workspace</span>
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-                  Welcome back, {firstName}
-                </h1>
-
-                <p className="text-xs sm:text-sm text-secondary mt-1.5 leading-relaxed">
-                  Manage your courses, support your learners, and review their progress.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 mt-5">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenStudio()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition-all cursor-pointer shadow-sm shadow-cobalt/20"
-                  >
-                    <PlusCircle size={14} strokeWidth={1.75} />
-                    <span>Create Course</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleViewCourses}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all cursor-pointer"
-                  >
-                    <Library size={13} strokeWidth={1.75} />
-                    <span>View My Courses</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="hidden lg:flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAvatarModalOpen(true)}
-                  title="Click to edit profile picture"
-                  className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-2xl"
-                >
-                  <div className="w-16 h-16 rounded-2xl bg-cobalt text-white flex items-center justify-center font-bold text-lg overflow-hidden shadow-card ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
-                    {user?.avatar?.url ? (
-                      <img
-                        src={user.avatar.url}
-                        alt={user?.name || 'Instructor profile'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      user?.name
-                        ? user.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join('')
-                            .toUpperCase()
-                        : 'U'
-                    )}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-surface border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
-                    <Camera size={12} />
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* TAB: OVERVIEW */}
           {activeTab === 'overview' && (
-            <>
-              {/* Teaching Overview Metrics */}
+            <div className="space-y-6">
+              {/* Compact Welcome Header */}
+              <div className="bg-white border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <div className="space-y-1">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">
+                    Welcome back, {firstName}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-secondary">
+                    Manage your curriculum, track cohort engagement, and review student deliverables.
+                  </p>
+                  <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenStudio()}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press transition-all cursor-pointer shadow-sm shadow-cobalt/20"
+                    >
+                      <PlusCircle size={14} strokeWidth={2} />
+                      <span>Create course</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleViewCourses}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover-lift btn-press transition-all cursor-pointer"
+                    >
+                      <BookOpen size={14} strokeWidth={2} />
+                      <span>View courses</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    title="Change profile avatar"
+                    className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt rounded-xl"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-cobalt text-white flex items-center justify-center font-bold text-sm overflow-hidden shadow-xs ring-2 ring-border-subtle group-hover:ring-cobalt transition-all">
+                      {user?.avatar?.url ? (
+                        <img
+                          src={user.avatar.url}
+                          alt={user?.name || 'Instructor profile'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        user?.name
+                          ? user.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join('')
+                              .toUpperCase()
+                          : 'IN'
+                      )}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 p-1 rounded-md bg-white border border-border-subtle text-secondary group-hover:text-primary shadow-xs transition-colors">
+                      <Camera size={10} />
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Key Metrics */}
               <div>
                 <h2 className="text-xs font-bold uppercase tracking-wider text-secondary mb-3">
-                  Teaching Overview
+                  Key Metrics
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard
-                    title="Created Courses"
-                    value={data?.overview?.createdCoursesCount ?? 0}
-                    subtitle="Drafted & active modules"
-                    icon={Library}
-                    badge={isApproved ? 'Studio Ready' : 'Restricted'}
-                    badgeType={isApproved ? 'sage' : 'amber'}
-                    onClick={handleViewCourses}
-                  />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard
                     title="Published Courses"
                     value={data?.overview?.publishedCoursesCount ?? 0}
-                    subtitle="Publicly accessible to learners"
+                    subtitle="Live in catalog"
                     icon={BookOpen}
-                    badge="Public"
-                    badgeType="default"
                     onClick={handleViewCourses}
                   />
                   <MetricCard
                     title="Total Learners"
                     value={data?.overview?.totalLearnersCount ?? 0}
-                    subtitle="Enrolled across active cohorts"
+                    subtitle="Enrolled students"
                     icon={Users}
-                    badge="Cohort"
-                    badgeType="blue"
                     onClick={() => setActiveTab('learners')}
                   />
                   <MetricCard
                     title="Pending Reviews"
-                    value={data?.overview?.pendingReviewsCount ?? 0}
-                    subtitle="Submissions awaiting feedback"
+                    value={pendingReviewsCount}
+                    subtitle="Awaiting evaluation"
                     icon={FileClock}
-                    badge={data?.overview?.pendingReviewsCount > 0 ? 'Action Req' : 'Zero Backlog'}
-                    badgeType={data?.overview?.pendingReviewsCount > 0 ? 'amber' : 'sage'}
                     onClick={() => setActiveTab('reviews')}
+                  />
+                  <MetricCard
+                    title="Draft Courses"
+                    value={draftCourses.length}
+                    subtitle="In progress modules"
+                    icon={Layers}
+                    onClick={() => {
+                      setCourseFilter('draft');
+                      setActiveTab('courses');
+                    }}
                   />
                 </div>
               </div>
 
-              {/* My Courses & Submissions Preview */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* My Courses Summary */}
-                <div className="bg-surface border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <Library size={16} strokeWidth={1.75} className="text-accent-sage-dark" />
-                        <h3 className="text-sm font-bold text-primary">My Courses</h3>
-                      </div>
-                      <span className="text-[11px] font-semibold text-secondary">
-                        {data?.courses?.length || 0} active
-                      </span>
-                    </div>
+              {/* Needs Your Attention Section */}
+              {hasAttentionItems ? (
+                <div className="bg-white border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border-subtle">
+                    <AlertTriangle size={15} className="text-amber-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
+                      Needs Your Attention
+                    </h3>
+                  </div>
 
-                    {data?.courses && data.courses.length > 0 ? (
-                      <div className="space-y-3">
-                        {data.courses.slice(0, 3).map((c) => (
-                          <div
-                            key={c._id}
-                            className="p-3 bg-surface-subtle border border-border-subtle rounded-xl flex items-center justify-between hover:border-border-medium hover-lift transition-all"
-                          >
-                            <div className="min-w-0 flex-1 pr-3">
-                              <h5 className="text-xs font-bold text-primary truncate">{c.title}</h5>
-                              <div className="flex items-center gap-2 mt-1 text-[10px] text-secondary">
-                                <span className="capitalize">{c.status.replace('_', ' ')}</span>
-                                <span>•</span>
-                                <span>{c.totalLessons} lessons</span>
-                                <span>•</span>
-                                <span>{c.enrolledCount} learners</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenStudio(c._id)}
-                              className="text-xs font-semibold text-accent-blue-dark hover:underline cursor-pointer"
-                            >
-                              Edit
-                            </button>
+                  <div className="divide-y divide-border-subtle">
+                    {/* Educator Credential Pending Approval */}
+                    {!isApproved && (
+                      <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <p className="text-xs font-semibold text-primary">
+                              Educator Credentials Under Review
+                            </p>
                           </div>
-                        ))}
-                        {data.courses.length > 3 && (
-                          <button
-                            type="button"
-                            onClick={handleViewCourses}
-                            className="text-xs text-secondary hover:text-primary font-medium w-full text-center mt-2 cursor-pointer"
-                          >
-                            View all {data.courses.length} courses &rarr;
-                          </button>
-                        )}
+                          <p className="text-[11px] text-secondary mt-0.5">
+                            Account ({user?.email}) is pending administrative approval. Course publication is paused until verified.
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-md shrink-0 w-fit">
+                          Pending Approval
+                        </span>
                       </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <IconChip icon={Library} tone="neutral" size="lg" className="w-12 h-12 rounded-2xl mx-auto mb-3" />
-                        <h4 className="text-xs font-bold text-primary mb-1">
-                          Your teaching workspace is ready.
-                        </h4>
-                        <p className="text-[11px] text-secondary max-w-xs mx-auto leading-relaxed mb-4">
-                          Assemble curriculum modules, add interactive lessons, and publish to the student catalog.
-                        </p>
+                    )}
+
+                    {/* Rejected Courses Requiring Revision */}
+                    {rejectedCourses.length > 0 && (
+                      <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                            <p className="text-xs font-semibold text-primary">
+                              {rejectedCourses.length} course{rejectedCourses.length > 1 ? 's' : ''} returned for revisions
+                            </p>
+                          </div>
+                          <p className="text-[11px] text-secondary mt-0.5 truncate">
+                            &ldquo;{rejectedCourses[0].title}&rdquo;{rejectedCourses[0].rejectionReason ? ` — ${rejectedCourses[0].rejectionReason}` : ''}
+                          </p>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => handleOpenStudio()}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 hover-lift btn-press transition-all cursor-pointer"
+                          onClick={() => handleOpenStudio(rejectedCourses[0]._id)}
+                          className="text-xs font-semibold text-accent-blue-dark hover:underline cursor-pointer shrink-0"
                         >
-                          <PlusCircle size={13} strokeWidth={1.75} />
-                          <span>Create Course</span>
+                          Edit & Resubmit &rarr;
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Pending Reviews / Ungraded Submissions */}
+                    {pendingReviewsCount > 0 && (
+                      <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <p className="text-xs font-semibold text-primary">
+                              {pendingReviewsCount} submission{pendingReviewsCount > 1 ? 's' : ''} awaiting grading
+                            </p>
+                          </div>
+                          <p className="text-[11px] text-secondary mt-0.5">
+                            Learners have turned in coursework ready for evaluation and feedback.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('reviews')}
+                          className="text-xs font-semibold text-accent-blue-dark hover:underline cursor-pointer shrink-0"
+                        >
+                          Review Submissions &rarr;
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Draft Courses */}
+                    {draftCourses.length > 0 && (
+                      <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                            <p className="text-xs font-semibold text-primary">
+                              {draftCourses.length} unpublished course draft{draftCourses.length > 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <p className="text-[11px] text-secondary mt-0.5 truncate">
+                            Latest draft: &ldquo;{draftCourses[0].title}&rdquo; ({draftCourses[0].totalLessons || 0} lessons)
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenStudio(draftCourses[0]._id)}
+                          className="text-xs font-semibold text-accent-blue-dark hover:underline cursor-pointer shrink-0"
+                        >
+                          Resume Editing &rarr;
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* Pending Submissions */}
-                <div className="bg-surface border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <Inbox size={16} strokeWidth={1.75} className="text-accent-blue-dark" />
-                        <h3 className="text-sm font-bold text-primary">Pending Submissions</h3>
-                      </div>
-                      <span className="text-[11px] font-semibold text-secondary">
-                        {data?.pendingSubmissions?.length || 0} awaiting review
-                      </span>
-                    </div>
-
-                    <div className="text-center py-8">
-                      <IconChip icon={Inbox} tone="neutral" size="lg" className="w-12 h-12 rounded-2xl mx-auto mb-3" />
-                      <h4 className="text-xs font-bold text-primary mb-1">
-                        No submissions awaiting review.
-                      </h4>
-                      <p className="text-[11px] text-secondary max-w-xs mx-auto leading-relaxed">
-                        Student assignment submissions will populate here when cohorts submit code reviews and project deliverables.
-                      </p>
-                    </div>
-                  </div>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-border-subtle text-secondary text-xs shadow-xs">
+                  <CheckCircle2 size={16} className="text-accent-sage-dark shrink-0" />
+                  <span>All caught up! No pending submissions or urgent course actions require your attention.</span>
                 </div>
-              </div>
+              )}
 
-              {/* Course Progress & Cohort Analytics */}
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
+              {/* Recent or Active Courses */}
+              <div className="bg-white border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
                   <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-accent-blue-dark" />
-                    <h3 className="text-sm font-bold text-primary">
-                      Cohort Velocity & Progress Analytics
-                    </h3>
+                    <Library size={16} strokeWidth={1.75} className="text-secondary" />
+                    <h3 className="text-sm font-bold text-primary">Recent Courses</h3>
+                    <span className="text-[11px] font-semibold text-secondary">
+                      ({data?.courses?.length || 0})
+                    </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-secondary">Phase 4 Roadmap</span>
+                  {data?.courses && data.courses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleViewCourses}
+                      className="text-xs font-semibold text-accent-blue-dark hover:underline cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <span>View all courses</span>
+                      <ArrowRight size={12} />
+                    </button>
+                  )}
                 </div>
 
-                <div className="p-6 rounded-xl bg-surface-subtle border border-border-subtle text-center">
-                  <p className="text-xs font-bold text-primary mb-1">
-                    Telemetry and Cohort Completion Charts
-                  </p>
-                  <p className="text-xs text-secondary max-w-md mx-auto leading-relaxed">
-                    Granular learner pacing, module completion rates, and assessment histograms will be compiled from live student submissions.
-                  </p>
-                </div>
+                {data?.courses && data.courses.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {data.courses.slice(0, 3).map((c) => {
+                      const statusBadgeMap = {
+                        published: { label: 'Published', style: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                        pending_review: { label: 'In Review', style: 'bg-amber-50 text-amber-700 border-amber-200' },
+                        draft: { label: 'Draft', style: 'bg-slate-100 text-slate-600 border-slate-200' },
+                        rejected: { label: 'Changes Requested', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+                      };
+                      const badgeInfo = statusBadgeMap[c.status] || {
+                        label: c.status?.replace('_', ' ') || 'Unknown',
+                        style: 'bg-surface-subtle text-secondary border-border-subtle',
+                      };
+
+                      return (
+                        <div
+                          key={c._id}
+                          className="p-3.5 bg-surface-subtle border border-border-subtle rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-border-medium hover-lift transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {c.thumbnail ? (
+                              <img
+                                src={c.thumbnail}
+                                alt={c.title}
+                                className="w-10 h-10 rounded-lg object-cover shrink-0 border border-border-subtle"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-white border border-border-subtle flex items-center justify-center shrink-0 text-secondary">
+                                <BookOpen size={16} />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="text-xs font-bold text-primary truncate max-w-sm">
+                                  {c.title}
+                                </h4>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${badgeInfo.style}`}>
+                                  {badgeInfo.label}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-[11px] text-secondary">
+                                <span>{c.category || 'General'}</span>
+                                <span>&bull;</span>
+                                <span>{c.totalLessons || 0} lessons</span>
+                                <span>&bull;</span>
+                                <span>{c.enrolledCount || 0} learners</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenStudio(c._id)}
+                              className="px-3 py-1.5 rounded-lg bg-white border border-border-subtle hover:border-border-medium text-xs font-semibold text-primary hover:text-accent-blue-dark transition-colors cursor-pointer"
+                            >
+                              Manage
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <IconChip icon={Library} tone="neutral" size="lg" className="w-12 h-12 rounded-2xl mx-auto mb-3" />
+                    <h4 className="text-xs font-bold text-primary mb-1">
+                      No courses created yet
+                    </h4>
+                    <p className="text-[11px] text-secondary max-w-xs mx-auto leading-relaxed mb-4">
+                      Build your first curriculum, add lessons, and submit for publication.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenStudio()}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 hover-lift btn-press transition-all cursor-pointer"
+                    >
+                      <PlusCircle size={13} strokeWidth={1.75} />
+                      <span>Create Course</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            </>
+            </div>
           )}
 
           {/* TAB: TEACHING ANALYTICS */}
@@ -1170,20 +1265,259 @@ export default function InstructorDashboard() {
           {/* TAB: LEARNERS */}
           {activeTab === 'learners' && (
             <div className="space-y-6">
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                <h2 className="text-base font-bold text-primary mb-1">Enrolled Learners Directory</h2>
-                <p className="text-xs text-secondary">
-                  Track individual student progress, lesson engagement, and assignment completion.
-                </p>
+              {/* Header Card */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-base font-bold text-primary">Enrolled Learners Directory</h2>
+                    <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-cobalt/10 text-cobalt border border-cobalt/20">
+                      {learnersList.length} Enrolled
+                    </span>
+                  </div>
+                  <p className="text-xs text-secondary">
+                    Track individual student progress, lesson engagement, and assignment completion.
+                  </p>
+                </div>
               </div>
 
-              <EmptyState
-                icon={Users}
-                title="No enrolled learners yet."
-                description="Learners will populate this roster once your published courses accept cohort admissions."
-                actionLabel="Return to Overview"
-                onAction={() => setActiveTab('overview')}
-              />
+              {/* Summary Metrics Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-white border border-border-subtle rounded-2xl p-4 shadow-xs">
+                  <div className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                    Total Enrollments
+                  </div>
+                  <div className="text-xl font-extrabold text-primary">
+                    {learnersSummary?.totalEnrollments ?? learnersList.length}
+                  </div>
+                </div>
+                <div className="bg-white border border-border-subtle rounded-2xl p-4 shadow-xs">
+                  <div className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                    Unique Students
+                  </div>
+                  <div className="text-xl font-extrabold text-primary">
+                    {learnersSummary?.totalUniqueLearners ?? new Set(learnersList.map((l) => l.student.id)).size}
+                  </div>
+                </div>
+                <div className="bg-white border border-border-subtle rounded-2xl p-4 shadow-xs">
+                  <div className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                    Active Learning
+                  </div>
+                  <div className="text-xl font-extrabold text-emerald-600">
+                    {learnersSummary?.activeLearners ?? learnersList.filter((l) => !l.isCompleted).length}
+                  </div>
+                </div>
+                <div className="bg-white border border-border-subtle rounded-2xl p-4 shadow-xs">
+                  <div className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                    Completed Courses
+                  </div>
+                  <div className="text-xl font-extrabold text-cobalt">
+                    {learnersSummary?.completedLearners ?? learnersList.filter((l) => l.isCompleted).length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Selector Filter & Search Bar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-border-subtle rounded-2xl p-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-secondary whitespace-nowrap">
+                      Course:
+                    </label>
+                    <select
+                      value={selectedLearnerCourse}
+                      onChange={(e) => setSelectedLearnerCourse(e.target.value)}
+                      className="text-xs font-medium bg-surface-subtle border border-border-subtle rounded-xl px-3 py-2 text-primary focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
+                    >
+                      <option value="all">All Courses ({data?.courses?.length || 0})</option>
+                      {data?.courses?.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="relative flex-1 max-w-md">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                    <input
+                      type="text"
+                      value={learnerSearchQuery}
+                      onChange={(e) => setLearnerSearchQuery(e.target.value)}
+                      placeholder="Search learner by name, email, or course..."
+                      className="w-full text-xs font-medium bg-surface-subtle border border-border-subtle rounded-xl pl-9 pr-8 py-2 text-primary placeholder:text-secondary focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30"
+                    />
+                    {learnerSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setLearnerSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary hover:text-primary text-xs font-bold"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-xs font-semibold text-secondary whitespace-nowrap">
+                  Showing <span className="text-primary font-bold">{learnersList.length}</span> learner{learnersList.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+
+              {/* Main Content Area */}
+              {learnersLoading ? (
+                <div className="bg-white border border-border-subtle rounded-2xl p-12 shadow-xs">
+                  <LoadingState message="Loading enrolled learners directory..." />
+                </div>
+              ) : learnersList.length === 0 ? (
+                learnerSearchQuery || selectedLearnerCourse !== 'all' ? (
+                  <EmptyState
+                    icon={Users}
+                    title="No matching learners found"
+                    description="No enrolled students match your search query or selected course filter."
+                    actionLabel="Reset Filters"
+                    onAction={() => {
+                      setSelectedLearnerCourse('all');
+                      setLearnerSearchQuery('');
+                    }}
+                  />
+                ) : (
+                  <EmptyState
+                    icon={Users}
+                    title="No enrolled learners yet."
+                    description="Learners will populate this roster once students enroll in your published courses."
+                    actionLabel="Return to Overview"
+                    onAction={() => setActiveTab('overview')}
+                  />
+                )
+              ) : (
+                <div className="bg-white border border-border-subtle rounded-2xl shadow-xs overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-border-subtle bg-surface-subtle/50 text-[11px] font-bold text-secondary uppercase tracking-wider">
+                          <th className="py-3.5 px-4 sm:px-6">Learner</th>
+                          <th className="py-3.5 px-4">Course</th>
+                          <th className="py-3.5 px-4">Progress</th>
+                          <th className="py-3.5 px-4">Status</th>
+                          <th className="py-3.5 px-4">Enrollment Type</th>
+                          <th className="py-3.5 px-4 text-right">Enrolled Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-subtle text-xs">
+                        {learnersList.map((l) => {
+                          const initials = (l.student.name || 'Student')
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2);
+
+                          return (
+                            <tr key={l.id} className="hover:bg-surface-subtle/30 transition-colors">
+                              {/* Learner Info */}
+                              <td className="py-3.5 px-4 sm:px-6">
+                                <div className="flex items-center gap-3">
+                                  {l.student.avatar ? (
+                                    <img
+                                      src={l.student.avatar}
+                                      alt={l.student.name}
+                                      className="w-9 h-9 rounded-full object-cover border border-border-subtle"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-full bg-cobalt/10 text-cobalt flex items-center justify-center font-bold text-xs shrink-0">
+                                      {initials}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="font-bold text-primary truncate">{l.student.name}</div>
+                                    <div className="text-[11px] text-secondary flex items-center gap-1 truncate">
+                                      <Mail size={11} className="shrink-0" />
+                                      <span>{l.student.email}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Course */}
+                              <td className="py-3.5 px-4">
+                                <div className="min-w-0 max-w-xs">
+                                  <div className="font-semibold text-primary truncate" title={l.course.title}>
+                                    {l.course.title}
+                                  </div>
+                                  <div className="text-[10px] text-secondary flex items-center gap-1.5 mt-0.5">
+                                    <span className="bg-surface-subtle px-1.5 py-0.5 rounded text-[10px] font-medium border border-border-subtle">
+                                      {l.course.category}
+                                    </span>
+                                    <span>•</span>
+                                    <span>{l.totalLessons} lessons</span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Progress Bar */}
+                              <td className="py-3.5 px-4 min-w-[140px]">
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="font-semibold text-primary">{l.progressPercentage}%</span>
+                                    <span className="text-secondary text-[10px]">
+                                      {l.completedCount}/{l.totalLessons} lessons
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-surface-subtle h-1.5 rounded-full overflow-hidden border border-border-subtle/50">
+                                    <div
+                                      className="bg-cobalt h-full rounded-full transition-all duration-300"
+                                      style={{ width: `${l.progressPercentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                {l.isCompleted ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-cobalt border border-blue-200">
+                                    <Award size={12} />
+                                    <span>Completed</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span>In Progress</span>
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Enrollment Type */}
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                {l.enrollmentType === 'paid' ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <span>PAID</span>
+                                    <span>•</span>
+                                    <span>₹{l.amountPaid}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                    FREE
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Enrolled Date */}
+                              <td className="py-3.5 px-4 text-right whitespace-nowrap text-secondary text-[11px]">
+                                {l.enrolledAt ? new Date(l.enrolledAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                }) : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

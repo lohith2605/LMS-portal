@@ -41,6 +41,7 @@ const createCourse = async (req, res) => {
       intendedAudience,
       estimatedDuration,
       language,
+      price,
       sections,
     } = req.body;
 
@@ -52,6 +53,15 @@ const createCourse = async (req, res) => {
     }
     if (!description || !description.trim()) {
       return res.status(400).json({ error: 'Course full description is required.' });
+    }
+
+    let validatedPrice = 0;
+    if (price !== undefined && price !== null && price !== '') {
+      const num = Number(price);
+      if (isNaN(num) || !Number.isFinite(num) || num < 0) {
+        return res.status(400).json({ error: 'Course price must be a valid non-negative number.' });
+      }
+      validatedPrice = Math.round(num * 100) / 100;
     }
 
     const slug = await Course.generateSlug(title);
@@ -94,6 +104,8 @@ const createCourse = async (req, res) => {
       intendedAudience: intendedAudience || '',
       estimatedDuration: estimatedDuration || '4 weeks',
       language: language || 'English',
+      price: validatedPrice,
+      currency: 'INR',
       status: 'draft',
       sections: sanitizedSections,
     });
@@ -242,6 +254,7 @@ const updateCourse = async (req, res) => {
       intendedAudience,
       estimatedDuration,
       language,
+      price,
       sections,
     } = req.body;
 
@@ -262,6 +275,16 @@ const updateCourse = async (req, res) => {
     if (intendedAudience !== undefined) course.intendedAudience = intendedAudience.trim();
     if (estimatedDuration !== undefined) course.estimatedDuration = estimatedDuration.trim();
     if (language !== undefined) course.language = language.trim();
+
+    if (price !== undefined && price !== null && price !== '') {
+      const num = Number(price);
+      if (isNaN(num) || !Number.isFinite(num) || num < 0) {
+        return res.status(400).json({ error: 'Course price must be a valid non-negative number.' });
+      }
+      course.price = Math.round(num * 100) / 100;
+    } else if (price === 0 || price === '0') {
+      course.price = 0;
+    }
 
     if (Array.isArray(sections)) {
       course.sections = sections.map((sec, sIdx) => {
@@ -858,6 +881,152 @@ const reorderLessons = async (req, res) => {
   }
 };
 
+/**
+ * Retrieve enrolled learners across instructor courses (or filtered by courseId)
+ * GET /api/instructor/learners
+ */
+const getInstructorLearners = async (req, res) => {
+  try {
+    const instructorId = req.user.id;
+    const { courseId, search } = req.query;
+
+    let targetCourseIds = [];
+
+    if (courseId && courseId !== 'all') {
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        return res.status(400).json({ error: 'Invalid course ID format.' });
+      }
+      const course = await Course.findById(courseId).select('_id instructor title');
+      if (!course) {
+        return res.status(404).json({ error: 'Course not found.' });
+      }
+      if (course.instructor.toString() !== instructorId && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden: You do not own this course.' });
+      }
+      targetCourseIds = [course._id];
+    } else {
+      const ownedCourses = await Course.find({ instructor: instructorId }).select('_id').lean();
+      targetCourseIds = ownedCourses.map((c) => c._id);
+    }
+
+    if (targetCourseIds.length === 0) {
+      return res.status(200).json({
+        learners: [],
+        count: 0,
+        summary: {
+          totalEnrollments: 0,
+          totalUniqueLearners: 0,
+          activeLearners: 0,
+          completedLearners: 0,
+        },
+      });
+    }
+
+    const enrollments = await Enrollment.find({
+      course: { $in: targetCourseIds },
+      status: { $in: ['active', 'completed'] },
+    })
+      .populate('student', 'name email avatar createdAt')
+      .populate('course', 'title slug thumbnail category level sections price currency')
+      .populate('payment', 'amount currency status receipt razorpayPaymentId paidAt')
+      .sort({ enrolledAt: -1 })
+      .lean();
+
+    // Map and enrich with progress details
+    const learners = enrollments
+      .filter((e) => e.student && e.course)
+      .map((e) => {
+        const c = e.course;
+        const validLessonIds = new Set(
+          (c.sections || []).flatMap((s) => (s.lessons || []).map((l) => (l._id ? l._id.toString() : '')))
+        );
+        const totalLessons = validLessonIds.size;
+        const validCompletedLessons = (e.completedLessons || []).filter((id) =>
+          validLessonIds.has(id ? id.toString() : '')
+        );
+        const completedCount = validCompletedLessons.length;
+        const progressPercentage =
+          totalLessons > 0 ? Math.min(100, Math.round((completedCount / totalLessons) * 100)) : 0;
+
+        return {
+          id: e._id.toString(),
+          enrollmentId: e._id.toString(),
+          student: {
+            id: e.student._id ? e.student._id.toString() : '',
+            name: e.student.name || 'Learner',
+            email: e.student.email || '',
+            avatar: e.student.avatar || '',
+            joinedAt: e.student.createdAt,
+          },
+          course: {
+            id: c._id.toString(),
+            title: c.title,
+            slug: c.slug,
+            thumbnail: c.thumbnail || '',
+            category: c.category || 'Development',
+            level: c.level || 'All Levels',
+            price: c.price || 0,
+            currency: c.currency || 'INR',
+          },
+          enrollmentType: e.enrollmentType || (e.payment ? 'paid' : 'free'),
+          amountPaid: e.amountPaid || (e.payment ? e.payment.amount : 0),
+          enrolledAt: e.enrolledAt,
+          status: e.status,
+          isCompleted: e.isCompleted || e.status === 'completed',
+          completedAt: e.completedAt,
+          completedCount,
+          totalLessons,
+          progressPercentage,
+          lastAccessedAt: e.lastAccessedAt,
+          certificateIssued: Boolean(e.certificateIssued),
+          certificateId: e.certificateId || null,
+          payment: e.payment
+            ? {
+                id: e.payment._id ? e.payment._id.toString() : '',
+                amount: e.payment.amount,
+                currency: e.payment.currency,
+                receipt: e.payment.receipt,
+                paymentId: e.payment.razorpayPaymentId,
+                paidAt: e.payment.paidAt,
+              }
+            : null,
+        };
+      });
+
+    // In-memory search filter if search parameter provided
+    let filteredLearners = learners;
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filteredLearners = learners.filter(
+        (l) =>
+          (l.student.name && l.student.name.toLowerCase().includes(q)) ||
+          (l.student.email && l.student.email.toLowerCase().includes(q)) ||
+          (l.course.title && l.course.title.toLowerCase().includes(q))
+      );
+    }
+
+    const uniqueStudents = new Set(learners.map((l) => l.student.id));
+    const activeLearners = learners.filter((l) => l.status === 'active' && !l.isCompleted).length;
+    const completedLearners = learners.filter((l) => l.isCompleted || l.status === 'completed').length;
+
+    return res.status(200).json({
+      learners: filteredLearners,
+      count: filteredLearners.length,
+      summary: {
+        totalEnrollments: learners.length,
+        totalUniqueLearners: uniqueStudents.size,
+        activeLearners,
+        completedLearners,
+      },
+    });
+  } catch (error) {
+    logger.error(`Get instructor learners error: ${error.message}`);
+    return res.status(500).json({
+      error: 'Failed to retrieve enrolled learners.',
+    });
+  }
+};
+
 module.exports = {
   createCourse,
   getInstructorCourses,
@@ -873,4 +1042,5 @@ module.exports = {
   updateLesson,
   deleteLesson,
   reorderLessons,
+  getInstructorLearners,
 };

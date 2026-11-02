@@ -300,6 +300,22 @@ export const courseService = {
 
 export const instructorCourseService = {
   /**
+   * Fetch enrolled learners across instructor courses
+   */
+  getLearners: async (params = {}) => {
+    const res = await api.get('/instructor/learners', { params });
+    return res.data;
+  },
+
+  /**
+   * Fetch enrolled learners for a specific course
+   */
+  getCourseLearners: async (courseId, params = {}) => {
+    const res = await api.get(`/instructor/courses/${courseId}/learners`, { params });
+    return res.data;
+  },
+
+  /**
    * Fetch courses authored by the current instructor
    */
   getCourses: async (params = {}) => {
@@ -426,6 +442,32 @@ export const studentEnrollmentService = {
    */
   getCourseProgress: async (courseId) => {
     const res = await api.get(`/student/courses/${courseId}`);
+    return res.data;
+  },
+};
+
+export const paymentService = {
+  /**
+   * Create Razorpay payment order for paid course checkout
+   */
+  createOrder: async (courseId) => {
+    const res = await api.post('/payments/create-order', { courseId });
+    return res.data;
+  },
+
+  /**
+   * Verify Razorpay payment signature and confirm enrollment
+   */
+  verifyPayment: async (data) => {
+    const res = await api.post('/payments/verify', data);
+    return res.data;
+  },
+
+  /**
+   * Fetch authenticated student's payment history
+   */
+  getMyPayments: async () => {
+    const res = await api.get('/payments/my-payments');
     return res.data;
   },
 };

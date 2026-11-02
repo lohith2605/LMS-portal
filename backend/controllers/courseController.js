@@ -102,6 +102,9 @@ const getCourses = async (req, res) => {
         thumbnail: c.thumbnail,
         estimatedDuration: c.estimatedDuration,
         language: c.language,
+        price: c.price ?? 0,
+        currency: c.currency || 'INR',
+        isPaid: Boolean((c.price ?? 0) > 0),
         instructor: c.instructor
           ? {
               id: c.instructor._id.toString(),
@@ -214,6 +217,9 @@ const getCourseByIdOrSlug = async (req, res) => {
       intendedAudience: course.intendedAudience,
       estimatedDuration: course.estimatedDuration,
       language: course.language,
+      price: course.price ?? 0,
+      currency: course.currency || 'INR',
+      isPaid: Boolean((course.price ?? 0) > 0),
       status: course.status,
       instructor: course.instructor
         ? {

@@ -118,6 +118,15 @@ export default function CourseCard({ course, onSelectCourse }) {
         {/* Bottom actions & metadata */}
         <div className="flex items-center justify-between pt-2">
           <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                Number(course.price || 0) > 0
+                  ? 'bg-cobalt-soft text-cobalt border-cobalt-border'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              }`}
+            >
+              {Number(course.price || 0) > 0 ? `₹${Number(course.price).toLocaleString('en-IN')}` : 'Free'}
+            </span>
             <div className="text-[11px] text-secondary flex items-center gap-1">
               <Clock size={12} aria-hidden="true" />
               <span>
@@ -135,7 +144,7 @@ export default function CourseCard({ course, onSelectCourse }) {
 
           <button
             type="button"
-            className="text-xs font-semibold text-primary inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-subtle border border-border-subtle hover:bg-cobalt hover:text-white hover:border-cobalt active:bg-cobalt-pressed transition-all cursor-pointer"
+            className="text-xs font-semibold text-primary inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-subtle border border-border-subtle hover:bg-cobalt hover:text-white hover:border-cobalt active:bg-cobalt-pressed transition-all cursor-pointer shrink-0"
             onClick={() => onSelectCourse(course)}
             aria-label={`View course ${course.title}`}
           >

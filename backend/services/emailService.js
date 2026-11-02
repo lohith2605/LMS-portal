@@ -2,11 +2,22 @@ const nodemailer = require('nodemailer');
 const { logger } = require('../utils/logger');
 
 let transporter = null;
+let customTransporter = null;
+
+/**
+ * Override or inject a custom transporter (useful for testing and mocks)
+ * @param {Object|null} mockTransporter
+ */
+const setTransporter = (mockTransporter) => {
+  customTransporter = mockTransporter;
+};
 
 /**
  * Get or initialize nodemailer transporter
  */
 const getTransporter = () => {
+  if (customTransporter) return customTransporter;
+
   if (process.env.NODE_ENV === 'test') {
     return null;
   }
@@ -361,10 +372,288 @@ const sendMfaEmailOtp = async ({ to, name, otp }) => {
   }
 };
 
+/**
+ * Send course payment receipt email to student upon successful payment verification
+ * @param {Object} options
+ * @param {string} options.to - Student's email
+ * @param {string} [options.studentName] - Student's display name
+ * @param {string} options.courseTitle - Title of the course
+ * @param {string} [options.instructorName] - Instructor's name
+ * @param {number} options.amount - Paid amount
+ * @param {string} [options.currency='INR'] - Payment currency
+ * @param {Date|string} [options.paymentDate] - Date of payment
+ * @param {string} [options.razorpayPaymentId] - Razorpay payment ID
+ * @param {string} [options.razorpayOrderId] - Razorpay order ID
+ * @param {string} [options.receiptId] - Internal receipt reference identifier
+ * @param {string} [options.courseUrl] - Link to course or student dashboard
+ * @returns {Promise<boolean>}
+ */
+const sendPaymentReceiptEmail = async ({
+  to,
+  studentName,
+  courseTitle,
+  instructorName,
+  amount,
+  currency = 'INR',
+  paymentDate,
+  razorpayPaymentId,
+  razorpayOrderId,
+  receiptId,
+  courseUrl,
+}) => {
+  const mailTransporter = getTransporter();
+
+  const safeStudentName = escapeHtml(studentName || 'Learner');
+  const safeCourseTitle = escapeHtml(courseTitle || 'Enrolled Course');
+  const safeInstructorName = escapeHtml(instructorName || 'LearnSpace Educator');
+  const safeReceiptId = escapeHtml(receiptId || 'N/A');
+  const safePaymentId = escapeHtml(razorpayPaymentId || 'N/A');
+  const safeOrderId = escapeHtml(razorpayOrderId || 'N/A');
+  const curr = (currency || 'INR').toUpperCase();
+  const formattedAmount = `${curr} ${Number(amount || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+  const formattedDate = paymentDate ? new Date(paymentDate).toUTCString() : new Date().toUTCString();
+  const resolvedCourseUrl =
+    courseUrl ||
+    `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/dashboard?tab=courses`;
+
+  const subject = `LearnSpace — Payment Receipt: ${courseTitle || 'Course Enrollment'}`;
+
+  const text = `Hello ${studentName || 'Learner'},\n\nThank you for your purchase on LearnSpace! Your payment has been successfully processed and your course enrollment is confirmed.\n\n--- Payment Receipt Summary ---\nCourse: ${courseTitle || 'Course'}\nInstructor: ${instructorName || 'LearnSpace Educator'}\nAmount Paid: ${formattedAmount}\nPayment Date: ${formattedDate}\nReceipt Reference: ${receiptId || 'N/A'}\nRazorpay Payment ID: ${razorpayPaymentId || 'N/A'}\nRazorpay Order ID: ${razorpayOrderId || 'N/A'}\n\nAccess your course here:\n${resolvedCourseUrl}\n\nKeep this email for your records. If you did not make this purchase, please contact platform security immediately.\n\n— The LearnSpace Team`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; color: #0F172A;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid #E2E8F0; padding-bottom: 16px;">
+        <div style="font-size: 20px; font-weight: 800; color: #0F172A;">
+          Learn<span style="color: #2563EB;">Space</span>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: #EEF2FF; color: #1D4ED8; padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.05em;">
+          Payment Receipt
+        </span>
+      </div>
+
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #0F172A;">Payment Confirmed</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
+        Hello <strong>${safeStudentName}</strong>,<br/>
+        Thank you for your enrollment. We have verified your payment for <strong>${safeCourseTitle}</strong>. Your course access is now fully active.
+      </p>
+
+      <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 12px; letter-spacing: 0.05em;">Transaction Details</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Course</td>
+            <td style="padding: 6px 0; color: #0F172A; font-weight: 600; text-align: right;">${safeCourseTitle}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Instructor</td>
+            <td style="padding: 6px 0; color: #0F172A; text-align: right;">${safeInstructorName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Amount Paid</td>
+            <td style="padding: 6px 0; color: #2563EB; font-weight: 700; font-size: 15px; text-align: right;">${formattedAmount}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Payment Date</td>
+            <td style="padding: 6px 0; color: #0F172A; text-align: right;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Receipt Reference</td>
+            <td style="padding: 6px 0; font-family: monospace; color: #0F172A; text-align: right;">${safeReceiptId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Payment ID</td>
+            <td style="padding: 6px 0; font-family: monospace; color: #0F172A; text-align: right;">${safePaymentId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Order ID</td>
+            <td style="padding: 6px 0; font-family: monospace; color: #0F172A; text-align: right;">${safeOrderId}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <a href="${resolvedCourseUrl}" style="display: inline-block; background-color: #2563EB; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 24px; border-radius: 8px;">
+          Access Your Course
+        </a>
+      </div>
+
+      <p style="font-size: 12px; color: #94A3B8; line-height: 1.5; margin-bottom: 20px;">
+        Keep this email for your records. If you did not make this transaction, please contact platform security immediately.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 20px 0;" />
+      <p style="font-size: 11px; color: #94A3B8; margin: 0;">LearnSpace LMS Platform • Official Payment Confirmation</p>
+    </div>
+  `;
+
+  if (!mailTransporter) {
+    logger.info(`[Email Service Simulation] Payment receipt prepared for ${to}. Email credentials not configured or operating in local test mode.`);
+    return false;
+  }
+
+  try {
+    const fromAddress = process.env.EMAIL_FROM || `"LearnSpace Billing" <${process.env.EMAIL_USER}>`;
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+    });
+    logger.success(`Payment receipt email delivered to ${to}`);
+    return true;
+  } catch (error) {
+    logger.warn(`Failed to dispatch payment receipt email to ${to}: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Send student enrollment notification to course instructor (for free or paid enrollments)
+ * @param {Object} options
+ * @param {string} options.to - Instructor's email address
+ * @param {string} [options.instructorName] - Instructor's name
+ * @param {string} [options.studentName] - Student's name
+ * @param {string} [options.studentEmail] - Student's email
+ * @param {string} options.courseTitle - Title of the course
+ * @param {Date|string} [options.enrollmentDate] - Date of enrollment
+ * @param {'free'|'paid'} [options.enrollmentType='free'] - Type of enrollment
+ * @param {number} [options.amount=0] - Amount paid (if paid enrollment)
+ * @param {string} [options.currency='INR'] - Currency
+ * @param {string} [options.dashboardUrl] - Link to instructor dashboard
+ * @returns {Promise<boolean>}
+ */
+const sendInstructorEnrollmentNotificationEmail = async ({
+  to,
+  instructorName,
+  studentName,
+  studentEmail,
+  courseTitle,
+  enrollmentDate,
+  enrollmentType = 'free',
+  amount = 0,
+  currency = 'INR',
+  dashboardUrl,
+}) => {
+  const mailTransporter = getTransporter();
+
+  const safeInstructorName = escapeHtml(instructorName || 'Educator');
+  const safeStudentName = escapeHtml(studentName || 'Student');
+  const safeStudentEmail = escapeHtml(studentEmail || 'N/A');
+  const safeCourseTitle = escapeHtml(courseTitle || 'Course');
+  const isPaid = enrollmentType === 'paid';
+  const curr = (currency || 'INR').toUpperCase();
+  const formattedAmount = isPaid
+    ? `${curr} ${Number(amount || 0).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`
+    : 'Free';
+  const formattedDate = enrollmentDate
+    ? new Date(enrollmentDate).toUTCString()
+    : new Date().toUTCString();
+  const resolvedDashboardUrl =
+    dashboardUrl ||
+    `${process.env.CLIENT_URL || 'http://localhost:5173'}/instructor/dashboard`;
+
+  const subject = `LearnSpace — New Student Enrolled: ${courseTitle || 'Course'}`;
+
+  const text = `Hello ${instructorName || 'Educator'},\n\nGreat news! A new student has enrolled in your course "${courseTitle || 'Course'}".\n\n--- Enrollment Details ---\nStudent: ${studentName || 'Student'} (${studentEmail || 'N/A'})\nCourse: ${courseTitle || 'Course'}\nEnrollment Type: ${isPaid ? 'Paid Enrollment' : 'Free Enrollment'}\n${isPaid ? `Amount Paid: ${formattedAmount}\n` : ''}Date: ${formattedDate}\n\nYou can manage your courses and review student progress in your Instructor Workspace:\n${resolvedDashboardUrl}\n\n— The LearnSpace Team`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; color: #0F172A;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid #E2E8F0; padding-bottom: 16px;">
+        <div style="font-size: 20px; font-weight: 800; color: #0F172A;">
+          Learn<span style="color: #2563EB;">Space</span>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: #E0F2FE; color: #0369A1; padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.05em;">
+          New Enrollment
+        </span>
+      </div>
+
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #0F172A;">New Student Enrolled</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
+        Hello <strong>${safeInstructorName}</strong>,<br/>
+        A new student has enrolled in your course <strong>${safeCourseTitle}</strong>.
+      </p>
+
+      <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 12px; letter-spacing: 0.05em;">Enrollment Summary</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Student Name</td>
+            <td style="padding: 6px 0; color: #0F172A; font-weight: 600; text-align: right;">${safeStudentName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Student Email</td>
+            <td style="padding: 6px 0; color: #0F172A; text-align: right;">${safeStudentEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Course</td>
+            <td style="padding: 6px 0; color: #0F172A; font-weight: 600; text-align: right;">${safeCourseTitle}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Enrollment Type</td>
+            <td style="padding: 6px 0; text-align: right;">
+              <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background-color: ${isPaid ? '#DCFCE7' : '#F1F5F9'}; color: ${isPaid ? '#15803D' : '#475569'};">
+                ${isPaid ? 'PAID ENROLLMENT' : 'FREE ENROLLMENT'}
+              </span>
+            </td>
+          </tr>
+          ${isPaid ? `<tr>
+            <td style="padding: 6px 0; color: #64748B;">Course Fee Paid</td>
+            <td style="padding: 6px 0; color: #2563EB; font-weight: 700; font-size: 14px; text-align: right;">${formattedAmount}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Date</td>
+            <td style="padding: 6px 0; color: #0F172A; text-align: right;">${formattedDate}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <a href="${resolvedDashboardUrl}" style="display: inline-block; background-color: #2563EB; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 24px; border-radius: 8px;">
+          View in Instructor Dashboard
+        </a>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 20px 0;" />
+      <p style="font-size: 11px; color: #94A3B8; margin: 0;">LearnSpace LMS Platform • Educator Notifications</p>
+    </div>
+  `;
+
+  if (!mailTransporter) {
+    logger.info(`[Email Service Simulation] Instructor enrollment notification prepared for ${to}. Email credentials not configured or operating in local test mode.`);
+    return false;
+  }
+
+  try {
+    const fromAddress = process.env.EMAIL_FROM || `"LearnSpace Notifications" <${process.env.EMAIL_USER}>`;
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+    });
+    logger.success(`Instructor enrollment notification email delivered to ${to}`);
+    return true;
+  } catch (error) {
+    logger.warn(`Failed to dispatch instructor enrollment notification email to ${to}: ${error.message}`);
+    throw error;
+  }
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendInstructorApprovalEmail,
   sendAssignmentDeadlineReminderEmail,
   sendMfaEmailOtp,
+  sendPaymentReceiptEmail,
+  sendInstructorEnrollmentNotificationEmail,
+  setTransporter,
 };

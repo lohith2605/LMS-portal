@@ -197,14 +197,15 @@ const getInstructorOverview = async (req, res) => {
         publishedCoursesCount = publishedCount;
         authoredCourses = coursesFound;
 
-        const courseIds = authoredCourses.map((c) => c._id);
+        const allOwnedCourses = await Course.find({ instructor: instructorId }).select('_id').lean();
+        const allCourseIds = allOwnedCourses.map((c) => c._id);
         const [learnerCounts, pendingSubmissionsCount] = await Promise.all([
           Enrollment.aggregate([
-            { $match: { course: { $in: courseIds }, status: { $in: ['active', 'completed'] } } },
+            { $match: { course: { $in: allCourseIds }, status: { $in: ['active', 'completed'] } } },
             { $group: { _id: '$course', totalLearners: { $sum: 1 } } },
           ]),
           AssignmentSubmission.countDocuments({
-            course: { $in: courseIds },
+            course: { $in: allCourseIds },
             status: { $in: ['submitted', 'late'] },
             isGradePublished: false,
           }),

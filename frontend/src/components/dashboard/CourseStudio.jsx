@@ -32,6 +32,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
     prerequisites: '',
     intendedAudience: '',
     estimatedDuration: '4 weeks',
+    price: 0,
     sections: [],
     status: 'draft',
     rejectionReason: '',
@@ -84,6 +85,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
           prerequisites: c.prerequisites || '',
           intendedAudience: c.intendedAudience || '',
           estimatedDuration: c.estimatedDuration || '4 weeks',
+          price: c.price !== undefined ? c.price : 0,
           sections: c.sections || [],
           status: c.status || 'draft',
           rejectionReason: c.rejectionReason || '',
@@ -267,6 +269,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
         prerequisites: formData.prerequisites,
         intendedAudience: formData.intendedAudience,
         estimatedDuration: formData.estimatedDuration,
+        price: Number(formData.price) || 0,
         sections: formData.sections || [],
       };
 
@@ -720,6 +723,31 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                   className="w-full px-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
                 />
               </div>
+
+              <div>
+                <label htmlFor="course-price" className="block text-xs font-semibold text-[#171717] mb-1.5">
+                  Course Price (INR)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-[#686868]">
+                    ₹
+                  </span>
+                  <input
+                    id="course-price"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.price}
+                    onChange={handleChange}
+                    placeholder="0"
+                    className="w-full pl-8 pr-3.5 py-2 text-sm bg-[#FFFFFF] border border-[#E4E4E1] rounded-lg focus:outline-none focus:border-cobalt focus:ring-2 focus:ring-focus-ring/30 text-[#171717]"
+                  />
+                </div>
+                <p className="text-[11px] text-[#686868] mt-1">
+                  Set to 0 for a free course, or enter a price in ₹ (INR) for paid student enrollment.
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -922,6 +950,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
                     )}
                   </span>
                   <span>Duration: {formData.estimatedDuration}</span>
+                  <span>Price: {Number(formData.price || 0) > 0 ? `₹${formData.price}` : 'Free'}</span>
                 </div>
               </div>
             </div>

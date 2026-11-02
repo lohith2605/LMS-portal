@@ -148,6 +148,17 @@ const courseSchema = new mongoose.Schema(
       trim: true,
       default: 'English',
     },
+    price: {
+      type: Number,
+      default: 0,
+      min: [0, 'Course price cannot be negative'],
+    },
+    currency: {
+      type: String,
+      default: 'INR',
+      trim: true,
+      uppercase: true,
+    },
     status: {
       type: String,
       enum: ['draft', 'pending_review', 'published', 'rejected', 'archived'],
@@ -175,6 +186,11 @@ const courseSchema = new mongoose.Schema(
 courseSchema.virtual('totalLessonsCount').get(function () {
   if (!this.sections) return 0;
   return this.sections.reduce((acc, sec) => acc + (sec.lessons ? sec.lessons.length : 0), 0);
+});
+
+// Virtual for whether the course is paid
+courseSchema.virtual('isPaid').get(function () {
+  return Number(this.price || 0) > 0;
 });
 
 // Helper static to generate URL-safe unique slug

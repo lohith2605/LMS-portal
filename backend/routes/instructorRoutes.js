@@ -15,6 +15,7 @@ const {
   updateLesson,
   deleteLesson,
   reorderLessons,
+  getInstructorLearners,
 } = require('../controllers/instructorCourseController');
 const {
   createQuiz,
@@ -50,6 +51,10 @@ router.use(restrictTo('instructor', 'admin'));
 
 // Phase 13: Learning Analytics
 router.get('/analytics', getInstructorAnalytics);
+
+// Enrolled Learners Directory endpoints
+router.get('/learners', getInstructorLearners);
+router.get('/courses/:courseId/learners', getInstructorLearners);
 
 // Course lifecycle endpoints
 router.post('/courses', createCourse);
