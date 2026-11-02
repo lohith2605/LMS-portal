@@ -477,6 +477,17 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
                     <span>Get Started</span>
                     <ArrowUpRight size={16} aria-hidden="true" />
                   </button>
+
+                  <div className="pt-2 text-center border-t border-border-subtle/50">
+                    <Link
+                      to="/admin/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="inline-flex items-center gap-1.5 text-xs text-secondary hover:text-cobalt transition-colors"
+                    >
+                      <ShieldCheck size={13} className="text-cobalt" aria-hidden="true" />
+                      <span>Admin Portal</span>
+                    </Link>
+                  </div>
                 </>
               )}
             </div>

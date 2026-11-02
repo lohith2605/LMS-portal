@@ -577,6 +577,18 @@ export default function LoginPage() {
                   Create an account
                 </Link>
               </div>
+
+              {/* Administrative Gateway Link */}
+              <div className="text-center pt-2 text-[11px] text-tertiary">
+                Platform administrator?{' '}
+                <Link
+                  to="/admin/login"
+                  className="font-medium text-secondary hover:text-cobalt hover:underline transition-colors inline-flex items-center gap-1 group"
+                >
+                  <ShieldCheck size={12} className="text-cobalt group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  <span>Admin Sign In</span>
+                </Link>
+              </div>
             </>
           ) : (
             <div className="pt-4 border-t border-divider space-y-3">

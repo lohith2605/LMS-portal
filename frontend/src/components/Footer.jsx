@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Clock, SlidersHorizontal, Cookie } from 'lucide-react';
+import { Mail, Clock, SlidersHorizontal, Cookie, ShieldCheck } from 'lucide-react';
 import BrandLogo from './ui/BrandLogo';
 import { SocialIcon } from './ui/SocialIcons';
 import { SOCIAL_LINKS, CONTACT_INFO } from '../config/socialLinks';
@@ -153,31 +153,41 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
             </h4>
             <ul className="list-none flex flex-col gap-2.5 p-0 m-0">
               <li>
-                <button
-                  type="button"
+                <Link
+                  to="/login"
                   onClick={() => (onOpenAuth ? onOpenAuth('login') : null)}
-                  className="text-xs text-secondary hover:text-primary transition-colors bg-transparent border-none p-0 text-left cursor-pointer"
+                  className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer"
                 >
                   Student Login
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
+                <Link
+                  to="/register"
                   onClick={() => (onOpenAuth ? onOpenAuth('register') : null)}
-                  className="text-xs text-secondary hover:text-primary transition-colors bg-transparent border-none p-0 text-left cursor-pointer"
+                  className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer"
                 >
                   Student Registration
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
+                <Link
+                  to="/register?role=instructor"
                   onClick={() => (onOpenAuth ? onOpenAuth('instructor') : null)}
-                  className="text-xs text-secondary hover:text-primary transition-colors bg-transparent border-none p-0 text-left cursor-pointer"
+                  className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer"
                 >
                   Instructor Cohort Access
-                </button>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/login"
+                  onClick={() => (onOpenAuth ? onOpenAuth('admin') : null)}
+                  className="text-xs text-secondary hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer group"
+                >
+                  <ShieldCheck size={13} className="text-cobalt shrink-0 group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  <span>Admin Portal</span>
+                </Link>
               </li>
               <li>
                 <span className="inline-flex items-center gap-1.5 text-xs text-tertiary cursor-default">
@@ -283,6 +293,15 @@ export default function Footer({ onOpenAuth, brandName = 'LearnSpace' }) {
             <span>&bull;</span>
             <Link to="/contact" className="hover:text-primary transition-colors">
               Contact
+            </Link>
+            <span>&bull;</span>
+            <Link
+              to="/admin/login"
+              onClick={() => (onOpenAuth ? onOpenAuth('admin') : null)}
+              className="hover:text-primary transition-colors inline-flex items-center gap-1 group"
+            >
+              <ShieldCheck size={11} className="text-secondary group-hover:text-cobalt transition-colors" aria-hidden="true" />
+              <span>Admin Login</span>
             </Link>
           </div>
         </div>
