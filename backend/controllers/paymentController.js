@@ -9,6 +9,7 @@ const {
   sendInstructorEnrollmentNotificationEmail,
 } = require('../services/emailService');
 const { getRazorpayInstance } = require('../config/razorpay');
+const { getClientBaseUrl } = require('../utils/authUtils');
 const { logger } = require('../utils/logger');
 
 /**
@@ -311,7 +312,7 @@ const verifyPayment = async (req, res) => {
       // 1. Student Payment Receipt Email (Duplicate-protected)
       if (!payment.receiptEmailSent && student && student.email) {
         try {
-          const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+          const clientBaseUrl = getClientBaseUrl();
           const courseUrl = course && course.slug
             ? `${clientBaseUrl}/courses/${course.slug}`
             : `${clientBaseUrl}/student/dashboard?tab=courses`;
@@ -349,7 +350,7 @@ const verifyPayment = async (req, res) => {
         const instructor = course && course.instructor;
         if (instructor && instructor.email) {
           try {
-            const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+            const clientBaseUrl = getClientBaseUrl();
             const dashboardUrl = `${clientBaseUrl}/instructor/dashboard`;
 
             const sent = await sendInstructorEnrollmentNotificationEmail({

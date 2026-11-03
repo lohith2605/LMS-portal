@@ -1,10 +1,8 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
-const { sanitizeUser } = require('../utils/authUtils');
+const { sanitizeUser, getClientBaseUrl } = require('../utils/authUtils');
 const { logger } = require('../utils/logger');
 const { sendInstructorApprovalEmail } = require('../services/emailService');
-
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 /**
  * Get platform overview metrics for Administrator console
@@ -118,7 +116,7 @@ const approveInstructor = async (req, res) => {
     // Dispatch approval email notification if this is a fresh approval
     if (!wasAlreadyActive) {
       try {
-        const loginUrl = `${CLIENT_URL}/login`;
+        const loginUrl = `${getClientBaseUrl()}/login`;
         await sendInstructorApprovalEmail({
           to: user.email,
           name: user.name,

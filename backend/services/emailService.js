@@ -1,6 +1,11 @@
 const nodemailer = require('nodemailer');
 const { logger } = require('../utils/logger');
 
+const getClientBaseUrl = () => {
+  const raw = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5174';
+  return raw.toString().trim().replace(/\/+$/, '');
+};
+
 let transporter = null;
 let customTransporter = null;
 
@@ -154,7 +159,7 @@ const sendVerificationEmail = async ({ to, name, verifyUrl }) => {
 const sendInstructorApprovalEmail = async ({ to, name, loginUrl }) => {
   const mailTransporter = getTransporter();
 
-  const resolvedLoginUrl = loginUrl || `${process.env.CLIENT_URL || 'http://localhost:5173'}/login`;
+  const resolvedLoginUrl = loginUrl || `${getClientBaseUrl()}/login`;
   const subject = 'LearnSpace — Instructor Application Approved';
   const text = `Hello ${name},\n\nCongratulations! Your instructor application for LearnSpace has been reviewed and approved by the platform administration team.\n\nYour instructor permissions are now active. You can log in to your account, access the Instructor Workspace, create and manage courses, and review student submissions.\n\nSign in to your account here:\n${resolvedLoginUrl}\n\nWelcome to the LearnSpace teaching community!\n\n— The LearnSpace Team`;
   const html = `
@@ -251,7 +256,7 @@ const sendAssignmentDeadlineReminderEmail = async ({
 
   const resolvedAssignmentUrl =
     assignmentUrl ||
-    `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/dashboard?tab=assignments`;
+    `${getClientBaseUrl()}/student/dashboard?tab=assignments`;
 
   const text = `Hello ${safeName},\n\nThis is a reminder that your assignment "${assignmentTitle}" for "${courseTitle}" is due ${timeRemainingText}.\n\nDeadline (UTC): ${formattedDueDate}\n\nPlease ensure your deliverables are submitted before the deadline.\n\nView Assignment:\n${resolvedAssignmentUrl}\n\n— The LearnSpace Team`;
 
@@ -417,7 +422,7 @@ const sendPaymentReceiptEmail = async ({
   const formattedDate = paymentDate ? new Date(paymentDate).toUTCString() : new Date().toUTCString();
   const resolvedCourseUrl =
     courseUrl ||
-    `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/dashboard?tab=courses`;
+    `${getClientBaseUrl()}/student/dashboard?tab=courses`;
 
   const subject = `LearnSpace — Payment Receipt: ${courseTitle || 'Course Enrollment'}`;
 
@@ -557,7 +562,7 @@ const sendInstructorEnrollmentNotificationEmail = async ({
     : new Date().toUTCString();
   const resolvedDashboardUrl =
     dashboardUrl ||
-    `${process.env.CLIENT_URL || 'http://localhost:5173'}/instructor/dashboard`;
+    `${getClientBaseUrl()}/instructor/dashboard`;
 
   const subject = `LearnSpace — New Student Enrolled: ${courseTitle || 'Course'}`;
 

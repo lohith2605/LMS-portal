@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const { sendInstructorEnrollmentNotificationEmail } = require('../services/emailService');
+const { getClientBaseUrl } = require('../utils/authUtils');
 const { logger } = require('../utils/logger');
 
 /**
@@ -103,7 +104,7 @@ const enrollInCourse = async (req, res) => {
 
         if (instructor && instructor.email) {
           try {
-            const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+            const clientBaseUrl = getClientBaseUrl();
             const dashboardUrl = `${clientBaseUrl}/instructor/dashboard`;
 
             const sent = await sendInstructorEnrollmentNotificationEmail({

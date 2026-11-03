@@ -8,6 +8,9 @@ const {
   hashToken,
   sanitizeUser,
   signPreAuthToken,
+  getClientBaseUrl,
+  getResetPasswordUrl,
+  getVerificationUrl,
 } = require('../utils/authUtils');
 const {
   createSession,
@@ -34,7 +37,7 @@ const {
 const firebaseAdmin = require('../config/firebaseAdmin');
 const { logger } = require('../utils/logger');
 
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+// Frontend base URL dynamically resolved via getClientBaseUrl()
 
 /**
  * Register a new user
@@ -78,7 +81,7 @@ const register = async (req, res) => {
       const verifyToken = newUser.createEmailVerificationToken();
       await newUser.save({ validateBeforeSave: false });
 
-      const verifyUrl = `${CLIENT_URL}/verify-email?token=${verifyToken}`;
+      const verifyUrl = getVerificationUrl(verifyToken);
       try {
         await sendVerificationEmail({
           to: newUser.email,
@@ -363,7 +366,7 @@ const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Construct reset URL for frontend
-    const resetUrl = `${CLIENT_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = getResetPasswordUrl(resetToken);
 
     // Dispatch email
     try {
@@ -587,7 +590,7 @@ const resendVerification = async (req, res) => {
     const verifyToken = user.createEmailVerificationToken();
     await user.save({ validateBeforeSave: false });
 
-    const verifyUrl = `${CLIENT_URL}/verify-email?token=${verifyToken}`;
+    const verifyUrl = getVerificationUrl(verifyToken);
     await sendVerificationEmail({
       to: user.email,
       name: user.name,

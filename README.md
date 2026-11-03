@@ -135,7 +135,7 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 PORT=5000
 NODE_ENV=development
 MONGODB_URI=your-mongodb-atlas-uri
-CLIENT_URL=http://localhost:5173
+CLIENT_URL=http://localhost:5174
 
 # JWT Configuration
 JWT_SECRET=your-super-strong-jwt-secret-min-32-chars
@@ -197,7 +197,7 @@ npm run dev
 ```bash
 cd frontend
 npm run dev
-# Vite runs at http://localhost:5173
+# Vite runs at http://localhost:5174
 ```
 
 ---

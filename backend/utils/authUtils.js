@@ -190,6 +190,49 @@ const verifyPreAuthToken = (token) => {
   }
 };
 
+/**
+ * Resolves the frontend base URL dynamically from environment variables,
+ * stripping trailing slashes. Checks CLIENT_URL, then FRONTEND_URL,
+ * defaulting to http://localhost:5174 (Vite dev server port).
+ * @returns {string} Clean base URL without trailing slash
+ */
+const getClientBaseUrl = () => {
+  const raw = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5174';
+  return raw.toString().trim().replace(/\/+$/, '');
+};
+
+/**
+ * Builds a valid, configurable password reset URL.
+ * Supports:
+ * - Direct template via RESET_PASSWORD_URL (e.g. "https://example.com/reset-password?token=" or with "{token}")
+ * - Configured CLIENT_URL / FRONTEND_URL base URL
+ * @param {string} token - Raw unhashed password reset token
+ * @returns {string} Fully qualified reset URL
+ */
+const getResetPasswordUrl = (token) => {
+  const encodedToken = encodeURIComponent(token || '');
+  if (process.env.RESET_PASSWORD_URL) {
+    const raw = process.env.RESET_PASSWORD_URL.trim();
+    if (raw.includes('{token}')) return raw.replace('{token}', encodedToken);
+    if (raw.includes(':token')) return raw.replace(':token', encodedToken);
+    const cleaned = raw.replace(/\/+$/, '');
+    return cleaned.includes('?') ? `${cleaned}&token=${encodedToken}` : `${cleaned}?token=${encodedToken}`;
+  }
+  const baseUrl = getClientBaseUrl();
+  return `${baseUrl}/reset-password?token=${encodedToken}`;
+};
+
+/**
+ * Builds a valid email verification URL.
+ * @param {string} token - Raw unhashed email verification token
+ * @returns {string} Fully qualified verification URL
+ */
+const getVerificationUrl = (token) => {
+  const encodedToken = encodeURIComponent(token || '');
+  const baseUrl = getClientBaseUrl();
+  return `${baseUrl}/verify-email?token=${encodedToken}`;
+};
+
 module.exports = {
   getJwtSecret,
   signToken,
@@ -200,4 +243,7 @@ module.exports = {
   sanitizeUser,
   signPreAuthToken,
   verifyPreAuthToken,
+  getClientBaseUrl,
+  getResetPasswordUrl,
+  getVerificationUrl,
 };

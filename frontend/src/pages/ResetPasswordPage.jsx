@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Eye,
   EyeOff,
@@ -15,8 +15,9 @@ import { authService } from '../services/api';
 import { useAuth } from '../context/useAuth';
 
 export default function ResetPasswordPage() {
+  const { token: paramToken } = useParams();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') || '';
+  const token = (paramToken || searchParams.get('token') || '').trim();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

@@ -8,7 +8,7 @@ const { logger } = require('../utils/logger');
 
 const DEFAULT_TIMEZONE = 'Asia/Kolkata';
 const DEFAULT_DAILY_GOAL_SECONDS = 15 * 60; // 15 minutes of validated active learning
-const MAX_INTERVAL_SECONDS = 300; // Maximum allowed single study heartbeat duration (5 mins)
+const MAX_INTERVAL_SECONDS = 300; 
 const MIN_INTERVAL_SECONDS = 1;
 
 /**

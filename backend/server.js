@@ -36,7 +36,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
   app.set('trust proxy', 1);
 }
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const CLIENT_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5174';
 const rawClientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : [];
 const defaultAllowedOrigins = [
   'http://localhost:5173',

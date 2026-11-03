@@ -60,7 +60,7 @@ const verifySocketToken = async (token) => {
 
 const initSocket = (httpServer) => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5174';
   const rawUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : [];
   const defaultOrigins = [
     'http://localhost:5173',
