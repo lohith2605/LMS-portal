@@ -1096,6 +1096,7 @@ export default function CoursePlayerPage() {
                 courseId={course?._id || idOrSlug}
                 courseTitle={course?.title}
                 currentUser={user}
+                initialDiscussionId={searchParams.get('discussionId')}
               />
             )}
 

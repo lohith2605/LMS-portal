@@ -102,12 +102,28 @@ export default function LoginPage() {
   }
 
   // Return to intended page if safe, otherwise role-appropriate dashboard
+  const redirectParam = searchParams.get('redirect') || searchParams.get('from');
+  const rawFromState = location.state?.from;
+  const statePath = typeof rawFromState === 'string'
+    ? rawFromState
+    : rawFromState?.pathname
+      ? `${rawFromState.pathname}${rawFromState.search || ''}${rawFromState.hash || ''}`
+      : null;
+
+  // Safe relative-only redirect target (blocks protocol-relative '//' open redirects)
+  const safeCandidate =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : statePath && statePath.startsWith('/') && !statePath.startsWith('//')
+        ? statePath
+        : null;
+
   const destination = isAdminRole
-    ? location.state?.from?.pathname?.startsWith('/admin')
-      ? location.state.from.pathname
+    ? safeCandidate && safeCandidate.startsWith('/admin')
+      ? safeCandidate
       : '/admin/dashboard'
-    : location.state?.from?.pathname && !location.state?.from?.pathname?.startsWith('/admin')
-      ? location.state.from.pathname
+    : safeCandidate && !safeCandidate.startsWith('/admin')
+      ? safeCandidate
       : '/dashboard';
 
   const loginHighlights = [

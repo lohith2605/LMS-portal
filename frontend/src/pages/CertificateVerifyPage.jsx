@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   ShieldCheck,
@@ -12,16 +12,36 @@ import {
   Printer,
   Copy,
   Check,
+  LayoutDashboard,
 } from 'lucide-react';
 import { certificateService } from '../services/api';
 import ThemeToggle from '../components/ThemeToggle';
+import { useAuth } from '../context/useAuth';
 
 export default function CertificateVerifyPage() {
   const { certificateId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [certificate, setCertificate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else if (user) {
+      if (user.role === 'student') {
+        navigate('/student/dashboard?tab=certificates');
+      } else if (user.role === 'instructor') {
+        navigate('/instructor/dashboard');
+      } else {
+        navigate('/admin/dashboard');
+      }
+    } else {
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -83,13 +103,35 @@ export default function CertificateVerifyPage() {
             <span className="font-mono font-semibold text-primary">{certificateId}</span>{' '}
             could not be validated against the LearnSpace credential registry.
           </p>
-          <div className="pt-2">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-cobalt text-white text-xs font-semibold rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition"
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-border-subtle bg-surface text-secondary hover:text-primary text-xs font-semibold rounded-xl hover:bg-surface-subtle transition cursor-pointer"
             >
-              <ArrowLeft size={14} /> Return to Home
-            </Link>
+              <ArrowLeft size={14} /> Go Back
+            </button>
+            {user ? (
+              <Link
+                to={
+                  user.role === 'admin'
+                    ? '/admin/dashboard'
+                    : user.role === 'instructor'
+                    ? '/instructor/dashboard'
+                    : '/student/dashboard?tab=certificates'
+                }
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-cobalt text-white text-xs font-semibold rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition"
+              >
+                <LayoutDashboard size={14} /> Return to Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-cobalt text-white text-xs font-semibold rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition"
+              >
+                Return to Home
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -107,13 +149,31 @@ export default function CertificateVerifyPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Navigation & Verification Status Bar */}
         <div className="flex items-center justify-between">
-          <Link
-            to="/"
-            className="text-xs text-secondary hover:text-primary flex items-center gap-1.5 font-medium transition"
-          >
-            <ArrowLeft size={14} />
-            <span>LearnSpace Academy</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="text-xs text-secondary hover:text-primary flex items-center gap-1.5 font-medium transition cursor-pointer"
+            >
+              <ArrowLeft size={14} />
+              <span>Back</span>
+            </button>
+            <span className="text-border-subtle">|</span>
+            <Link
+              to={
+                user
+                  ? user.role === 'admin'
+                    ? '/admin/dashboard'
+                    : user.role === 'instructor'
+                    ? '/instructor/dashboard'
+                    : '/student/dashboard?tab=certificates'
+                  : '/'
+              }
+              className="text-xs text-secondary hover:text-primary font-medium transition"
+            >
+              {user ? 'My Dashboard' : 'LearnSpace Academy'}
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <ThemeToggle />

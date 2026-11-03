@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from './context/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -29,7 +29,11 @@ import CookieConsentBanner from './components/cookie/CookieConsentBanner';
 import CookiePreferencesModal from './components/cookie/CookiePreferencesModal';
 
 function DashboardRedirect() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isLoggingOut } = useAuth();
+
+  if (isLoggingOut) {
+    return <Navigate to="/" replace />;
+  }
 
   if (isLoading) {
     return (
@@ -54,12 +58,45 @@ function DashboardRedirect() {
   return <Navigate to="/student/dashboard" replace />;
 }
 
+function CourseDiscussionsRedirect() {
+  const { idOrSlug, discussionId } = useParams();
+  const target = `/courses/${idOrSlug}/learn?view=discussions${
+    discussionId ? `&discussionId=${encodeURIComponent(discussionId)}` : ''
+  }`;
+  return <Navigate to={target} replace />;
+}
+
+function CoursesRedirect() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-page flex flex-col items-center justify-center p-4">
+        <div className="w-8 h-8 border-3 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated && user) {
+    if (user.role === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    if (user.role === 'instructor') {
+      return <Navigate to="/instructor/dashboard?tab=courses" replace />;
+    }
+    return <Navigate to="/student/dashboard?tab=explore" replace />;
+  }
+
+  return <Navigate to="/#courses" replace />;
+}
+
 export default function App() {
   return (
     <>
       <Routes>
         {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/courses" element={<CoursesRedirect />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -80,6 +117,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CoursePlayerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/courses/:idOrSlug/discussions"
+          element={
+            <ProtectedRoute>
+              <CourseDiscussionsRedirect />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/courses/:idOrSlug/discussions/:discussionId"
+          element={
+            <ProtectedRoute>
+              <CourseDiscussionsRedirect />
             </ProtectedRoute>
           }
         />

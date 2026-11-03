@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState(null);
 
   // Inactivity tracking state
@@ -25,24 +26,45 @@ export function AuthProvider({ children }) {
   const [countdownSeconds, setCountdownSeconds] = useState(WARNING_WINDOW_SECONDS);
   const [isRefreshingSession, setIsRefreshingSession] = useState(false);
 
+  const isLoggingOutRef = useRef(false);
+  const isTimeoutWarningOpenRef = useRef(false);
   const lastActivityRef = useRef(0);
   const lastThrottleRef = useRef(0);
   const lastKeepAliveRef = useRef(0);
   const hadInteractionRef = useRef(false);
+  const handleInactivityLogoutRef = useRef(null);
+
+  // Synchronize warning visibility ref with React state
+  useEffect(() => {
+    isTimeoutWarningOpenRef.current = isTimeoutWarningOpen;
+  }, [isTimeoutWarningOpen]);
 
   /**
    * Log out, clear cookie, and reset user state
+   * Redirects Student/Instructor to public Landing Page ('/') and Admin to ('/admin/login')
    */
   const logout = async () => {
+    if (isLoggingOutRef.current) return;
+    const role = user?.role;
+    isLoggingOutRef.current = true;
+    setIsLoggingOut(true);
+
     try {
       await authService.logout();
     } catch (err) {
       console.warn('Logout error:', err.message);
     } finally {
       disconnectSocket();
+      isTimeoutWarningOpenRef.current = false;
+      setIsTimeoutWarningOpen(false);
+      const target = role === 'admin' ? '/admin/login' : '/';
+      navigate(target, { replace: true });
       setUser(null);
       setError(null);
-      setIsTimeoutWarningOpen(false);
+      setTimeout(() => {
+        isLoggingOutRef.current = false;
+        setIsLoggingOut(false);
+      }, 150);
     }
   };
 
@@ -58,14 +80,20 @@ export function AuthProvider({ children }) {
     } finally {
       disconnectSocket();
       setUser(null);
+      isTimeoutWarningOpenRef.current = false;
       setIsTimeoutWarningOpen(false);
       const targetLogin = role === 'admin' ? '/admin/login?reason=inactivity' : '/login?reason=inactivity';
       navigate(targetLogin, { replace: true });
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    handleInactivityLogoutRef.current = handleInactivityLogout;
+  }, [handleInactivityLogout]);
+
   /**
    * Genuine user activity recorder (throttled to 1000ms)
+   * Stable callback: reads warning-modal visibility from ref rather than capturing state in dependencies
    */
   const recordUserActivity = useCallback(() => {
     const now = Date.now();
@@ -74,26 +102,32 @@ export function AuthProvider({ children }) {
 
     // Only update activity timestamp if warning modal is not currently active
     // (If the modal is visible, user must explicitly click "Stay Signed In")
-    if (!isTimeoutWarningOpen) {
+    if (!isTimeoutWarningOpenRef.current) {
       lastActivityRef.current = now;
       hadInteractionRef.current = true;
     }
-  }, [isTimeoutWarningOpen]);
+  }, []);
+
+  const userId = user?._id || user?.id || null;
 
   /**
    * Inactivity and Learning Continuity Monitor
+   * Initializes activity clock and ticker interval strictly when authenticated session identity changes.
    */
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
+      isTimeoutWarningOpenRef.current = false;
       setIsTimeoutWarningOpen(false);
       setCountdownSeconds(WARNING_WINDOW_SECONDS);
       return;
     }
 
-    // Reset activity timestamps when authenticated session initializes
+    // Reset activity timestamps strictly when authenticated session initializes
     lastActivityRef.current = Date.now();
     lastKeepAliveRef.current = Date.now();
     hadInteractionRef.current = false;
+    isTimeoutWarningOpenRef.current = false;
+    setIsTimeoutWarningOpen(false);
 
     const activityEvents = [
       'mousemove',
@@ -127,11 +161,14 @@ export function AuthProvider({ children }) {
       if (document.visibilityState === 'visible') {
         const inactiveSeconds = Math.floor((Date.now() - lastActivityRef.current) / 1000);
         if (inactiveSeconds >= INACTIVITY_TIMEOUT_SECONDS) {
-          handleInactivityLogout();
+          handleInactivityLogoutRef.current?.();
         } else if (inactiveSeconds >= WARNING_THRESHOLD_SECONDS) {
           const remaining = Math.max(0, INACTIVITY_TIMEOUT_SECONDS - inactiveSeconds);
           setCountdownSeconds(remaining);
-          setIsTimeoutWarningOpen(true);
+          if (!isTimeoutWarningOpenRef.current) {
+            isTimeoutWarningOpenRef.current = true;
+            setIsTimeoutWarningOpen(true);
+          }
         }
       }
     };
@@ -144,17 +181,23 @@ export function AuthProvider({ children }) {
 
       // 1. Inactivity timeout reached (10 minutes)
       if (inactiveSeconds >= INACTIVITY_TIMEOUT_SECONDS) {
-        handleInactivityLogout();
+        handleInactivityLogoutRef.current?.();
       }
       // 2. Warning window active (between 7 and 10 minutes)
       else if (inactiveSeconds >= WARNING_THRESHOLD_SECONDS) {
         const remaining = Math.max(0, INACTIVITY_TIMEOUT_SECONDS - inactiveSeconds);
         setCountdownSeconds(remaining);
-        setIsTimeoutWarningOpen(true);
+        if (!isTimeoutWarningOpenRef.current) {
+          isTimeoutWarningOpenRef.current = true;
+          setIsTimeoutWarningOpen(true);
+        }
       }
       // 3. Normal active state (< 7 minutes)
       else {
-        setIsTimeoutWarningOpen(false);
+        if (isTimeoutWarningOpenRef.current) {
+          isTimeoutWarningOpenRef.current = false;
+          setIsTimeoutWarningOpen(false);
+        }
 
         // Learning continuity: If active learner interactions occurred, periodically slide the server idle window
         const timeSinceKeepAlive = Date.now() - lastKeepAliveRef.current;
@@ -163,7 +206,7 @@ export function AuthProvider({ children }) {
           hadInteractionRef.current = false;
           sessionService.refreshSession().catch((err) => {
             if (err.response?.status === 401) {
-              handleInactivityLogout();
+              handleInactivityLogoutRef.current?.();
             }
           });
         }
@@ -180,7 +223,7 @@ export function AuthProvider({ children }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(timer);
     };
-  }, [user, recordUserActivity, handleInactivityLogout]);
+  }, [userId, recordUserActivity]);
 
   /**
    * "Stay Signed In" Button Click Handler
@@ -193,16 +236,23 @@ export function AuthProvider({ children }) {
       lastActivityRef.current = Date.now();
       lastKeepAliveRef.current = Date.now();
       hadInteractionRef.current = false;
+      isTimeoutWarningOpenRef.current = false;
       setIsTimeoutWarningOpen(false);
       setCountdownSeconds(WARNING_WINDOW_SECONDS);
     } catch (err) {
       console.warn('Stay Signed In refresh failed:', err.message);
       // If refresh failed because session has expired or been revoked on the server
-      disconnectSocket();
-      setUser(null);
-      setIsTimeoutWarningOpen(false);
-      const targetLogin = user?.role === 'admin' ? '/admin/login?reason=expired' : '/login?reason=expired';
-      navigate(targetLogin, { replace: true });
+      if (err.response?.status === 401) {
+        disconnectSocket();
+        setUser(null);
+        isTimeoutWarningOpenRef.current = false;
+        setIsTimeoutWarningOpen(false);
+        const targetLogin = user?.role === 'admin' ? '/admin/login?reason=expired' : '/login?reason=expired';
+        navigate(targetLogin, { replace: true });
+      } else {
+        // Transient network or server failure: keep warning modal open so user can retry or logout
+        alert(err.normalizedMessage || 'Unable to extend session. Please check your network connection and try again.');
+      }
     } finally {
       setIsRefreshingSession(false);
     }
@@ -212,14 +262,12 @@ export function AuthProvider({ children }) {
    * Warning Modal "Log Out" Button Click Handler
    */
   const handleTimeoutLogout = async () => {
-    const role = user?.role;
     try {
       await logout();
     } finally {
       disconnectSocket();
+      isTimeoutWarningOpenRef.current = false;
       setIsTimeoutWarningOpen(false);
-      const targetLogin = role === 'admin' ? '/admin/login' : '/login';
-      navigate(targetLogin, { replace: true });
     }
   };
 
@@ -372,6 +420,7 @@ export function AuthProvider({ children }) {
     user,
     isAuthenticated: Boolean(user),
     isLoading,
+    isLoggingOut,
     error,
     login,
     adminLogin,

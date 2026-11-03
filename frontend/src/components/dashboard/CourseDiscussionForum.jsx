@@ -30,6 +30,7 @@ export default function CourseDiscussionForum({
   courseId,
   courseTitle = 'Course Discussion',
   currentUser,
+  initialDiscussionId,
 }) {
   // Navigation & View: 'list' | 'thread'
   const [activeView, setActiveView] = useState('list');
@@ -145,6 +146,15 @@ export default function CourseDiscussionForum({
       setThreadLoading(false);
     }
   }, []);
+
+  // Open initial discussion if deep linked via route / query param
+  useEffect(() => {
+    if (initialDiscussionId) {
+      setSelectedDiscussionId(initialDiscussionId);
+      setActiveView('thread');
+      fetchThread(initialDiscussionId);
+    }
+  }, [initialDiscussionId, fetchThread]);
 
   const openThread = (discussion) => {
     setSelectedDiscussionId(discussion._id);

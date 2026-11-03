@@ -28,6 +28,14 @@ export default function CourseDetailsPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
+  const catalogTarget = isAuthenticated
+    ? user?.role === 'instructor'
+      ? '/instructor/dashboard?tab=courses'
+      : user?.role === 'admin'
+      ? '/admin/dashboard'
+      : '/student/dashboard?tab=explore'
+    : '/#courses';
+
   const [course, setCourse] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [hasFullAccess, setHasFullAccess] = useState(false);
@@ -242,7 +250,7 @@ export default function CourseDetailsPage() {
             {error || 'This course could not be located in our catalog.'}
           </p>
           <Link
-            to="/#courses"
+            to={catalogTarget}
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-neutral-800 transition"
           >
             <ArrowLeft size={14} />
@@ -259,7 +267,7 @@ export default function CourseDetailsPage() {
       <div className="bg-surface border-b border-border-subtle py-3.5 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
-            to="/#courses"
+            to={catalogTarget}
             className="inline-flex items-center gap-1.5 text-xs font-medium text-secondary hover:text-primary transition"
           >
             <ArrowLeft size={14} />

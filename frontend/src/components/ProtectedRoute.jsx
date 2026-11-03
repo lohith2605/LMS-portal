@@ -3,10 +3,15 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, isLoggingOut } = useAuth();
   const location = useLocation();
 
-  // 1. Initial session checking state: avoid content flash
+  // 1. If currently performing logout, suppress redirection to prevent race condition with landing page navigation
+  if (isLoggingOut) {
+    return null;
+  }
+
+  // 2. Initial session checking state: avoid content flash
   if (isLoading) {
     return (
       <div className="min-h-screen bg-page flex flex-col items-center justify-center p-4">
@@ -21,8 +26,11 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   // 2. Unauthenticated: redirect to login and preserve intended path
   if (!isAuthenticated || !user) {
     const isTargetingAdmin =
-      (allowedRoles && allowedRoles.includes('admin') && !allowedRoles.includes('student')) ||
-      location.pathname.startsWith('/admin');
+      location.pathname.startsWith('/admin') ||
+      (allowedRoles &&
+        allowedRoles.includes('admin') &&
+        !allowedRoles.includes('student') &&
+        !allowedRoles.includes('instructor'));
     const loginPath = isTargetingAdmin ? '/admin/login' : '/login';
     return <Navigate to={loginPath} state={{ from: location }} replace />;
   }

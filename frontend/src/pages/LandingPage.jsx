@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import SkillShowcaseBanner from '../components/SkillShowcaseBanner';
@@ -11,10 +11,11 @@ import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
 import CourseModal from '../components/CourseModal';
 import AuthModal from '../components/AuthModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [authModalConfig, setAuthModalConfig] = useState({
     isOpen: false,
@@ -66,6 +67,16 @@ export default function LandingPage() {
       });
     }
   };
+
+  useEffect(() => {
+    const hash = location.hash?.replace('#', '');
+    if (hash) {
+      const timer = setTimeout(() => {
+        scrollToSection(hash);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash]);
 
   return (
     <div className="min-h-screen bg-page text-primary font-sans antialiased overflow-x-clip selection:bg-accent-sage-pale selection:text-primary">
