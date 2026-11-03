@@ -13,8 +13,15 @@ import {
   RefreshCw,
   Inbox,
   Clock,
+  HelpCircle,
+  Monitor,
+  AlertCircle,
 } from 'lucide-react';
 import { useNotifications } from '../../context/useNotifications';
+import {
+  getDesktopNotificationPermission,
+  requestDesktopNotificationPermission,
+} from '../../utils/desktopNotification';
 
 const formatRelativeTime = (timestamp) => {
   if (!timestamp) return '';
@@ -40,6 +47,12 @@ const getNotificationIcon = (type) => {
         icon: FileText,
         bg: 'bg-blue-50 text-blue-700 border-blue-200',
         label: 'Assignment',
+      };
+    case 'quiz_published':
+      return {
+        icon: HelpCircle,
+        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        label: 'Quiz',
       };
     case 'assignment_submitted':
       return {
@@ -99,6 +112,30 @@ export default function NotificationDrawer({ isOpen, onClose, announcements = []
   } = useNotifications();
 
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
+  const [desktopPermission, setDesktopPermission] = useState(() =>
+    getDesktopNotificationPermission()
+  );
+  const [requestingPermission, setRequestingPermission] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const syncPermission = () => {
+      setDesktopPermission(getDesktopNotificationPermission());
+    };
+    syncPermission();
+    window.addEventListener('focus', syncPermission);
+    return () => window.removeEventListener('focus', syncPermission);
+  }, [isOpen]);
+
+  const handleRequestDesktopPermission = async () => {
+    setRequestingPermission(true);
+    try {
+      const res = await requestDesktopNotificationPermission();
+      setDesktopPermission(res);
+    } finally {
+      setRequestingPermission(false);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -232,6 +269,52 @@ export default function NotificationDrawer({ isOpen, onClose, announcements = []
               <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
             </button>
           </div>
+
+          {/* Desktop Notification Banner */}
+          {desktopPermission === 'default' && (
+            <div className="mx-4 sm:mx-5 mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-accent/5 to-accent-blue/5 border border-accent/20 flex items-start gap-3 text-xs">
+              <div className="w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                <Monitor size={15} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-primary mb-0.5">Enable Desktop Notifications</h4>
+                <p className="text-[11px] text-secondary leading-relaxed mb-2.5">
+                  Receive Windows & browser alerts for new assignments, quizzes, and discussion replies when this tab is in the background.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleRequestDesktopPermission}
+                  disabled={requestingPermission}
+                  className="px-3 py-1.5 rounded-lg bg-accent text-white font-semibold text-[11px] hover:bg-accent/90 active:scale-98 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Bell size={12} />
+                  <span>{requestingPermission ? 'Requesting...' : 'Enable Notifications'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {desktopPermission === 'granted' && (
+            <div className="mx-4 sm:mx-5 mt-3 px-3.5 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-emerald-800 text-[11px] font-medium flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Desktop notifications active</span>
+              </div>
+              <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Enabled</span>
+            </div>
+          )}
+
+          {desktopPermission === 'denied' && (
+            <div className="mx-4 sm:mx-5 mt-3 p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2.5">
+              <AlertCircle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <span className="font-semibold block text-amber-950">Desktop notifications blocked in browser</span>
+                <p className="text-amber-800 mt-0.5 text-[10px] leading-relaxed">
+                  To receive alerts when tabs are in the background, allow notifications in your browser's site settings.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Body Content */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">

@@ -82,7 +82,7 @@ export default function LoginPage() {
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedRecoveryCodes, setCopiedRecoveryCodes] = useState(false);
 
-  const { login, adminLogin, loginWithGoogle, completeMfaLogin } = useAuth();
+  const { user, isAuthenticated, login, adminLogin, loginWithGoogle, completeMfaLogin } = useAuth();
   const navigate = useNavigate();
 
   // Cooldown timer for email resend
@@ -125,6 +125,18 @@ export default function LoginPage() {
     : safeCandidate && !safeCandidate.startsWith('/admin')
       ? safeCandidate
       : '/dashboard';
+
+  // If already authenticated with valid session, redirect immediately to intended destination or role dashboard
+  if (isAuthenticated && user) {
+    const defaultDashboard =
+      user.role === 'admin'
+        ? '/admin/dashboard'
+        : user.role === 'instructor'
+        ? '/instructor/dashboard'
+        : '/student/dashboard';
+    const target = destination === '/dashboard' ? defaultDashboard : destination;
+    return <Navigate to={target} replace />;
+  }
 
   const loginHighlights = [
     {

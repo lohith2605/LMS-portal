@@ -34,7 +34,7 @@ export default function CourseDetailsPage() {
       : user?.role === 'admin'
       ? '/admin/dashboard'
       : '/student/dashboard?tab=explore'
-    : '/#courses';
+    : '/courses';
 
   const [course, setCourse] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);

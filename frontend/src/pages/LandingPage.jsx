@@ -57,24 +57,31 @@ export default function LandingPage() {
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      const navOffset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+      if (typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        const navOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - navOffset;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth',
-      });
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth',
+        });
+      }
     }
   };
 
   useEffect(() => {
     const hash = location.hash?.replace('#', '');
     if (hash) {
-      const timer = setTimeout(() => {
-        scrollToSection(hash);
-      }, 100);
-      return () => clearTimeout(timer);
+      scrollToSection(hash);
+      const timer1 = setTimeout(() => scrollToSection(hash), 120);
+      const timer2 = setTimeout(() => scrollToSection(hash), 400);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [location.hash]);
 

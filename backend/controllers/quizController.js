@@ -3,6 +3,7 @@ const Quiz = require('../models/Quiz');
 const QuizAttempt = require('../models/QuizAttempt');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const notificationService = require('../services/notificationService');
 const { logger } = require('../utils/logger');
 
 /**
@@ -252,8 +253,43 @@ const publishQuiz = async (req, res) => {
       }
     }
 
+    const wasAlreadyPublished = quiz.status === 'published';
     quiz.status = 'published';
     await quiz.save();
+
+    // Notify enrolled students on fresh publication
+    if (!wasAlreadyPublished) {
+      try {
+        const enrollments = await Enrollment.find({
+          course: quiz.course,
+          status: { $in: ['active', 'completed'] },
+        }).select('student');
+
+        if (enrollments && enrollments.length > 0) {
+          const courseDoc = await Course.findById(quiz.course).select('slug title');
+          const courseIdentifier = courseDoc?.slug || quiz.course.toString();
+          const notifPayloads = enrollments
+            .map((enr) => ({
+              recipient: enr.student,
+              type: 'quiz_published',
+              title: 'New Quiz Published',
+              message: `A new quiz "${quiz.title}" is now available in "${courseDoc?.title || 'your course'}".`,
+              link: `/courses/${courseIdentifier}/learn?view=quiz&quizId=${quiz._id}`,
+              metadata: {
+                quizId: quiz._id,
+                courseId: quiz.course,
+              },
+            }))
+            .filter((item) => item.recipient && item.recipient.toString() !== req.user.id);
+
+          if (notifPayloads.length > 0) {
+            await notificationService.createBatchNotifications(notifPayloads);
+          }
+        }
+      } catch (notifErr) {
+        logger.warn(`Failed to dispatch quiz published notifications: ${notifErr.message}`);
+      }
+    }
 
     logger.success(`Quiz published: "${quiz.title}" (${quiz._id})`);
 

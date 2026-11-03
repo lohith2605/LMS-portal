@@ -228,8 +228,11 @@ export default function CoursePlayerPage() {
         // Determine which lesson to load first
         const paramView = searchParams.get('view');
         const isDiscussionsInitial = paramView === 'discussions';
+        const isQuizInitial = paramView === 'quiz' || Boolean(searchParams.get('quizId'));
         if (isDiscussionsInitial) {
           setActiveView('discussions');
+        } else if (isQuizInitial) {
+          setActiveView('quiz');
         }
         const paramLessonId = searchParams.get('lesson');
         const firstLesson = data.course.sections?.[0]?.lessons?.[0] || null;
@@ -419,6 +422,22 @@ export default function CoursePlayerPage() {
       setQuizDetailsLoading(false);
     }
   };
+
+  const handleSelectQuizRef = useRef(handleSelectQuiz);
+  useEffect(() => {
+    handleSelectQuizRef.current = handleSelectQuiz;
+  });
+
+  // Auto-select quiz from URL query parameter (?quizId=...)
+  useEffect(() => {
+    const targetQuizId = searchParams.get('quizId');
+    if (targetQuizId && courseQuizzes.length > 0 && !activeQuiz) {
+      const match = courseQuizzes.find((q) => q._id?.toString() === targetQuizId);
+      if (match) {
+        handleSelectQuizRef.current(match);
+      }
+    }
+  }, [searchParams, courseQuizzes, activeQuiz]);
 
   const handleStartAttempt = async () => {
     if (!activeQuiz) return;

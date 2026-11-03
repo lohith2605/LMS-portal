@@ -15,6 +15,7 @@ const notificationSchema = new mongoose.Schema(
         'assignment_published',
         'assignment_submitted',
         'submission_graded',
+        'quiz_published',
         'discussion_reply',
         'reply_accepted',
         'certificate_issued',
