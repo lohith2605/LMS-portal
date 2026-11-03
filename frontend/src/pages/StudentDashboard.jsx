@@ -57,7 +57,7 @@ import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
-import ProfileCompletionCard from '../components/dashboard/ProfileCompletionCard';
+import ProfileView from '../components/profile/ProfileView';
 import StudentAnalyticsView from '../components/analytics/StudentAnalyticsView';
 import StudentStreakWidget from '../components/dashboard/learningStreak/StudentStreakWidget';
 
@@ -294,7 +294,37 @@ export default function StudentDashboard() {
       setAssignmentsLoading(true);
       setAssignmentError(null);
       const res = await assignmentService.getStudentAssignments();
-      setAssignments(res?.assignments || []);
+      const rawList = res?.assignments || [];
+      const now = new Date();
+      const normalized = rawList.map((a) => {
+        const isSubmitted =
+          a.isSubmitted !== undefined
+            ? Boolean(a.isSubmitted)
+            : a.hasSubmitted !== undefined
+            ? Boolean(a.hasSubmitted)
+            : Boolean(a.submission);
+        const submissionStatus =
+          a.submissionStatus ||
+          a.studentStatus ||
+          a.submission?.status ||
+          (isSubmitted ? 'submitted' : 'not_submitted');
+        const isPastDue = a.dueDate ? new Date(a.dueDate) < now : false;
+        const isOverdue = a.isOverdue !== undefined ? Boolean(a.isOverdue) : !isSubmitted && isPastDue;
+        const grade = a.grade ?? (a.submission?.isGradePublished ? a.submission.grade : null);
+        const feedback = a.feedback ?? (a.submission?.isGradePublished ? a.submission.feedback : null);
+
+        return {
+          ...a,
+          submissionStatus,
+          studentStatus: a.studentStatus || submissionStatus,
+          isSubmitted,
+          hasSubmitted: isSubmitted,
+          isOverdue,
+          grade,
+          feedback,
+        };
+      });
+      setAssignments(normalized);
     } catch (err) {
       setAssignmentError(err.normalizedMessage || 'Failed to load assignments.');
     } finally {
@@ -519,13 +549,6 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
-
-              {/* Profile Completion Experience */}
-              <ProfileCompletionCard
-                user={user}
-                onOpenEditProfile={handleOpenEditProfile}
-                onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
-              />
 
               {/* Learning Overview Metrics */}
               <div>
@@ -1318,12 +1341,12 @@ export default function StudentDashboard() {
                     f.id === 'all'
                       ? assignments.length
                       : f.id === 'pending'
-                      ? assignments.filter((a) => a.submissionStatus === 'not_submitted' && !a.isOverdue).length
+                      ? assignments.filter((a) => !a.isSubmitted && !a.isOverdue).length
                       : f.id === 'submitted'
-                      ? assignments.filter((a) => a.submissionStatus === 'submitted' || a.submissionStatus === 'late').length
+                      ? assignments.filter((a) => a.isSubmitted && a.submissionStatus !== 'graded').length
                       : f.id === 'graded'
                       ? assignments.filter((a) => a.submissionStatus === 'graded').length
-                      : assignments.filter((a) => a.isOverdue && a.submissionStatus === 'not_submitted').length;
+                      : assignments.filter((a) => a.isOverdue && !a.isSubmitted).length;
 
                   return (
                     <button
@@ -1368,16 +1391,16 @@ export default function StudentDashboard() {
                 (() => {
                   const filtered = assignments.filter((a) => {
                     if (assignmentFilter === 'pending') {
-                      return a.submissionStatus === 'not_submitted' && !a.isOverdue;
+                      return !a.isSubmitted && !a.isOverdue;
                     }
                     if (assignmentFilter === 'submitted') {
-                      return a.submissionStatus === 'submitted' || a.submissionStatus === 'late';
+                      return a.isSubmitted && a.submissionStatus !== 'graded';
                     }
                     if (assignmentFilter === 'graded') {
                       return a.submissionStatus === 'graded';
                     }
                     if (assignmentFilter === 'overdue') {
-                      return a.isOverdue && a.submissionStatus === 'not_submitted';
+                      return a.isOverdue && !a.isSubmitted;
                     }
                     return true;
                   });
@@ -1419,11 +1442,19 @@ export default function StudentDashboard() {
                                     </span>
                                   ) : isSubmitted ? (
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
-                                      Submitted
+                                      {item.submissionStatus === 'late' || item.submission?.isLate
+                                        ? 'Submitted (Late)'
+                                        : 'Awaiting Grade'}
                                     </span>
                                   ) : isOverdue ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 border border-rose-200">
-                                      Overdue
+                                    <span
+                                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                        item.allowLateSubmissions === false
+                                          ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                          : 'bg-amber-50 text-amber-900 border-amber-200'
+                                      }`}
+                                    >
+                                      {item.allowLateSubmissions === false ? 'Overdue • Closed' : 'Overdue • Late Accepted'}
                                     </span>
                                   ) : (
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
@@ -1487,7 +1518,15 @@ export default function StudentDashboard() {
                                     Status
                                   </span>
                                   <span className="font-medium text-primary capitalize">
-                                    {item.submissionStatus?.replace(/_/g, ' ')}
+                                    {isGraded
+                                      ? 'Graded'
+                                      : isSubmitted
+                                      ? item.submissionStatus === 'late' || item.submission?.isLate
+                                        ? 'Submitted (Late)'
+                                        : 'Awaiting Grade'
+                                      : isOverdue
+                                      ? 'Overdue'
+                                      : 'Pending Action'}
                                   </span>
                                 </div>
                               </div>
@@ -1516,29 +1555,40 @@ export default function StudentDashboard() {
                                 <span />
                               )}
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedAssignmentForSubmission(item);
-                                  setSubmissionModalOpen(true);
-                                }}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs ${
-                                  isGraded
-                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                    : isSubmitted
-                                    ? 'bg-surface-subtle text-primary border border-border-subtle hover:bg-border-subtle'
-                                    : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
-                                }`}
-                              >
-                                <span>
-                                  {isGraded
-                                    ? 'View Grade & Evaluation'
-                                    : isSubmitted
-                                    ? 'View Submission / Resubmit'
-                                    : 'Submit Deliverable'}
-                                </span>
-                                <ArrowRight size={13} />
-                              </button>
+                              {(() => {
+                                const isClosed = isOverdue && !isSubmitted && item.allowLateSubmissions === false;
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedAssignmentForSubmission(item);
+                                      setSubmissionModalOpen(true);
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs ${
+                                      isGraded
+                                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                        : isSubmitted
+                                        ? 'bg-surface-subtle text-primary border border-border-subtle hover:bg-border-subtle'
+                                        : isClosed
+                                        ? 'bg-surface-subtle text-secondary border border-border-subtle hover:bg-border-subtle hover:text-primary'
+                                        : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
+                                    }`}
+                                  >
+                                    <span>
+                                      {isGraded
+                                        ? 'View Grade & Evaluation'
+                                        : isSubmitted
+                                        ? 'View Submission / Resubmit'
+                                        : isClosed
+                                        ? 'View Instructions (Closed)'
+                                        : isOverdue
+                                        ? 'Submit Late Deliverable'
+                                        : 'Submit Deliverable'}
+                                    </span>
+                                    <ArrowRight size={13} />
+                                  </button>
+                                );
+                              })()}
                             </div>
                           </div>
                         );
@@ -1683,6 +1733,15 @@ export default function StudentDashboard() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: PROFILE */}
+          {activeTab === 'profile' && (
+            <ProfileView
+              user={user}
+              onOpenEditProfile={handleOpenEditProfile}
+              onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+            />
           )}
 
           {/* TAB: SECURITY & PROFILE */}
@@ -1846,6 +1905,7 @@ export default function StudentDashboard() {
       {submissionModalOpen && selectedAssignmentForSubmission && (
         <AssignmentSubmissionModal
           assignment={selectedAssignmentForSubmission}
+          existingSubmission={selectedAssignmentForSubmission.submission}
           isOpen={submissionModalOpen}
           onClose={() => {
             setSubmissionModalOpen(false);

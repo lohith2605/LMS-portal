@@ -911,12 +911,17 @@ const getStudentAssignments = async (req, res) => {
         submissionTypes: a.submissionTypes,
         allowedFileTypes: a.allowedFileTypes,
         maxFileSizeMB: a.maxFileSizeMB,
-        allowLateSubmissions: a.allowLateSubmissions,
+        allowLateSubmissions: a.allowLateSubmissions !== false,
+        latePenaltyPercent: a.latePenaltyPercent || 0,
         attachments: a.attachments,
         course: a.course,
         studentStatus,
+        submissionStatus: studentStatus,
         isOverdue: isPastDue && !sub,
         hasSubmitted: Boolean(sub),
+        isSubmitted: Boolean(sub),
+        grade: sub?.isGradePublished ? sub.grade : null,
+        feedback: sub?.isGradePublished ? sub.feedback : null,
         submission: sub
           ? {
               _id: sub._id,
@@ -924,6 +929,8 @@ const getStudentAssignments = async (req, res) => {
               isLate: sub.isLate,
               submittedAt: sub.submittedAt,
               version: sub.version,
+              submissionText: sub.submissionText || '',
+              submittedFiles: sub.submittedFiles || [],
               grade: sub.isGradePublished ? sub.grade : null,
               feedback: sub.isGradePublished ? sub.feedback : null,
               isGradePublished: sub.isGradePublished,
@@ -1037,7 +1044,8 @@ const uploadSubmissionFile = async (req, res) => {
     // Deadline check
     const now = new Date();
     const isLate = now > new Date(assignment.dueDate);
-    if (isLate && !assignment.allowLateSubmissions) {
+    const allowsLate = assignment.allowLateSubmissions !== false;
+    if (isLate && !allowsLate) {
       return res.status(400).json({
         error: 'Deadline has passed. This assignment does not accept late submissions.',
       });
@@ -1287,7 +1295,9 @@ const submitAssignment = async (req, res) => {
     const now = new Date();
     const isLate = now > new Date(assignment.dueDate);
 
-    if (isLate && !assignment.allowLateSubmissions) {
+    const allowsLate = assignment.allowLateSubmissions !== false;
+
+    if (isLate && !allowsLate) {
       return res.status(400).json({
         error: 'Deadline has passed. This assignment does not accept late submissions.',
       });

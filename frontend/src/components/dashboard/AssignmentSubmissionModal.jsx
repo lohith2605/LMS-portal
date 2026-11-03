@@ -18,10 +18,13 @@ import { assignmentService } from '../../services/api';
 
 export default function AssignmentSubmissionModal({
   assignment,
-  existingSubmission = null,
+  existingSubmission: propExistingSubmission = null,
   onClose,
   onSubmitted,
 }) {
+  const existingSubmission = propExistingSubmission || assignment?.submission || null;
+  const isAlreadyGraded = existingSubmission?.status === 'graded';
+
   const [submissionText, setSubmissionText] = useState(
     existingSubmission?.submissionText || ''
   );
@@ -35,15 +38,19 @@ export default function AssignmentSubmissionModal({
   const [error, setError] = useState(null);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
 
-  const dueDate = new Date(assignment.dueDate);
-  const isPastDue = new Date() > dueDate;
-  const allowsLate = assignment.allowLateSubmissions !== false;
-  const isSubmissionBlocked = isPastDue && !allowsLate;
+  const dueDate = assignment?.dueDate ? new Date(assignment.dueDate) : null;
+  const isPastDue = dueDate ? new Date() > dueDate : false;
+  const allowsLate = assignment?.allowLateSubmissions !== false;
+  const isSubmissionBlocked = (isPastDue && !allowsLate) || isAlreadyGraded;
 
-  const supportsText = assignment.submissionTypes?.includes('text');
-  const supportsFile = assignment.submissionTypes?.includes('file');
-  const maxFileSizeMB = assignment.maxFileSizeMB || 10;
-  const allowedExts = (assignment.allowedFileTypes || ['pdf', 'zip', 'docx']).map((e) =>
+  const supportsText =
+    !assignment?.submissionTypes ||
+    assignment.submissionTypes.length === 0 ||
+    assignment.submissionTypes.includes('text');
+  const supportsFile =
+    Array.isArray(assignment?.submissionTypes) && assignment.submissionTypes.includes('file');
+  const maxFileSizeMB = assignment?.maxFileSizeMB || 10;
+  const allowedExts = (assignment?.allowedFileTypes || ['pdf', 'zip', 'docx']).map((e) =>
     e.toLowerCase().replace('.', '')
   );
 
@@ -186,6 +193,21 @@ export default function AssignmentSubmissionModal({
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {/* Closed / Blocked Notice */}
+          {isSubmissionBlocked && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 space-y-1">
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                <span>{isAlreadyGraded ? 'Assignment Graded' : 'Submissions Closed'}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-rose-800">
+                {isAlreadyGraded
+                  ? 'This assignment has already been evaluated and graded by your instructor. Resubmission is not permitted.'
+                  : `The deadline for this assignment was ${dueDate ? dueDate.toLocaleString() : 'in the past'}, and late submissions are disabled by the instructor. You may view the instructions and resources below, but new deliverables can no longer be accepted.`}
+              </p>
             </div>
           )}
 
@@ -409,24 +431,41 @@ export default function AssignmentSubmissionModal({
                 Close
               </button>
 
-              <button
-                type="submit"
-                disabled={isSubmissionBlocked || submitting || uploading}
-                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-cobalt text-white font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
-              >
-                <Send size={14} />
-                <span>
-                  {submitting
-                    ? 'Submitting...'
-                    : uploading
-                    ? 'Uploading Files...'
-                    : confirmSubmit
-                    ? 'Confirm & Submit Deliverable'
-                    : existingSubmission
-                    ? 'Submit Updated Version'
-                    : 'Submit Assignment'}
-                </span>
-              </button>
+              {isSubmissionBlocked ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-tertiary italic">
+                    {isAlreadyGraded ? 'Evaluation Complete' : 'Submissions Closed'}
+                  </span>
+                  <button
+                    type="button"
+                    disabled
+                    className="px-5 py-2.5 rounded-xl bg-surface-subtle text-tertiary border border-border-subtle font-semibold text-xs cursor-not-allowed opacity-60"
+                  >
+                    {isAlreadyGraded ? 'Graded • Closed' : 'Submissions Closed'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={submitting || uploading}
+                  className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-cobalt text-white font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
+                >
+                  <Send size={14} />
+                  <span>
+                    {submitting
+                      ? 'Submitting...'
+                      : uploading
+                      ? 'Uploading Files...'
+                      : confirmSubmit
+                      ? 'Confirm & Submit Deliverable'
+                      : existingSubmission
+                      ? 'Submit Updated Version'
+                      : isPastDue
+                      ? 'Submit Late Deliverable'
+                      : 'Submit Assignment'}
+                  </span>
+                </button>
+              )}
             </div>
           </form>
         </div>

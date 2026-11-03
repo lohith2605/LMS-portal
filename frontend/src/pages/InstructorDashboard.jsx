@@ -25,6 +25,7 @@ import {
   FileClock,
   Star,
   TrendingUp,
+  BarChart2,
   ListChecks,
   MessageSquareText,
   Camera,
@@ -50,12 +51,13 @@ import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import CourseStudio from '../components/dashboard/CourseStudio';
 import QuizStudioModal from '../components/dashboard/QuizStudioModal';
+import QuizAnalyticsModal from '../components/dashboard/QuizAnalyticsModal';
 import AssignmentStudioModal from '../components/dashboard/AssignmentStudioModal';
 import SubmissionGradingModal from '../components/dashboard/SubmissionGradingModal';
 import InstructorAnalyticsView from '../components/analytics/InstructorAnalyticsView';
 import ProfilePictureModal from '../components/profile/ProfilePictureModal';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
-import ProfileCompletionCard from '../components/dashboard/ProfileCompletionCard';
+import ProfileView from '../components/profile/ProfileView';
 import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
 
@@ -99,6 +101,8 @@ export default function InstructorDashboard() {
 
   // Phase 5 Assessment Quiz State
   const [quizModalOpen, setQuizModalOpen] = useState(false);
+  const [quizAnalyticsModalOpen, setQuizAnalyticsModalOpen] = useState(false);
+  const [selectedQuizForAnalytics, setSelectedQuizForAnalytics] = useState(null);
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [quizCourseId, setQuizCourseId] = useState('');
   const [selectedAssessmentCourse, setSelectedAssessmentCourse] = useState('all');
@@ -118,6 +122,7 @@ export default function InstructorDashboard() {
 
   // Phase 6 Grading Review State
   const [gradingModalOpen, setGradingModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const [submissionsList, setSubmissionsList] = useState([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
@@ -154,9 +159,10 @@ export default function InstructorDashboard() {
     try {
       setQuizzesLoading(true);
       setQuizFeedback(null);
+      let rawQuizzes = [];
       if (courseIdToFetch && courseIdToFetch !== 'all') {
         const res = await quizService.getInstructorQuizzes(courseIdToFetch);
-        setCourseQuizzes(res?.quizzes || []);
+        rawQuizzes = res?.quizzes || [];
       } else {
         const courses = data?.courses || [];
         if (courses.length > 0) {
@@ -164,12 +170,22 @@ export default function InstructorDashboard() {
             quizService.getInstructorQuizzes(c._id).catch(() => ({ quizzes: [] }))
           );
           const results = await Promise.all(promises);
-          const combined = results.flatMap((r) => r.quizzes || []);
-          setCourseQuizzes(combined);
+          rawQuizzes = results.flatMap((r) => r.quizzes || []);
         } else {
-          setCourseQuizzes([]);
+          rawQuizzes = [];
         }
       }
+
+      const normalizedQuizzes = rawQuizzes.map((q) => {
+        const status = q.status || (q.isPublished ? 'published' : 'draft');
+        return {
+          ...q,
+          status,
+          isPublished: status === 'published',
+        };
+      });
+
+      setCourseQuizzes(normalizedQuizzes);
     } catch (err) {
       setQuizFeedback({ type: 'error', text: err.normalizedMessage || 'Failed to load quizzes.' });
     } finally {
@@ -390,13 +406,20 @@ export default function InstructorDashboard() {
     setQuizModalOpen(true);
   };
 
+  const handleOpenQuizAnalytics = (quiz) => {
+    setSelectedQuizForAnalytics(quiz);
+    setQuizAnalyticsModalOpen(true);
+  };
+
   const handleTogglePublishQuiz = async (quiz) => {
     try {
       setQuizzesLoading(true);
       setQuizFeedback(null);
       const cId = typeof quiz.course === 'object' ? quiz.course?._id : quiz.course;
+      const isCurrentlyPublished =
+        quiz.status === 'published' || Boolean(quiz.isPublished);
       let res;
-      if (quiz.isPublished) {
+      if (isCurrentlyPublished) {
         res = await quizService.unpublishQuiz(cId, quiz._id);
       } else {
         res = await quizService.publishQuiz(cId, quiz._id);
@@ -489,8 +512,15 @@ export default function InstructorDashboard() {
     }
   };
 
-  const handleOpenGrading = (submissionId) => {
-    setSelectedSubmissionId(submissionId);
+  const handleOpenGrading = (submissionOrId) => {
+    if (submissionOrId && typeof submissionOrId === 'object') {
+      setSelectedSubmission(submissionOrId);
+      setSelectedSubmissionId(submissionOrId._id || submissionOrId.id);
+    } else {
+      setSelectedSubmissionId(submissionOrId);
+      const found = submissionsList.find((s) => s._id === submissionOrId || s.id === submissionOrId);
+      setSelectedSubmission(found || null);
+    }
     setGradingModalOpen(true);
   };
 
@@ -574,13 +604,6 @@ export default function InstructorDashboard() {
                   </button>
                 </div>
               </div>
-
-              {/* Profile Completion Experience */}
-              <ProfileCompletionCard
-                user={user}
-                onOpenEditProfile={handleOpenEditProfile}
-                onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
-              />
 
               {/* Key Metrics */}
               <div>
@@ -1136,7 +1159,7 @@ export default function InstructorDashboard() {
                   <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
                     Published:{' '}
                     <strong className="text-emerald-900">
-                      {courseQuizzes.filter((q) => q.isPublished).length}
+                      {courseQuizzes.filter((q) => (q.status || (q.isPublished ? 'published' : 'draft')) === 'published').length}
                     </strong>
                   </span>
                 </div>
@@ -1181,15 +1204,25 @@ export default function InstructorDashboard() {
                                   Required
                                 </span>
                               )}
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                  quiz.isPublished
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}
-                              >
-                                {quiz.isPublished ? 'Published' : 'Draft'}
-                              </span>
+                              {(() => {
+                                const status = quiz.status || (quiz.isPublished ? 'published' : 'draft');
+                                const isPub = status === 'published';
+                                const isArch = status === 'archived';
+
+                                return (
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                      isArch
+                                        ? 'bg-slate-100 text-slate-700 border border-slate-200'
+                                        : isPub
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    }`}
+                                  >
+                                    {isArch ? 'Archived' : isPub ? 'Published' : 'Draft'}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
 
@@ -1200,7 +1233,7 @@ export default function InstructorDashboard() {
                             </p>
                           )}
 
-                          <div className="grid grid-cols-2 gap-2 text-xs text-secondary bg-surface-subtle p-3 rounded-xl mb-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-secondary bg-surface-subtle p-3 rounded-xl mb-4">
                             <div>
                               <span className="text-[10px] uppercase text-tertiary block font-semibold">
                                 Questions
@@ -1233,32 +1266,66 @@ export default function InstructorDashboard() {
                                 {quiz.maxAttempts ? `${quiz.maxAttempts}` : 'Unlimited'}
                               </span>
                             </div>
+                            <div>
+                              <span className="text-[10px] uppercase text-tertiary block font-semibold">
+                                Learner Attempts
+                              </span>
+                              <span className="font-medium text-primary">
+                                {quiz.totalAttempts ?? 0}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase text-tertiary block font-semibold">
+                                Pass Rate
+                              </span>
+                              <span className="font-medium text-primary">
+                                {quiz.totalAttempts > 0 ? `${quiz.passRate ?? 0}%` : 'N/A'}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-border-subtle flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleEditQuiz(quiz)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-subtle hover:bg-border-subtle text-primary text-xs font-semibold transition cursor-pointer"
-                          >
-                            <Edit3 size={13} />
-                            <span>Edit Questions</span>
-                          </button>
-
-                          <div className="flex items-center gap-1.5">
+                        <div className="pt-3 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <button
                               type="button"
-                              onClick={() => handleTogglePublishQuiz(quiz)}
-                              disabled={quizzesLoading}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer disabled:opacity-50 ${
-                                quiz.isPublished
-                                  ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                              }`}
+                              onClick={() => handleOpenQuizAnalytics(quiz)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cobalt-soft hover:bg-cobalt-soft/80 text-cobalt text-xs font-semibold transition cursor-pointer"
+                              title="View learner submission results and aggregate analytics"
                             >
-                              {quiz.isPublished ? 'Unpublish' : 'Publish'}
+                              <BarChart2 size={13} />
+                              <span>View Results</span>
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEditQuiz(quiz)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-subtle hover:bg-border-subtle text-primary text-xs font-semibold transition cursor-pointer"
+                            >
+                              <Edit3 size={13} />
+                              <span>Edit</span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {(() => {
+                              const isPub =
+                                quiz.status === 'published' || Boolean(quiz.isPublished);
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePublishQuiz(quiz)}
+                                  disabled={quizzesLoading}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer disabled:opacity-50 ${
+                                    isPub
+                                      ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                  }`}
+                                >
+                                  {isPub ? 'Unpublish' : 'Publish'}
+                                </button>
+                              );
+                            })()}
 
                             <button
                               type="button"
@@ -1975,7 +2042,7 @@ export default function InstructorDashboard() {
                                   <td className="py-3.5 px-4 text-right whitespace-nowrap">
                                     <button
                                       type="button"
-                                      onClick={() => handleOpenGrading(sub._id)}
+                                      onClick={() => handleOpenGrading(sub)}
                                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer"
                                     >
                                       <span>
@@ -2029,6 +2096,15 @@ export default function InstructorDashboard() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* TAB: PROFILE */}
+          {activeTab === 'profile' && (
+            <ProfileView
+              user={user}
+              onOpenEditProfile={handleOpenEditProfile}
+              onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+            />
           )}
 
           {/* TAB: SECURITY & PROFILE */}
@@ -2201,6 +2277,17 @@ export default function InstructorDashboard() {
         />
       )}
 
+      {quizAnalyticsModalOpen && selectedQuizForAnalytics && (
+        <QuizAnalyticsModal
+          quiz={selectedQuizForAnalytics}
+          quizId={selectedQuizForAnalytics._id}
+          onClose={() => {
+            setQuizAnalyticsModalOpen(false);
+            setSelectedQuizForAnalytics(null);
+          }}
+        />
+      )}
+
       {assignmentStudioModalOpen && (
         <AssignmentStudioModal
           courseId={assignmentCourseId}
@@ -2221,13 +2308,16 @@ export default function InstructorDashboard() {
 
       {gradingModalOpen && (
         <SubmissionGradingModal
+          submission={selectedSubmission || submissionsList.find((s) => s._id === selectedSubmissionId)}
           submissionId={selectedSubmissionId}
           onClose={() => {
             setGradingModalOpen(false);
+            setSelectedSubmission(null);
             setSelectedSubmissionId(null);
           }}
           onGraded={() => {
             setGradingModalOpen(false);
+            setSelectedSubmission(null);
             setSelectedSubmissionId(null);
             fetchSubmissions();
             fetchInstructorData();

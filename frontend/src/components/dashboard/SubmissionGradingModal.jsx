@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Award,
@@ -15,22 +15,68 @@ import {
 import { assignmentService } from '../../services/api';
 
 export default function SubmissionGradingModal({
-  submission,
+  submission: initialSubmission,
+  submissionId: propSubmissionId,
   onClose,
   onGraded,
 }) {
+  const [submission, setSubmission] = useState(initialSubmission || null);
+  const [loadingSubmission, setLoadingSubmission] = useState(false);
   const [grade, setGrade] = useState(
-    submission?.grade !== null && submission?.grade !== undefined ? submission.grade : ''
+    initialSubmission?.grade !== null && initialSubmission?.grade !== undefined ? initialSubmission.grade : ''
   );
-  const [feedback, setFeedback] = useState(submission?.feedback || '');
+  const [feedback, setFeedback] = useState(initialSubmission?.feedback || '');
   const [isGradePublished, setIsGradePublished] = useState(true);
   const [saving, setSaving] = useState(false);
   const [returning, setReturning] = useState(false);
   const [error, setError] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
+  useEffect(() => {
+    if (initialSubmission) {
+      setSubmission(initialSubmission);
+      if (initialSubmission.grade !== null && initialSubmission.grade !== undefined) {
+        setGrade(initialSubmission.grade);
+      }
+      if (initialSubmission.feedback) {
+        setFeedback(initialSubmission.feedback);
+      }
+    } else if (propSubmissionId) {
+      setLoadingSubmission(true);
+      assignmentService
+        .getSubmissionById(propSubmissionId)
+        .then((res) => {
+          const sub = res?.submission || res;
+          setSubmission(sub);
+          if (sub?.grade !== null && sub?.grade !== undefined) {
+            setGrade(sub.grade);
+          }
+          if (sub?.feedback) {
+            setFeedback(sub.feedback);
+          }
+        })
+        .catch((err) => {
+          setError(err.normalizedMessage || 'Failed to retrieve submission details.');
+        })
+        .finally(() => {
+          setLoadingSubmission(false);
+        });
+    }
+  }, [initialSubmission, propSubmissionId]);
+
   const maxMarks = submission?.assignment?.maxMarks || 100;
   const latePenalty = submission?.assignment?.latePenaltyPercent || 0;
+
+  const resolveFileDownloadUrl = (file) => {
+    const targetSubId = submission?._id || propSubmissionId;
+    if (targetSubId && file?._id) {
+      return assignmentService.getInstructorSubmissionFileDownloadUrl(targetSubId, file._id);
+    }
+    if (file?.fileUrl && file.fileUrl !== '#' && !file.fileUrl.startsWith('javascript:')) {
+      return assignmentService.getFileDownloadUrl(file.fileUrl);
+    }
+    return '';
+  };
 
   const handleGrade = async (e) => {
     e.preventDefault();
@@ -44,10 +90,16 @@ export default function SubmissionGradingModal({
       return;
     }
 
+    const targetSubmissionId = submission?._id || propSubmissionId;
+    if (!targetSubmissionId) {
+      setError('Submission identifier is missing. Please close and re-open the modal.');
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
-      const res = await assignmentService.gradeSubmission(submission._id, {
+      const res = await assignmentService.gradeSubmission(targetSubmissionId, {
         grade: gradeNum,
         feedback,
         isGradePublished,
@@ -67,10 +119,16 @@ export default function SubmissionGradingModal({
       return;
     }
 
+    const targetSubmissionId = submission?._id || propSubmissionId;
+    if (!targetSubmissionId) {
+      setError('Submission identifier is missing. Please close and re-open the modal.');
+      return;
+    }
+
     try {
       setReturning(true);
       setError(null);
-      const res = await assignmentService.returnSubmissionForRevision(submission._id, {
+      const res = await assignmentService.returnSubmissionForRevision(targetSubmissionId, {
         feedback,
       });
       if (onGraded) onGraded(res.submission);
@@ -117,133 +175,154 @@ export default function SubmissionGradingModal({
             </div>
           )}
 
-          {/* Student Profile Card */}
-          <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
-                {submission?.student?.name ? submission.student.name[0] : 'S'}
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-primary">{submission?.student?.name}</h4>
-                <p className="text-[11px] text-secondary">{submission?.student?.email}</p>
-              </div>
+          {loadingSubmission ? (
+            <div className="py-16 text-center space-y-2">
+              <div className="w-6 h-6 border-2 border-cobalt border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-secondary">Loading submission details...</p>
             </div>
+          ) : (
+            <>
+              {/* Student Profile Card */}
+              <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
+                    {submission?.student?.name ? submission.student.name[0] : 'S'}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-primary">{submission?.student?.name || 'Enrolled Student'}</h4>
+                    <p className="text-[11px] text-secondary">{submission?.student?.email}</p>
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-secondary px-2.5 py-1 rounded-lg bg-white border border-border-subtle">
-                Version #{submission?.version || 1}
-              </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-semibold text-secondary px-2.5 py-1 rounded-lg bg-white border border-border-subtle">
+                    Version #{submission?.version || 1}
+                  </span>
 
-              {submission?.isLate ? (
-                <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1">
-                  <Clock size={12} /> Late Submission {latePenalty > 0 ? `(-${latePenalty}%)` : ''}
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
-                  <CheckCircle2 size={12} /> On Time
-                </span>
+                  {submission?.isLate ? (
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1">
+                      <Clock size={12} /> Late Submission {latePenalty > 0 ? `(-${latePenalty}%)` : ''}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
+                      <CheckCircle2 size={12} /> On Time
+                    </span>
+                  )}
+
+                  <span className="text-[11px] text-tertiary">
+                    {submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}
+                  </span>
+                </div>
+              </div>
+
+              {/* Submitted Deliverables: Written Text */}
+              {submission?.submissionText && (
+                <div className="space-y-2">
+                  <h4 className="font-bold text-primary uppercase text-[10px] tracking-wider text-secondary flex items-center gap-1.5">
+                    <FileText size={13} />
+                    <span>Written Response</span>
+                  </h4>
+                  <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle text-primary whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                    {submission.submissionText}
+                  </div>
+                </div>
               )}
 
-              <span className="text-[11px] text-tertiary">
-                {new Date(submission?.submittedAt).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* Submitted Deliverables: Written Text */}
-          {submission?.submissionText && (
-            <div className="space-y-2">
-              <h4 className="font-bold text-primary uppercase text-[10px] tracking-wider text-secondary flex items-center gap-1.5">
-                <FileText size={13} />
-                <span>Written Response</span>
-              </h4>
-              <div className="p-4 rounded-2xl bg-surface-subtle border border-border-subtle text-primary whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
-                {submission.submissionText}
-              </div>
-            </div>
-          )}
-
-          {/* Submitted Deliverables: Files */}
-          {submission?.submittedFiles && submission.submittedFiles.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-bold text-primary uppercase text-[10px] tracking-wider text-secondary flex items-center gap-1.5">
-                <FileDown size={13} />
-                <span>Attached Files ({submission.submittedFiles.length})</span>
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {submission.submittedFiles.map((file, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-2xl bg-surface-subtle border border-border-subtle flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <p className="font-semibold text-primary truncate">{file.originalName}</p>
-                      <p className="text-[10px] text-tertiary">
-                        {Math.round(file.fileSize / 1024)} KB • {file.mimeType}
-                      </p>
-                    </div>
-                    <a
-                      href={assignmentService.getFileDownloadUrl(file.fileUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-cobalt text-white text-[11px] font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition shrink-0 shadow-sm shadow-cobalt/20"
-                    >
-                      View / Open
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Version History Toggle if resubmissions exist */}
-          {submission?.history && submission.history.length > 0 && (
-            <div className="border border-border-subtle rounded-2xl p-4 bg-white">
-              <button
-                type="button"
-                onClick={() => setShowHistory((prev) => !prev)}
-                className="w-full flex items-center justify-between text-left font-bold text-primary hover:text-secondary cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <History size={14} className="text-secondary" />
-                  <span>Previous Submission Versions ({submission.history.length})</span>
-                </div>
-                <span>{showHistory ? '▲ Hide' : '▼ View History'}</span>
-              </button>
-
-              {showHistory && (
-                <div className="mt-4 space-y-3 pt-3 border-t border-border-subtle">
-                  {submission.history.map((h, i) => (
-                    <div key={i} className="p-3 bg-surface-subtle rounded-xl border border-border-subtle space-y-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-primary">Version #{h.version}</span>
-                        <span className="text-tertiary">{new Date(h.submittedAt).toLocaleString()}</span>
-                      </div>
-                      {h.submissionText && (
-                        <p className="text-secondary line-clamp-2 italic">{h.submissionText}</p>
-                      )}
-                      {h.submittedFiles && h.submittedFiles.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {h.submittedFiles.map((hf, hIdx) => (
+              {/* Submitted Deliverables: Files */}
+              {submission?.submittedFiles && submission.submittedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-bold text-primary uppercase text-[10px] tracking-wider text-secondary flex items-center gap-1.5">
+                    <FileDown size={13} />
+                    <span>Attached Files ({submission.submittedFiles.length})</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {submission.submittedFiles.map((file, idx) => {
+                      const downloadUrl = resolveFileDownloadUrl(file);
+                      return (
+                        <div
+                          key={file._id || idx}
+                          className="p-3 rounded-2xl bg-surface-subtle border border-border-subtle flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <p className="font-semibold text-primary truncate">{file.originalName}</p>
+                            <p className="text-[10px] text-tertiary">
+                              {Math.round((file.fileSize || 0) / 1024)} KB • {file.mimeType || 'Document'}
+                            </p>
+                          </div>
+                          {downloadUrl ? (
                             <a
-                              key={hIdx}
-                              href={assignmentService.getFileDownloadUrl(hf.fileUrl)}
+                              href={downloadUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary underline hover:text-secondary"
+                              className="px-3 py-1.5 rounded-lg bg-cobalt text-white text-[11px] font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed transition shrink-0 shadow-sm shadow-cobalt/20"
                             >
-                              <FileDown size={11} />
-                              <span>{hf.originalName}</span>
+                              View / Open
                             </a>
-                          ))}
+                          ) : (
+                            <span className="text-[11px] text-tertiary italic">Unavailable</span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-            </div>
-          )}
+
+              {/* Version History Toggle if resubmissions exist */}
+              {submission?.history && submission.history.length > 0 && (
+                <div className="border border-border-subtle rounded-2xl p-4 bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setShowHistory((prev) => !prev)}
+                    className="w-full flex items-center justify-between text-left font-bold text-primary hover:text-secondary cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <History size={14} className="text-secondary" />
+                      <span>Previous Submission Versions ({submission.history.length})</span>
+                    </div>
+                    <span>{showHistory ? '▲ Hide' : '▼ View History'}</span>
+                  </button>
+
+                  {showHistory && (
+                    <div className="mt-4 space-y-3 pt-3 border-t border-border-subtle">
+                      {submission.history.map((h, i) => (
+                        <div key={i} className="p-3 bg-surface-subtle rounded-xl border border-border-subtle space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-primary">Version #{h.version}</span>
+                            <span className="text-tertiary">{new Date(h.submittedAt).toLocaleString()}</span>
+                          </div>
+                          {h.submissionText && (
+                            <p className="text-secondary line-clamp-2 italic">{h.submissionText}</p>
+                          )}
+                          {h.submittedFiles && h.submittedFiles.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {h.submittedFiles.map((hf, hIdx) => {
+                                const hDownloadUrl = resolveFileDownloadUrl(hf);
+                                return hDownloadUrl ? (
+                                  <a
+                                    key={hf._id || hIdx}
+                                    href={hDownloadUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary underline hover:text-secondary"
+                                  >
+                                    <FileDown size={11} />
+                                    <span>{hf.originalName}</span>
+                                  </a>
+                                ) : (
+                                  <span key={hf._id || hIdx} className="text-[10px] text-tertiary">
+                                    {hf.originalName}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
           {/* Grading Input Form */}
           <form onSubmit={handleGrade} className="space-y-4 pt-2">
@@ -337,6 +416,8 @@ export default function SubmissionGradingModal({
               </div>
             </div>
           </form>
+          </>
+          )}
         </div>
       </div>
     </div>

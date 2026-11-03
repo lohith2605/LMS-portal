@@ -741,6 +741,32 @@ test('Phase 6 Assignments & Grading Suite', async (t) => {
     assert.ok(res.body.error.toLowerCase().includes('deadline has passed'));
   });
 
+  await t.test('15b. Deadline enforcement accepts late submissions when allowLateSubmissions is enabled', async () => {
+    // Create assignment with dueDate in the past and allowLateSubmissions: true
+    const lateAllowedAssignment = await Assignment.create({
+      course: courseA._id,
+      instructor: instructorA._id,
+      title: 'Late Allowed Assignment',
+      instructions: 'Late submissions accepted',
+      maxMarks: 50,
+      dueDate: new Date(Date.now() - 3600000), // 1 hour ago
+      submissionTypes: ['text'],
+      allowLateSubmissions: true,
+      status: 'published',
+    });
+
+    const res = await request(app)
+      .post(`/api/student/assignments/${lateAllowedAssignment._id}/submissions`)
+      .set('Authorization', `Bearer ${studentEmmaToken}`)
+      .send({
+        submissionText: 'Late attempt on allowed assignment',
+      });
+
+    assert.strictEqual(res.status, 201);
+    assert.strictEqual(res.body.submission.isLate, true);
+    assert.strictEqual(res.body.submission.status, 'late');
+  });
+
   await t.test('16. Instructor can retrieve all owned assignments across courses with populated course and stats', async () => {
     // Instructor A calls GET /api/instructor/assignments
     const resA = await request(app)

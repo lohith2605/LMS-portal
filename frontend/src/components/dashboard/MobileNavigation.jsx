@@ -17,6 +17,7 @@ import {
   ListChecks,
   ShieldAlert,
   LogOut,
+  User,
 } from 'lucide-react';
 
 export default function MobileNavigation({
@@ -81,6 +82,7 @@ export default function MobileNavigation({
     }
 
     const settingsItems = [
+      { id: 'profile', label: 'My Profile', icon: User },
       { id: 'security', label: 'Account Security', icon: ShieldCheck, badge: '2FA' },
     ];
 

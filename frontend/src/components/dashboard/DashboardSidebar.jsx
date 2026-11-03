@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   LogOut,
   ChevronLeft,
+  User,
 } from 'lucide-react';
 
 export default function DashboardSidebar({
@@ -70,6 +71,7 @@ export default function DashboardSidebar({
     }
 
     const settingsItems = [
+      { id: 'profile', label: 'My Profile', icon: User },
       { id: 'security', label: 'Account Security', icon: ShieldCheck, badge: '2FA' },
     ];
 

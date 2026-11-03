@@ -14,6 +14,7 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 import StudentDashboard from './pages/StudentDashboard';
 import InstructorDashboard from './pages/InstructorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ProfilePage from './pages/ProfilePage';
 import CourseDetailsPage from './pages/CourseDetailsPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
@@ -95,6 +96,18 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Dedicated Profile Route */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/student/profile" element={<Navigate to="/profile" replace />} />
+        <Route path="/instructor/profile" element={<Navigate to="/profile" replace />} />
 
         {/* Role-Protected Dashboard Views */}
         <Route

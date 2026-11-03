@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LogOut, KeyRound, ShieldCheck, ExternalLink, ChevronDown, Camera, User, Cookie } from 'lucide-react';
+import { LogOut, KeyRound, ShieldCheck, ExternalLink, ChevronDown, Camera, User, Cookie, Edit3 } from 'lucide-react';
 import { useCookieConsent } from '../../context/CookieConsentContext';
+import { calculateProfileCompletion } from '../../utils/profileCompletion';
 
 export default function ProfileMenu({
   user,
@@ -54,6 +55,7 @@ export default function ProfileMenu({
   };
 
   const avatarUrl = user?.avatar?.url;
+  const completion = user ? calculateProfileCompletion(user) : null;
 
   return (
     <div className="relative" ref={menuRef}>
@@ -107,10 +109,49 @@ export default function ProfileMenu({
               </span>
             </div>
             <p className="text-[11px] text-secondary truncate">{user?.email}</p>
+
+            {/* Compact Profile Completion Indicator */}
+            {completion && (
+              <div className="mt-2.5 pt-2 border-t border-border-subtle/50">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-secondary font-medium">Profile completeness</span>
+                  <span
+                    className={`font-bold ${
+                      completion.isComplete
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-cobalt'
+                    }`}
+                  >
+                    {completion.percentage}%
+                  </span>
+                </div>
+                <div className="w-full bg-surface-subtle h-1.5 rounded-full overflow-hidden mt-1 ring-1 ring-border-subtle/30">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      completion.isComplete ? 'bg-emerald-500' : 'bg-cobalt'
+                    }`}
+                    style={{ width: `${completion.percentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Menu Items */}
           <div className="py-1">
+            <Link
+              to="/profile"
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                if (onSelectTab) onSelectTab('profile');
+              }}
+              className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-primary hover:bg-surface-subtle transition-colors text-left"
+            >
+              <User size={14} className="text-cobalt" />
+              <span>View Profile</span>
+            </Link>
+
             {onOpenProfileModal && (
               <button
                 type="button"
@@ -121,7 +162,7 @@ export default function ProfileMenu({
                 }}
                 className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
               >
-                <User size={14} className="text-secondary" />
+                <Edit3 size={14} className="text-secondary" />
                 <span>Edit Profile Details</span>
               </button>
             )}
@@ -136,7 +177,7 @@ export default function ProfileMenu({
               className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors text-left cursor-pointer"
             >
               <Camera size={14} className="text-secondary" />
-              <span>Edit Profile Picture</span>
+              <span>Change Photo</span>
             </button>
 
             {onSelectTab && (

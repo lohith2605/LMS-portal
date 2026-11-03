@@ -737,6 +737,16 @@ export const assignmentService = {
     const base = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
     return `${base}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
   },
+  getInstructorSubmissionFileDownloadUrl: (submissionId, fileId) => {
+    if (!submissionId || !fileId) return '#';
+    const base = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
+    return `${base}/api/instructor/submissions/${submissionId}/files/${fileId}/download?redirect=true`;
+  },
+  getStudentSubmissionFileDownloadUrl: (submissionId, fileId) => {
+    if (!submissionId || !fileId) return '#';
+    const base = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
+    return `${base}/api/student/submissions/${submissionId}/files/${fileId}/download?redirect=true`;
+  },
 };
 
 

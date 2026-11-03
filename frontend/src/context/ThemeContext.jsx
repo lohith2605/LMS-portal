@@ -31,6 +31,7 @@ export function ThemeProvider({ children }) {
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', validTheme);
       document.documentElement.style.colorScheme = validTheme;
+      document.documentElement.classList.toggle('dark', validTheme === 'dark');
     }
   }, []);
 
@@ -42,6 +43,7 @@ export function ThemeProvider({ children }) {
     // Synchronize document attributes on mount
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.colorScheme = theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
 
     // Listen for OS system theme changes if user hasn't explicitly set a preference
     const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;

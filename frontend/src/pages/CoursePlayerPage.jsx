@@ -168,7 +168,25 @@ export default function CoursePlayerPage() {
         }),
         assignmentService.getCourseAssignments(idOrSlug).catch(() => ({ assignments: [] })),
       ]);
-      setCourseQuizzes(quizRes?.quizzes || []);
+      const rawQuizzes = quizRes?.quizzes || [];
+      const normalizedQuizzes = rawQuizzes.map((q) => {
+        const hasPassed = Boolean(q.hasPassed ?? q.userStats?.hasPassed);
+        const attemptsCount = q.attemptsCount ?? q.userStats?.totalAttempts ?? 0;
+        const bestScore = q.bestPercentage ?? q.bestScore ?? q.userStats?.bestScore ?? 0;
+        return {
+          ...q,
+          hasPassed,
+          attemptsCount,
+          totalQuestions: q.totalQuestions || q.questionsCount || (q.questions?.length || 0),
+          userStats: {
+            ...q.userStats,
+            hasPassed,
+            totalAttempts: attemptsCount,
+            bestScore,
+          },
+        };
+      });
+      setCourseQuizzes(normalizedQuizzes);
       if (compRes) {
         setCompletionData(compRes);
       }
@@ -325,8 +343,41 @@ export default function CoursePlayerPage() {
         quizService.getQuizForAttempt(idOrSlug, quiz._id),
         quizService.getStudentQuizAttempts(idOrSlug, quiz._id),
       ]);
-      setActiveQuiz(qData.quiz);
-      setQuizAttempts(attData.attempts || []);
+      const rawQuiz = qData?.quiz || quiz;
+      const rawAttempts = attData?.attempts || [];
+      const userPassed = Boolean(
+        rawQuiz.hasPassed ??
+          rawQuiz.userStats?.hasPassed ??
+          rawAttempts.some((a) => a.passed || a.isPassed)
+      );
+
+      const normalizedQuiz = {
+        ...rawQuiz,
+        hasPassed: userPassed,
+        userStats: {
+          ...rawQuiz.userStats,
+          hasPassed: userPassed,
+          attemptsCount: rawQuiz.attemptsCount ?? rawAttempts.length,
+          bestScore:
+            rawQuiz.bestPercentage ??
+            rawQuiz.userStats?.bestScore ??
+            rawAttempts.reduce(
+              (best, cur) => Math.max(best, cur.percentage || 0),
+              0
+            ),
+        },
+      };
+
+      const normalizedAttempts = rawAttempts.map((att) => ({
+        ...att,
+        _id: att.id || att._id,
+        id: att.id || att._id,
+        isPassed: Boolean(att.passed ?? att.isPassed),
+        passed: Boolean(att.passed ?? att.isPassed),
+      }));
+
+      setActiveQuiz(normalizedQuiz);
+      setQuizAttempts(normalizedAttempts);
     } catch (err) {
       setQuizError(err.normalizedMessage || 'Failed to load quiz details.');
     } finally {
@@ -340,16 +391,55 @@ export default function CoursePlayerPage() {
       setQuizDetailsLoading(true);
       setQuizError(null);
       const data = await quizService.startQuizAttempt(idOrSlug, activeQuiz._id);
-      setCurrentAttempt(data);
+
+      const attemptPayload = data?.attempt || data || {};
+      const realAttemptId =
+        attemptPayload.id ||
+        attemptPayload._id ||
+        attemptPayload.attemptId ||
+        data?.id ||
+        data?._id;
+
+      const deadline =
+        attemptPayload.deadline ||
+        data?.deadline ||
+        data?.expiresAt ||
+        null;
+
+      const durationMinutes =
+        attemptPayload.durationMinutes ??
+        data?.durationMinutes ??
+        activeQuiz?.durationMinutes ??
+        0;
+
+      const normalizedAttempt = {
+        ...attemptPayload,
+        id: realAttemptId,
+        _id: realAttemptId,
+        attemptId: realAttemptId,
+        attemptNumber: attemptPayload.attemptNumber || 1,
+        startedAt: attemptPayload.startedAt || new Date().toISOString(),
+        deadline,
+        durationMinutes,
+        questions: activeQuiz?.questions || attemptPayload.questions || [],
+      };
+
+      setCurrentAttempt(normalizedAttempt);
       setSelectedAnswers({});
       setCurrentQuestionIdx(0);
       setQuizStage('taking');
 
-      if (data.timeLimitSeconds) {
+      // Initialize countdown timer from server-provided deadline
+      if (deadline) {
+        const remaining = Math.max(
+          0,
+          Math.floor((new Date(deadline).getTime() - Date.now()) / 1000)
+        );
+        setSecondsRemaining(remaining);
+      } else if (data?.timeLimitSeconds) {
         setSecondsRemaining(data.timeLimitSeconds);
-      } else if (data.expiresAt) {
-        const secs = Math.max(0, Math.floor((new Date(data.expiresAt) - new Date()) / 1000));
-        setSecondsRemaining(secs);
+      } else if (durationMinutes > 0) {
+        setSecondsRemaining(durationMinutes * 60);
       } else {
         setSecondsRemaining(null);
       }
@@ -363,7 +453,13 @@ export default function CoursePlayerPage() {
   // Submit attempt
   const handleSubmitAttempt = useCallback(
     async (autoSubmitDueToTime = false) => {
-      if (!currentAttempt || submittingAttempt) return;
+      const realAttemptId =
+        currentAttempt?.attemptId ||
+        currentAttempt?.id ||
+        currentAttempt?._id ||
+        currentAttempt?.attempt?.id;
+
+      if (!currentAttempt || !realAttemptId || submittingAttempt) return;
       try {
         setSubmittingAttempt(true);
         setQuizError(null);
@@ -378,11 +474,47 @@ export default function CoursePlayerPage() {
         const res = await quizService.submitQuizAttempt(
           idOrSlug,
           activeQuiz._id,
-          currentAttempt.attemptId,
+          realAttemptId,
           answersArray
         );
 
-        setQuizResult(res.result);
+        const rawResult = res?.result || res || {};
+        const rawReview = Array.isArray(rawResult.review)
+          ? rawResult.review
+          : Array.isArray(rawResult.questions)
+          ? rawResult.questions
+          : [];
+
+        const reviewQuestions = rawReview.map((q) => ({
+          ...q,
+          questionId: q.questionId || q._id,
+          questionText: q.questionText,
+          options: q.options || [],
+          selectedOptionId: q.selectedOptionId || '',
+          correctOptionId: q.correctOptionId || '',
+          isCorrect: Boolean(q.isCorrect),
+          earnedPoints: q.earnedPoints ?? q.pointsEarned ?? 0,
+          pointsEarned: q.pointsEarned ?? q.earnedPoints ?? 0,
+          points: q.points ?? q.pointsPossible ?? 1,
+          pointsPossible: q.pointsPossible ?? q.points ?? 1,
+          explanation: q.explanation || '',
+        }));
+
+        const isPassed = Boolean(rawResult.passed ?? rawResult.isPassed);
+
+        const normalizedResult = {
+          ...rawResult,
+          score: rawResult.score ?? 0,
+          maxScore: rawResult.maxScore ?? 0,
+          percentage: rawResult.percentage ?? 0,
+          passingPercentage: rawResult.passingPercentage ?? activeQuiz?.passingPercentage ?? 70,
+          passed: isPassed,
+          isPassed,
+          questions: reviewQuestions,
+          review: reviewQuestions,
+        };
+
+        setQuizResult(normalizedResult);
         setQuizStage('result');
         setSecondsRemaining(null);
 
@@ -765,8 +897,9 @@ export default function CoursePlayerPage() {
                   {courseQuizzes.map((quiz) => {
                     const isSelected =
                       activeView === 'quiz' && activeQuiz?._id === quiz._id;
-                    const hasPassed = quiz.userStats?.hasPassed;
-                    const attemptsCount = quiz.userStats?.totalAttempts || 0;
+                    const hasPassed = Boolean(quiz.hasPassed || quiz.userStats?.hasPassed);
+                    const attemptsCount = quiz.attemptsCount ?? quiz.userStats?.totalAttempts ?? 0;
+                    const bestScore = quiz.bestPercentage ?? quiz.bestScore ?? quiz.userStats?.bestScore ?? 0;
 
                     return (
                       <button
@@ -795,7 +928,7 @@ export default function CoursePlayerPage() {
                               {quiz.title}
                             </span>
                             <span className="text-[10px] text-tertiary">
-                              {quiz.questionsCount || quiz.questions?.length || 0} questions •{' '}
+                              {quiz.totalQuestions || quiz.questionsCount || quiz.questions?.length || 0} questions •{' '}
                               {quiz.passingPercentage}% to pass
                             </span>
                           </div>
@@ -804,7 +937,7 @@ export default function CoursePlayerPage() {
                         <div className="shrink-0 text-right">
                           {hasPassed ? (
                             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                              Passed {quiz.userStats?.bestScore || 0}%
+                              Passed {bestScore}%
                             </span>
                           ) : attemptsCount > 0 ? (
                             <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
@@ -1122,9 +1255,9 @@ export default function CoursePlayerPage() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {activeQuiz.userStats?.hasPassed && (
+                        {(activeQuiz.hasPassed || activeQuiz.userStats?.hasPassed) && (
                           <span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1">
-                            <CheckCircle2 size={13} /> Passed ({activeQuiz.userStats.bestScore}%)
+                            <CheckCircle2 size={13} /> Passed ({activeQuiz.bestPercentage ?? activeQuiz.userStats?.bestScore ?? 0}%)
                           </span>
                         )}
                       </div>
@@ -1186,15 +1319,19 @@ export default function CoursePlayerPage() {
                         type="button"
                         onClick={handleStartAttempt}
                         disabled={
-                          activeQuiz.maxAttempts &&
-                          quizAttempts.length >= activeQuiz.maxAttempts &&
-                          !activeQuiz.userStats?.hasPassed
+                          Boolean(
+                            activeQuiz.maxAttempts &&
+                            quizAttempts.length >= activeQuiz.maxAttempts &&
+                            !(activeQuiz.hasPassed || activeQuiz.userStats?.hasPassed)
+                          )
                         }
                         className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cobalt text-white text-xs font-bold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-50"
                       >
-                        {quizAttempts.length === 0
+                        {activeQuiz.activeAttemptId
+                          ? 'Resume In-Progress Attempt'
+                          : quizAttempts.length === 0
                           ? 'Start Assessment'
-                          : activeQuiz.userStats?.hasPassed
+                          : (activeQuiz.hasPassed || activeQuiz.userStats?.hasPassed)
                           ? 'Retake Assessment (For Practice)'
                           : 'Begin Next Attempt'}
                       </button>
@@ -1215,35 +1352,38 @@ export default function CoursePlayerPage() {
                           Past Attempts ({quizAttempts.length})
                         </h4>
                         <div className="divide-y divide-border-subtle border border-border-subtle rounded-2xl overflow-hidden bg-white text-xs">
-                          {quizAttempts.map((att) => (
-                            <div
-                              key={att._id}
-                              className="p-3.5 flex items-center justify-between hover:bg-surface-subtle transition"
-                            >
-                              <div className="space-y-0.5">
-                                <span className="font-semibold text-primary">
-                                  Attempt #{att.attemptNumber}
-                                </span>
-                                <span className="text-[10px] text-tertiary block">
-                                  Submitted on {new Date(att.submittedAt).toLocaleDateString()}
-                                </span>
+                          {quizAttempts.map((att) => {
+                            const isAttPassed = Boolean(att.passed ?? att.isPassed);
+                            return (
+                              <div
+                                key={att.id || att._id}
+                                className="p-3.5 flex items-center justify-between hover:bg-surface-subtle transition"
+                              >
+                                <div className="space-y-0.5">
+                                  <span className="font-semibold text-primary">
+                                    Attempt #{att.attemptNumber}
+                                  </span>
+                                  <span className="text-[10px] text-tertiary block">
+                                    Submitted on {new Date(att.submittedAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-bold text-primary">
+                                    {att.score}/{att.maxScore} pts ({att.percentage}%)
+                                  </span>
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                      isAttPassed
+                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                                        : 'bg-rose-50 text-rose-800 border border-rose-300'
+                                    }`}
+                                  >
+                                    {isAttPassed ? 'Passed' : 'Failed'}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className="font-bold text-primary">
-                                  {att.score}/{att.maxScore} pts ({att.percentage}%)
-                                </span>
-                                <span
-                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    att.isPassed
-                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
-                                      : 'bg-rose-50 text-rose-800 border border-rose-300'
-                                  }`}
-                                >
-                                  {att.isPassed ? 'Passed' : 'Failed'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}

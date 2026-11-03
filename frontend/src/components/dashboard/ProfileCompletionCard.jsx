@@ -88,7 +88,7 @@ export default function ProfileCompletionCard({
               <div
                 className={`absolute -bottom-1 -right-1 p-1 rounded-lg border shadow-2xs transition-transform group-hover:scale-110 ${
                   isComplete
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/60 dark:border-emerald-800'
+                    ? 'bg-emerald-50 border-emerald-200/80 text-emerald-600 dark:bg-emerald-950/40 dark:border-emerald-800/80 dark:text-emerald-400'
                     : 'bg-surface border-border-subtle text-secondary group-hover:text-primary'
                 }`}
               >
@@ -103,9 +103,9 @@ export default function ProfileCompletionCard({
                   {isComplete ? 'Your profile is complete' : 'Complete your profile'}
                 </h3>
                 {isComplete ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                    <ShieldCheck size={11} strokeWidth={2} />
-                    <span>Verified</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/80 text-[10px] font-bold uppercase tracking-wider">
+                    <CheckCircle2 size={11} strokeWidth={2.5} />
+                    <span>Complete</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-cobalt-soft text-cobalt text-[10px] font-bold">

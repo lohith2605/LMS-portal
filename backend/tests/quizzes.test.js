@@ -231,7 +231,7 @@ Quiz.create = (data) => {
 };
 
 QuizAttempt.find = (query) => {
-  const attempts = mockQuizAttempts.filter((a) => {
+  let attempts = mockQuizAttempts.filter((a) => {
     let match = true;
     if (query.quiz && a.quiz.toString() !== query.quiz.toString()) match = false;
     if (query.student && a.student.toString() !== query.student.toString()) match = false;
@@ -239,11 +239,24 @@ QuizAttempt.find = (query) => {
     return match;
   });
 
-  return {
-    sort: () => Promise.resolve(attempts),
-    populate: () => Promise.resolve(attempts),
-    then: (resolve) => Promise.resolve(attempts).then(resolve),
+  const queryObj = {
+    sort: () => queryObj,
+    populate: (field) => {
+      if (field === 'student') {
+        attempts = attempts.map((a) => {
+          const user = mockUsers.find((u) => u._id.toString() === a.student.toString());
+          return {
+            ...a,
+            student: user ? { _id: user._id, name: user.name, email: user.email, avatar: user.avatar } : a.student,
+          };
+        });
+      }
+      return queryObj;
+    },
+    then: (resolve, reject) => Promise.resolve(attempts).then(resolve, reject),
   };
+
+  return queryObj;
 };
 
 QuizAttempt.findOne = (query) => {
@@ -722,4 +735,381 @@ test('Phase 5 Assessments & Course Completion Suite', async (t) => {
     assert.strictEqual(res.body.certificate.studentEmail, undefined, 'Must not leak student email');
     assert.strictEqual(res.body.certificate._id, undefined, 'Must not leak internal Mongo ID');
   });
+
+  await t.test('10. Active attempt resumption returns existing attempt and instructor can toggle publish/unpublish', async () => {
+    const instructor = createMockUser({ name: 'Elena', email: 'elena@learnspace.org', role: 'instructor' });
+    const student = createMockUser({ name: 'Ian', email: 'ian@example.com', role: 'student' });
+    const course = createMockCourse({ title: 'Resilience Course', instructor: instructor._id });
+
+    const quiz = createMockQuiz({
+      title: 'Resilience Evaluation',
+      course: course._id,
+      instructor: instructor._id,
+      durationMinutes: 20,
+      maxAttempts: 3,
+      status: 'published',
+      questions: [
+        {
+          _id: makeObjectId(),
+          questionText: 'What is circuit breaking?',
+          options: [
+            { id: 'opt_1', text: 'Failing fast when downstream is degraded' },
+            { id: 'opt_2', text: 'A short circuit in the motherboard' },
+          ],
+          correctOptionId: 'opt_1',
+          points: 5,
+          explanation: 'Circuit breakers prevent cascade failures across microservices.',
+        },
+      ],
+    });
+
+    mockEnrollments.push({
+      _id: makeObjectId(),
+      student: student._id,
+      course: course._id,
+      status: 'active',
+      completedLessons: [],
+    });
+
+    const studentCookie = makeCookie(student);
+    const instructorCookie = makeCookie(instructor);
+
+    // 1. Start quiz attempt
+    const startRes1 = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/start`)
+      .set('Cookie', studentCookie);
+
+    assert.strictEqual(startRes1.status, 201);
+    const attemptId = startRes1.body.attempt.id;
+    assert.strictEqual(startRes1.body.attempt.attemptNumber, 1);
+    assert(startRes1.body.attempt.deadline !== null);
+
+    // 2. Request start again while attempt is active (e.g. reload or re-entry) -> resumes without duplicate
+    const startRes2 = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/start`)
+      .set('Cookie', studentCookie);
+
+    assert.strictEqual(startRes2.status, 200);
+    assert.strictEqual(startRes2.body.message, 'Resuming your active quiz attempt.');
+    assert.strictEqual(startRes2.body.attempt.id, attemptId);
+    assert.strictEqual(startRes2.body.attempt.attemptNumber, 1);
+
+    // 3. Submit and verify detailed review schema
+    const submitRes = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/attempts/${attemptId}/submit`)
+      .set('Cookie', studentCookie)
+      .send({
+        answers: [
+          { questionId: quiz.questions[0]._id.toString(), selectedOptionId: 'opt_1' },
+        ],
+      });
+
+    assert.strictEqual(submitRes.status, 200);
+    assert.strictEqual(submitRes.body.result.passed, true);
+    assert.strictEqual(submitRes.body.result.score, 5);
+    assert.strictEqual(submitRes.body.result.maxScore, 5);
+    const reviewItem = submitRes.body.result.review[0];
+    assert.strictEqual(reviewItem.pointsEarned, 5);
+    assert.strictEqual(reviewItem.pointsPossible, 5);
+    assert.strictEqual(reviewItem.isCorrect, true);
+    assert.strictEqual(reviewItem.explanation, 'Circuit breakers prevent cascade failures across microservices.');
+
+    // 4. Instructor toggles publication status (unpublish -> draft, publish -> published)
+    const unpublishRes = await request(app)
+      .patch(`/api/instructor/quizzes/${quiz._id}/unpublish`)
+      .set('Cookie', instructorCookie);
+
+    assert.strictEqual(unpublishRes.status, 200);
+    assert.strictEqual(unpublishRes.body.quiz.status, 'draft');
+
+    const publishRes = await request(app)
+      .patch(`/api/instructor/quizzes/${quiz._id}/publish`)
+      .set('Cookie', instructorCookie);
+
+    assert.strictEqual(publishRes.status, 200);
+    assert.strictEqual(publishRes.body.quiz.status, 'published');
+  });
+
+  await t.test('11. Unanswered question receives zero points while contributing to maximum possible score', async () => {
+    const instructor = createMockUser({ name: 'Grading Instructor', email: 'instructor_grading@learnspace.org', role: 'instructor' });
+    const student = createMockUser({ name: 'Partial Student', email: 'partial_student@example.com', role: 'student' });
+    const course = createMockCourse({ title: 'Grading Evaluation Course', instructor: instructor._id });
+
+    const quiz = createMockQuiz({
+      title: 'Partial Submission Evaluation Quiz',
+      course: course._id,
+      instructor: instructor._id,
+      passingPercentage: 70,
+      durationMinutes: 30,
+      maxAttempts: 2,
+      status: 'published',
+      questions: [
+        {
+          _id: makeObjectId(),
+          questionText: 'Question 1: Worth 10 points',
+          options: [
+            { id: 'opt_1', text: 'Correct Answer' },
+            { id: 'opt_2', text: 'Wrong Answer' },
+          ],
+          correctOptionId: 'opt_1',
+          points: 10,
+          explanation: 'Option 1 is correct.',
+        },
+        {
+          _id: makeObjectId(),
+          questionText: 'Question 2: Worth 10 points (unanswered)',
+          options: [
+            { id: 'opt_a', text: 'Choice A' },
+            { id: 'opt_b', text: 'Choice B' },
+          ],
+          correctOptionId: 'opt_a',
+          points: 10,
+          explanation: 'Choice A is correct.',
+        },
+      ],
+    });
+
+    mockEnrollments.push({
+      _id: makeObjectId(),
+      student: student._id,
+      course: course._id,
+      status: 'active',
+      completedLessons: [],
+    });
+
+    const cookie = makeCookie(student);
+
+    // 1. Start quiz attempt
+    const startRes = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/start`)
+      .set('Cookie', cookie);
+
+    assert.strictEqual(startRes.status, 201);
+    const attemptId = startRes.body.attempt.id;
+
+    // 2. Submit only Question 1 answered correctly; omit Question 2
+    const q1 = quiz.questions[0];
+    const q2 = quiz.questions[1];
+
+    const submitRes = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/attempts/${attemptId}/submit`)
+      .set('Cookie', cookie)
+      .send({
+        answers: [
+          { questionId: q1._id.toString(), selectedOptionId: 'opt_1' },
+        ],
+      });
+
+    assert.strictEqual(submitRes.status, 200);
+    assert.strictEqual(submitRes.body.result.score, 10);
+    assert.strictEqual(submitRes.body.result.maxScore, 20);
+    assert.strictEqual(submitRes.body.result.percentage, 50);
+    assert.strictEqual(submitRes.body.result.passed, false, 'Score 50% < passing 70%');
+
+    // Verify detailed review for answered vs unanswered questions
+    const review = submitRes.body.result.review;
+    assert.strictEqual(review.length, 2);
+
+    const q1Review = review.find((r) => r.questionId.toString() === q1._id.toString());
+    assert.strictEqual(q1Review.isCorrect, true);
+    assert.strictEqual(q1Review.pointsEarned, 10);
+    assert.strictEqual(q1Review.pointsPossible, 10);
+
+    const q2Review = review.find((r) => r.questionId.toString() === q2._id.toString());
+    assert.strictEqual(q2Review.isCorrect, false);
+    assert.strictEqual(q2Review.pointsEarned, 0);
+    assert.strictEqual(q2Review.pointsPossible, 10);
+    assert.strictEqual(q2Review.selectedOptionId, '');
+  });
+
+  await t.test('12. Submitting an already completed attempt returns HTTP 400 and preserves existing score', async () => {
+    const instructor = createMockUser({ name: 'Tamper Instructor', email: 'instructor_tamper@learnspace.org', role: 'instructor' });
+    const student = createMockUser({ name: 'Retest Student', email: 'retest_student@example.com', role: 'student' });
+    const course = createMockCourse({ title: 'Integrity Course', instructor: instructor._id });
+
+    const quiz = createMockQuiz({
+      title: 'Tamper Proof Quiz',
+      course: course._id,
+      instructor: instructor._id,
+      passingPercentage: 60,
+      durationMinutes: 20,
+      maxAttempts: 2,
+      status: 'published',
+      questions: [
+        {
+          _id: makeObjectId(),
+          questionText: 'Security Question',
+          options: [
+            { id: 'opt_yes', text: 'Secure' },
+            { id: 'opt_no', text: 'Insecure' },
+          ],
+          correctOptionId: 'opt_yes',
+          points: 15,
+          explanation: 'Always secure by default.',
+        },
+      ],
+    });
+
+    mockEnrollments.push({
+      _id: makeObjectId(),
+      student: student._id,
+      course: course._id,
+      status: 'active',
+      completedLessons: [],
+    });
+
+    const cookie = makeCookie(student);
+
+    // 1. Start attempt
+    const startRes = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/start`)
+      .set('Cookie', cookie);
+
+    assert.strictEqual(startRes.status, 201);
+    const attemptId = startRes.body.attempt.id;
+
+    // 2. Submit initial wrong answer (0 / 15)
+    const submitRes = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/attempts/${attemptId}/submit`)
+      .set('Cookie', cookie)
+      .send({
+        answers: [
+          { questionId: quiz.questions[0]._id.toString(), selectedOptionId: 'opt_no' },
+        ],
+      });
+
+    assert.strictEqual(submitRes.status, 200);
+    assert.strictEqual(submitRes.body.result.score, 0);
+    assert.strictEqual(submitRes.body.result.passed, false);
+
+    // Verify stored attempt in mock store
+    const storedAttempt = mockQuizAttempts.find((a) => a._id.toString() === attemptId);
+    assert(storedAttempt, 'Attempt must exist in mock store');
+    assert.strictEqual(storedAttempt.status, 'completed');
+    assert.strictEqual(storedAttempt.score, 0);
+
+    // 3. Re-submit the same attempt trying to send the correct answer
+    const resubmitRes = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/attempts/${attemptId}/submit`)
+      .set('Cookie', cookie)
+      .send({
+        answers: [
+          { questionId: quiz.questions[0]._id.toString(), selectedOptionId: 'opt_yes' },
+        ],
+      });
+
+    assert.strictEqual(resubmitRes.status, 400);
+    assert.strictEqual(resubmitRes.body.error, 'This attempt has already been submitted and graded.');
+
+    // 4. Verify that saved score was NOT altered
+    assert.strictEqual(storedAttempt.score, 0);
+    assert.strictEqual(storedAttempt.passed, false);
+  });
+
+  await t.test('13. Instructor quiz analytics returns aggregate statistics, student attempt records, and rejects unauthorized access', async () => {
+    const ownerInstructor = createMockUser({ name: 'Owner Instructor', email: 'owner@learnspace.org', role: 'instructor' });
+    const otherInstructor = createMockUser({ name: 'Other Instructor', email: 'other@learnspace.org', role: 'instructor' });
+    const student1 = createMockUser({ name: 'Alice Top', email: 'alice.top@example.com', role: 'student' });
+    const student2 = createMockUser({ name: 'Bob Low', email: 'bob.low@example.com', role: 'student' });
+    const course = createMockCourse({ title: 'Analytics Evaluation Course', instructor: ownerInstructor._id });
+
+    const quiz = createMockQuiz({
+      title: 'Analytics Test Quiz',
+      course: course._id,
+      instructor: ownerInstructor._id,
+      passingPercentage: 60,
+      durationMinutes: 30,
+      maxAttempts: 3,
+      status: 'published',
+      questions: [
+        {
+          _id: makeObjectId(),
+          questionText: 'Analytics Question 1',
+          options: [
+            { id: 'opt_1', text: 'Option A' },
+            { id: 'opt_2', text: 'Option B' },
+          ],
+          correctOptionId: 'opt_1',
+          points: 10,
+          explanation: 'A is correct.',
+        },
+      ],
+    });
+
+    mockEnrollments.push(
+      { _id: makeObjectId(), student: student1._id, course: course._id, status: 'active', completedLessons: [] },
+      { _id: makeObjectId(), student: student2._id, course: course._id, status: 'active', completedLessons: [] }
+    );
+
+    const student1Cookie = makeCookie(student1);
+    const student2Cookie = makeCookie(student2);
+    const ownerCookie = makeCookie(ownerInstructor);
+    const otherCookie = makeCookie(otherInstructor);
+
+    // Student 1 completes quiz (100% score)
+    const startRes1 = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/start`)
+      .set('Cookie', student1Cookie);
+    assert.strictEqual(startRes1.status, 201);
+
+    await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/attempts/${startRes1.body.attempt.id}/submit`)
+      .set('Cookie', student1Cookie)
+      .send({
+        answers: [{ questionId: quiz.questions[0]._id.toString(), selectedOptionId: 'opt_1' }],
+      });
+
+    // Student 2 completes quiz (0% score)
+    const startRes2 = await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/start`)
+      .set('Cookie', student2Cookie);
+    assert.strictEqual(startRes2.status, 201);
+
+    await request(app)
+      .post(`/api/courses/${course._id}/quizzes/${quiz._id}/attempts/${startRes2.body.attempt.id}/submit`)
+      .set('Cookie', student2Cookie)
+      .send({
+        answers: [{ questionId: quiz.questions[0]._id.toString(), selectedOptionId: 'opt_2' }],
+      });
+
+    // 1. Unauthorized instructor is rejected (403 Forbidden)
+    const unauthorizedRes = await request(app)
+      .get(`/api/instructor/quizzes/${quiz._id}/analytics`)
+      .set('Cookie', otherCookie);
+
+    assert.strictEqual(unauthorizedRes.status, 403);
+    assert.strictEqual(unauthorizedRes.body.error, 'Forbidden: You do not have permission to manage this quiz.');
+
+    // 2. Owner instructor accesses analytics successfully (200 OK)
+    const analyticsRes = await request(app)
+      .get(`/api/instructor/quizzes/${quiz._id}/analytics`)
+      .set('Cookie', ownerCookie);
+
+    assert.strictEqual(analyticsRes.status, 200);
+    assert.strictEqual(analyticsRes.body.quiz.id.toString(), quiz._id.toString());
+    assert.strictEqual(analyticsRes.body.quiz.title, 'Analytics Test Quiz');
+
+    // Aggregate stats: 2 attempts, 1 passed, 50% pass rate, 50% avg percentage
+    assert.strictEqual(analyticsRes.body.stats.totalCompleted, 2);
+    assert.strictEqual(analyticsRes.body.stats.passedCount, 1);
+    assert.strictEqual(analyticsRes.body.stats.passRate, 50);
+    assert.strictEqual(analyticsRes.body.stats.averagePercentage, 50);
+
+    // Recent attempts list
+    assert.strictEqual(analyticsRes.body.recentAttempts.length, 2);
+    const aliceAttempt = analyticsRes.body.recentAttempts.find((a) => a.studentEmail === student1.email);
+    assert(aliceAttempt, 'Alice attempt must be in analytics');
+    assert.strictEqual(aliceAttempt.studentName, 'Alice Top');
+    assert.strictEqual(aliceAttempt.score, 10);
+    assert.strictEqual(aliceAttempt.maxScore, 10);
+    assert.strictEqual(aliceAttempt.passed, true);
+
+    const bobAttempt = analyticsRes.body.recentAttempts.find((a) => a.studentEmail === student2.email);
+    assert(bobAttempt, 'Bob attempt must be in analytics');
+    assert.strictEqual(bobAttempt.studentName, 'Bob Low');
+    assert.strictEqual(bobAttempt.score, 0);
+    assert.strictEqual(bobAttempt.maxScore, 10);
+    assert.strictEqual(bobAttempt.passed, false);
+  });
+
 });
