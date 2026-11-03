@@ -403,13 +403,22 @@ const toggleLessonComplete = async (req, res) => {
       (id) => id.toString() === lessonId
     );
 
-    let completed = false;
-    if (index > -1) {
-      enrollment.completedLessons.splice(index, 1);
-      completed = false;
+    let completed;
+    if (typeof req.body?.completed === 'boolean') {
+      completed = req.body.completed;
+      if (completed && index === -1) {
+        enrollment.completedLessons.push(lessonId);
+      } else if (!completed && index > -1) {
+        enrollment.completedLessons.splice(index, 1);
+      }
     } else {
-      enrollment.completedLessons.push(lessonId);
-      completed = true;
+      if (index > -1) {
+        enrollment.completedLessons.splice(index, 1);
+        completed = false;
+      } else {
+        enrollment.completedLessons.push(lessonId);
+        completed = true;
+      }
     }
 
     await enrollment.save();
@@ -421,7 +430,7 @@ const toggleLessonComplete = async (req, res) => {
           courseId,
           lessonId,
           activityType: 'lesson_completion',
-          timeZone: req.headers['x-timezone'] || req.body.timezone || req.user?.timezone,
+          timeZone: req.headers['x-timezone'] || req.body?.timezone || req.user?.timezone,
         })
         .catch((streakErr) => {
           logger.warn(`Streak record on lesson complete warning: ${streakErr.message}`);

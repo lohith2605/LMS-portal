@@ -204,7 +204,11 @@ const getStudentEnrollments = async (req, res) => {
       .map((e) => {
         const c = e.course;
         const validLessonIds = new Set(
-          (c.sections || []).flatMap((s) => (s.lessons || []).map((l) => l._id.toString()))
+          (c.sections || []).flatMap((s) =>
+            (s.lessons || [])
+              .filter((l) => l && l.isPublished !== false)
+              .map((l) => (l._id ? l._id.toString() : l.id ? l.id.toString() : ''))
+          ).filter(Boolean)
         );
         const totalLessons = validLessonIds.size;
         const validCompletedLessons = (e.completedLessons || []).filter((id) =>
@@ -291,7 +295,11 @@ const getStudentCourse = async (req, res) => {
 
     const c = enrollment.course;
     const validLessonIds = new Set(
-      (c.sections || []).flatMap((s) => (s.lessons || []).map((l) => l._id.toString()))
+      (c.sections || []).flatMap((s) =>
+        (s.lessons || [])
+          .filter((l) => l && l.isPublished !== false)
+          .map((l) => (l._id ? l._id.toString() : l.id ? l.id.toString() : ''))
+      ).filter(Boolean)
     );
     const totalLessons = validLessonIds.size;
     const validCompletedLessons = (enrollment.completedLessons || []).filter((id) =>

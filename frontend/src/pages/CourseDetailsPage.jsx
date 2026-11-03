@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -79,6 +79,11 @@ export default function CourseDetailsPage() {
       [secId]: !prev[secId],
     }));
   };
+
+  const handleSummaryChange = useCallback((newSummary) => {
+    if (!newSummary) return;
+    setCourse((prev) => (prev ? { ...prev, ratingSummary: newSummary } : prev));
+  }, []);
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -508,6 +513,7 @@ export default function CourseDetailsPage() {
               courseIdOrSlug={idOrSlug}
               isEnrolled={isEnrolled}
               user={user}
+              onSummaryChange={handleSummaryChange}
             />
           </div>
 

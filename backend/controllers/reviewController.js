@@ -87,11 +87,12 @@ const createReview = async (req, res) => {
  */
 const updateReview = async (req, res) => {
   try {
-    const { reviewId } = req.params;
+    const { idOrSlug, reviewId } = req.params;
     const { rating, reviewText } = req.body;
 
     const result = await reviewService.updateReview({
       user: req.user,
+      courseIdOrSlug: idOrSlug,
       reviewId,
       rating,
       reviewText,
@@ -116,10 +117,11 @@ const updateReview = async (req, res) => {
  */
 const deleteReview = async (req, res) => {
   try {
-    const { reviewId } = req.params;
+    const { idOrSlug, reviewId } = req.params;
 
     const result = await reviewService.deleteReview({
       user: req.user,
+      courseIdOrSlug: idOrSlug,
       reviewId,
     });
 

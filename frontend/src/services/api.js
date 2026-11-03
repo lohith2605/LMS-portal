@@ -309,8 +309,9 @@ export const courseService = {
   /**
    * Toggle completion state for a lesson
    */
-  toggleLessonComplete: async (courseId, lessonId) => {
-    const res = await api.post(`/courses/${courseId}/lessons/${lessonId}/complete`);
+  toggleLessonComplete: async (courseId, lessonId, completed) => {
+    const payload = typeof completed === 'boolean' ? { completed } : {};
+    const res = await api.post(`/courses/${courseId}/lessons/${lessonId}/complete`, payload);
     return res.data;
   },
 };

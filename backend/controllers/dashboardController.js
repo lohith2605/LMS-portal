@@ -46,15 +46,31 @@ const getStudentOverview = async (req, res) => {
 
     const enrolledCourses = activeEnrollments.map((e) => {
       const c = e.course;
-      const totalLessons = (c.sections || []).reduce(
-        (sum, s) => sum + (s.lessons ? s.lessons.length : 0),
-        0
+
+      // Filter curriculum to only include valid published lessons
+      const validLessonIds = new Set(
+        (c.sections || []).flatMap((s) =>
+          (s.lessons || [])
+            .filter((l) => l && l.isPublished !== false)
+            .map((l) => (l._id ? l._id.toString() : l.id ? l.id.toString() : ''))
+        ).filter(Boolean)
       );
-      const completedLessonsCount = (e.completedLessons || []).length;
+      const totalLessons = validLessonIds.size;
+
+      // Exclude orphaned/deleted lesson IDs not in published curriculum
+      const validCompletedLessons = (e.completedLessons || []).filter((id) =>
+        validLessonIds.has(id ? id.toString() : '')
+      );
+      const completedLessonsCount = validCompletedLessons.length;
       const progressPercentage =
         totalLessons > 0 ? Math.min(100, Math.round((completedLessonsCount / totalLessons) * 100)) : 0;
 
-      if (totalLessons > 0 && completedLessonsCount >= totalLessons) {
+      // Formal completion requires authoritative enrollment isCompleted flag, completed status, or issued certificate
+      const isCompleted = Boolean(
+        e.isCompleted === true || e.status === 'completed' || e.certificateIssued
+      );
+
+      if (isCompleted) {
         completedCount++;
       } else if (completedLessonsCount > 0) {
         inProgressCount++;
@@ -64,6 +80,7 @@ const getStudentOverview = async (req, res) => {
         id: e._id.toString(),
         enrolledAt: e.enrolledAt,
         status: e.status,
+        isCompleted,
         progressPercentage,
         completedCount: completedLessonsCount,
         totalLessons,

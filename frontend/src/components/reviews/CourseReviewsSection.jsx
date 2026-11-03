@@ -78,7 +78,12 @@ function InteractiveStarPicker({ rating, onChange, disabled }) {
   );
 }
 
-export default function CourseReviewsSection({ courseIdOrSlug, isEnrolled, user }) {
+export default function CourseReviewsSection({
+  courseIdOrSlug,
+  isEnrolled,
+  user,
+  onSummaryChange,
+}) {
   // Reviews and summary state
   const [reviews, setReviews] = useState([]);
   const [summary, setSummary] = useState({
@@ -142,7 +147,8 @@ export default function CourseReviewsSection({ courseIdOrSlug, isEnrolled, user 
 
   // Check student eligibility and fetch own review
   const checkEligibility = useCallback(async () => {
-    if (!user || user.role !== 'student') {
+    const isSupportedRole = user && (user.role === 'student' || user.role === 'admin');
+    if (!isSupportedRole) {
       setEligibility({
         eligible: false,
         reason: !user ? 'Log in to submit a review.' : 'Only enrolled students can review courses.',
@@ -212,7 +218,10 @@ export default function CourseReviewsSection({ courseIdOrSlug, isEnrolled, user 
         );
         setFormFeedback({ type: 'success', text: 'Your review has been successfully updated!' });
         setIsEditing(false);
-        if (res.summary) setSummary(res.summary);
+        if (res.summary) {
+          setSummary(res.summary);
+          onSummaryChange?.(res.summary);
+        }
       } else {
         // Create new review
         const res = await reviewService.createReview(courseIdOrSlug, {
@@ -221,7 +230,10 @@ export default function CourseReviewsSection({ courseIdOrSlug, isEnrolled, user 
         });
         setFormFeedback({ type: 'success', text: 'Thank you! Your review has been submitted.' });
         setIsEditing(false);
-        if (res.summary) setSummary(res.summary);
+        if (res.summary) {
+          setSummary(res.summary);
+          onSummaryChange?.(res.summary);
+        }
       }
 
       await checkEligibility();
@@ -254,7 +266,10 @@ export default function CourseReviewsSection({ courseIdOrSlug, isEnrolled, user 
       setRatingInput(5);
       setReviewTextInput('');
 
-      if (res.summary) setSummary(res.summary);
+      if (res.summary) {
+        setSummary(res.summary);
+        onSummaryChange?.(res.summary);
+      }
       await checkEligibility();
       await fetchReviews(1);
     } catch (err) {

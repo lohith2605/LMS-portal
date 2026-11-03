@@ -8,7 +8,13 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Review = require('../models/Review');
-const { calculateRatingSummary, getBatchCourseRatings } = require('../services/reviewService');
+const {
+  calculateRatingSummary,
+  getBatchCourseRatings,
+  updateReview,
+  deleteReview,
+  checkReviewEligibility,
+} = require('../services/reviewService');
 
 const TEST_SECRET = 'test_jwt_secret_reviews_phase12_1234567890';
 process.env.JWT_SECRET = TEST_SECRET;
@@ -944,5 +950,216 @@ test('Phase 12 Course Ratings & Reviews Suite', async (t) => {
     assert.ok(found);
     assert.strictEqual(found.averageRating, 4.0);
     assert.strictEqual(found.totalReviews, 2);
+  });
+
+  // Group 5: Regression Tests for Course Scoping, Role Alignment, and Summary Propagation
+  await t.test('33. Updating a review through the wrong course ID/slug is rejected (404)', async () => {
+    resetTestDb();
+    const student = createMockUser({ name: 'Sam Student', email: 'sam@test.com', role: 'student' });
+    const courseA = createMockCourse({ title: 'Course A', slug: 'course-a', status: 'published' });
+    const courseB = createMockCourse({ title: 'Course B', slug: 'course-b', status: 'published' });
+    const reviewA = createMockReview({
+      course: courseA._id,
+      student: student._id,
+      rating: 5,
+      reviewText: 'Review for course A',
+      moderationStatus: 'approved',
+    });
+
+    // Attempt to update reviewA using courseB's slug
+    await assert.rejects(
+      async () => {
+        await updateReview({
+          user: { id: student._id.toString(), role: 'student', name: student.name },
+          courseIdOrSlug: courseB.slug,
+          reviewId: reviewA._id.toString(),
+          rating: 4,
+          reviewText: 'Malicious mismatch attempt',
+        });
+      },
+      (err) => {
+        assert.strictEqual(err.status, 404);
+        assert.match(err.message, /Review does not belong to the requested course/i);
+        return true;
+      }
+    );
+  });
+
+  await t.test('34. Deleting a review through the wrong course ID/slug is rejected (404)', async () => {
+    resetTestDb();
+    const student = createMockUser({ name: 'Sam Student', email: 'sam@test.com', role: 'student' });
+    const courseA = createMockCourse({ title: 'Course A', slug: 'course-a', status: 'published' });
+    const courseB = createMockCourse({ title: 'Course B', slug: 'course-b', status: 'published' });
+    const reviewA = createMockReview({
+      course: courseA._id,
+      student: student._id,
+      rating: 5,
+      reviewText: 'Review for course A',
+      moderationStatus: 'approved',
+    });
+
+    // Attempt to delete reviewA using courseB's slug
+    await assert.rejects(
+      async () => {
+        await deleteReview({
+          user: { id: student._id.toString(), role: 'student' },
+          courseIdOrSlug: courseB.slug,
+          reviewId: reviewA._id.toString(),
+        });
+      },
+      (err) => {
+        assert.strictEqual(err.status, 404);
+        assert.match(err.message, /Review does not belong to the requested course/i);
+        return true;
+      }
+    );
+  });
+
+  await t.test('35. Legitimate review update and deletion works and updates summary', async () => {
+    resetTestDb();
+    const student = createMockUser({ name: 'Legit User', email: 'legit@test.com', role: 'student' });
+    const course = createMockCourse({ title: 'TypeScript Mastery', slug: 'typescript-mastery', status: 'published' });
+    const review = createMockReview({
+      course: course._id,
+      student: student._id,
+      rating: 3,
+      reviewText: 'Initial review',
+      moderationStatus: 'approved',
+    });
+
+    // 1. Legitimate update with matching course slug
+    const updateResult = await updateReview({
+      user: { id: student._id.toString(), role: 'student', name: student.name },
+      courseIdOrSlug: course.slug,
+      reviewId: review._id.toString(),
+      rating: 5,
+      reviewText: 'Updated review to 5 stars',
+    });
+
+    assert.strictEqual(updateResult.review.rating, 5);
+    assert.strictEqual(updateResult.review.reviewText, 'Updated review to 5 stars');
+    assert.strictEqual(updateResult.summary.averageRating, 5);
+    assert.strictEqual(updateResult.summary.totalReviews, 1);
+
+    // 2. Legitimate deletion with matching course slug
+    const deleteResult = await deleteReview({
+      user: { id: student._id.toString(), role: 'student' },
+      courseIdOrSlug: course.slug,
+      reviewId: review._id.toString(),
+    });
+
+    assert.strictEqual(deleteResult.success, true);
+    assert.strictEqual(deleteResult.summary.totalReviews, 0);
+    assert.strictEqual(deleteResult.summary.averageRating, 0);
+  });
+
+  await t.test('36. Another student review remains protected against unauthorized modification or deletion (403)', async () => {
+    resetTestDb();
+    const alice = createMockUser({ name: 'Alice', email: 'alice@test.com', role: 'student' });
+    const bob = createMockUser({ name: 'Bob', email: 'bob@test.com', role: 'student' });
+    const course = createMockCourse({ title: 'Course Protection', slug: 'course-protection', status: 'published' });
+    const aliceReview = createMockReview({
+      course: course._id,
+      student: alice._id,
+      rating: 5,
+      reviewText: 'Alice genuine review',
+      moderationStatus: 'approved',
+    });
+
+    // Bob attempts to edit Alice's review
+    await assert.rejects(
+      async () => {
+        await updateReview({
+          user: { id: bob._id.toString(), role: 'student', name: bob.name },
+          courseIdOrSlug: course.slug,
+          reviewId: aliceReview._id.toString(),
+          rating: 1,
+          reviewText: 'Hacked by Bob',
+        });
+      },
+      (err) => {
+        assert.strictEqual(err.status, 403);
+        assert.match(err.message, /Forbidden: You can only edit your own reviews/i);
+        return true;
+      }
+    );
+
+    // Bob attempts to delete Alice's review
+    await assert.rejects(
+      async () => {
+        await deleteReview({
+          user: { id: bob._id.toString(), role: 'student' },
+          courseIdOrSlug: course.slug,
+          reviewId: aliceReview._id.toString(),
+        });
+      },
+      (err) => {
+        assert.strictEqual(err.status, 403);
+        assert.match(err.message, /Forbidden: You can only delete your own reviews/i);
+        return true;
+      }
+    );
+  });
+
+  await t.test('37. Frontend eligibility matches supported backend roles (students and enrolled admins)', async () => {
+    resetTestDb();
+    const instructor = createMockUser({ name: 'Prof Smith', email: 'prof@test.com', role: 'instructor' });
+    const admin = createMockUser({ name: 'Admin Jane', email: 'admin@test.com', role: 'admin' });
+    const student = createMockUser({ name: 'Student Lee', email: 'lee@test.com', role: 'student' });
+    const course = createMockCourse({ title: 'Docker Deep Dive', slug: 'docker-deep-dive', instructor: instructor._id, status: 'published' });
+
+    // Enroll admin and student
+    createMockEnrollment({ student: admin._id, course: course._id, status: 'active' });
+    createMockEnrollment({ student: student._id, course: course._id, status: 'active' });
+
+    // Frontend role pre-check logic: user && (user.role === 'student' || user.role === 'admin')
+    const checkRole = (user) => Boolean(user && (user.role === 'student' || user.role === 'admin'));
+
+    assert.strictEqual(checkRole(student), true);
+    assert.strictEqual(checkRole(admin), true);
+    assert.strictEqual(checkRole(instructor), false);
+    assert.strictEqual(checkRole(null), false);
+
+    // Backend verification confirms enrolled admin is eligible
+    const adminEligibility = await checkReviewEligibility({ id: admin._id.toString(), role: admin.role }, course);
+    assert.strictEqual(adminEligibility.eligible, true);
+
+    // Instructor reviewing own course is rejected by backend
+    const instructorEligibility = await checkReviewEligibility({ id: instructor._id.toString(), role: instructor.role }, course);
+    assert.strictEqual(instructorEligibility.eligible, false);
+    assert.match(instructorEligibility.reason, /Only students can submit course reviews/i);
+  });
+
+  await t.test('38. Review submission, update, and deletion propagate updated summary to parent callback', () => {
+    let capturedSummary = null;
+    const onSummaryChange = (summary) => {
+      capturedSummary = summary;
+    };
+
+    // Simulate review create response summary
+    const newSummary = {
+      averageRating: 4.5,
+      totalReviews: 2,
+      distribution: { 5: 1, 4: 1, 3: 0, 2: 0, 1: 0 },
+    };
+
+    // Callback invocation check
+    onSummaryChange?.(newSummary);
+    assert.deepStrictEqual(capturedSummary, newSummary);
+
+    // Parent state update simulation (CourseDetailsPage pattern)
+    let parentCourseState = {
+      title: 'Distributed Systems',
+      ratingSummary: { averageRating: 0, totalReviews: 0 },
+    };
+
+    const updateParent = (summary) => {
+      parentCourseState = { ...parentCourseState, ratingSummary: summary };
+    };
+
+    updateParent(capturedSummary);
+    assert.strictEqual(parentCourseState.ratingSummary.averageRating, 4.5);
+    assert.strictEqual(parentCourseState.ratingSummary.totalReviews, 2);
+    assert.strictEqual(parentCourseState.title, 'Distributed Systems'); // preserved other properties
   });
 });

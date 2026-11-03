@@ -21,6 +21,8 @@ import {
   Printer,
   FileCheck,
   MessageSquare,
+  Eye,
+  Loader2,
 } from 'lucide-react';
 import {
   courseService,
@@ -48,6 +50,8 @@ export default function CoursePlayerPage() {
   const [activeLesson, setActiveLesson] = useState(null);
   const [completedLessonIds, setCompletedLessonIds] = useState([]);
   const [isLessonCompleted, setIsLessonCompleted] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [togglingLesson, setTogglingLesson] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [lessonLoading, setLessonLoading] = useState(false);
@@ -80,23 +84,28 @@ export default function CoursePlayerPage() {
   const [selectedPlayerAssignment, setSelectedPlayerAssignment] = useState(null);
   const [playerAssignmentModalOpen, setPlayerAssignmentModalOpen] = useState(false);
 
+  // Instructor preview mode: user is instructor viewing course without an active student enrollment
+  const isInstructorPreview = Boolean(user?.role === 'instructor' && !isEnrolled);
+
   // Flattened list of lessons for seamless next/prev navigation
   const flatLessons = useMemo(() => {
     if (!course || !course.sections) return [];
     const list = [];
     course.sections.forEach((sec, sIdx) => {
       (sec.lessons || []).forEach((les, lIdx) => {
-        list.push({
-          ...les,
-          sectionId: sec._id,
-          sectionTitle: sec.title,
-          sectionIndex: sIdx + 1,
-          lessonIndex: lIdx + 1,
-        });
+        if (les.isPublished !== false || isInstructorPreview) {
+          list.push({
+            ...les,
+            sectionId: sec._id,
+            sectionTitle: sec.title,
+            sectionIndex: sIdx + 1,
+            lessonIndex: lIdx + 1,
+          });
+        }
       });
     });
     return list;
-  }, [course]);
+  }, [course, isInstructorPreview]);
 
   // Load lesson content
   const loadLesson = useCallback(
@@ -209,6 +218,7 @@ export default function CoursePlayerPage() {
       .then((data) => {
         if (!isMounted) return;
         setCourse(data.course);
+        setIsEnrolled(Boolean(data.isEnrolled));
 
         const initialCompleted = (data.enrollment?.completedLessons || []).map((id) =>
           id.toString()
@@ -248,13 +258,19 @@ export default function CoursePlayerPage() {
     };
   }, [idOrSlug, loadLesson, searchParams, fetchQuizzesAndCompletion]);
 
-  // Toggle lesson complete
+  // Toggle lesson complete with explicit desired state and debouncing
   const handleToggleComplete = async () => {
-    if (!course || !activeLesson) return;
+    if (!course || !activeLesson || togglingLesson || isInstructorPreview) return;
 
     try {
-      const res = await courseService.toggleLessonComplete(course._id, activeLesson._id);
-      setIsLessonCompleted(res.isCompleted);
+      setTogglingLesson(true);
+      const targetState = !isLessonCompleted;
+      const res = await courseService.toggleLessonComplete(
+        course._id,
+        activeLesson._id,
+        targetState
+      );
+      setIsLessonCompleted(Boolean(res.isCompleted));
       setCompletedLessonIds(res.completedLessons || []);
       fetchQuizzesAndCompletion();
       if (typeof window !== 'undefined') {
@@ -262,6 +278,8 @@ export default function CoursePlayerPage() {
       }
     } catch (err) {
       alert(err.normalizedMessage || 'Failed to update lesson completion status.');
+    } finally {
+      setTogglingLesson(false);
     }
   };
 
@@ -305,11 +323,28 @@ export default function CoursePlayerPage() {
       ? flatLessons[currentFlatIndex + 1]
       : null;
 
-  // Progress metrics
-  const totalLessons = flatLessons.length;
-  const completedCount = completedLessonIds.length;
+  // Progress metrics (strictly counts published curriculum and excludes orphaned IDs)
+  const publishedLessonIds = useMemo(() => {
+    if (!course || !course.sections) return new Set();
+    const ids = new Set();
+    course.sections.forEach((sec) => {
+      (sec.lessons || []).forEach((les) => {
+        if (les && les.isPublished !== false) {
+          ids.add(les._id ? les._id.toString() : '');
+        }
+      });
+    });
+    ids.delete('');
+    return ids;
+  }, [course]);
+
+  const totalLessons = publishedLessonIds.size;
+  const validCompletedCount = useMemo(() => {
+    return completedLessonIds.filter((id) => publishedLessonIds.has(id.toString())).length;
+  }, [completedLessonIds, publishedLessonIds]);
+
   const progressPercent =
-    totalLessons > 0 ? Math.min(100, Math.round((completedCount / totalLessons) * 100)) : 0;
+    totalLessons > 0 ? Math.min(100, Math.round((validCompletedCount / totalLessons) * 100)) : 0;
 
   // Helper for YouTube embed vs generic video
   const getEmbedUrl = (url) => {
@@ -635,7 +670,7 @@ export default function CoursePlayerPage() {
   const lessonsDoneCount =
     completionData?.criteria?.lessonsCompleted ??
     completionData?.progress?.lessons?.completedCount ??
-    completedCount;
+    validCompletedCount;
 
   const allLessonsDone = Boolean(
     completionData?.criteria?.allLessonsCompleted ??
@@ -1113,18 +1148,41 @@ export default function CoursePlayerPage() {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleToggleComplete}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer self-start sm:self-auto ${
-                          isLessonCompleted
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
-                            : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
-                        }`}
-                      >
-                        <CheckCircle size={15} />
-                        <span>{isLessonCompleted ? 'Completed' : 'Mark as Complete'}</span>
-                      </button>
+                      {isInstructorPreview ? (
+                        <div
+                          data-testid="instructor-preview-badge"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs font-semibold self-start sm:self-auto select-none"
+                        >
+                          <Eye size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span>Instructor Preview</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={togglingLesson}
+                          onClick={handleToggleComplete}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition self-start sm:self-auto ${
+                            togglingLesson ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                          } ${
+                            isLessonCompleted
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                              : 'bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20'
+                          }`}
+                        >
+                          {togglingLesson ? (
+                            <Loader2 size={15} className="animate-spin" />
+                          ) : (
+                            <CheckCircle size={15} />
+                          )}
+                          <span>
+                            {togglingLesson
+                              ? 'Updating...'
+                              : isLessonCompleted
+                              ? 'Completed'
+                              : 'Mark as Complete'}
+                          </span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Text Content / Markdown Notes */}

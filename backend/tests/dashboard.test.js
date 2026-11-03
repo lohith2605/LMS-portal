@@ -2,8 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const { app } = require('../server');
 const User = require('../models/User');
+const Assignment = require('../models/Assignment');
 
 const TEST_SECRET = 'test_jwt_secret_key_12345678901234567890';
 process.env.JWT_SECRET = TEST_SECRET;
@@ -108,6 +110,7 @@ test.beforeEach(() => {
       }),
     }),
   });
+  Assignment.find = () => ({ populate: () => ({ sort: () => ({ limit: () => ({ lean: () => Promise.resolve([]) }) }) }) });
   Enrollment.countDocuments = () => Promise.resolve(0);
   Enrollment.aggregate = () => Promise.resolve([]);
 });
@@ -243,4 +246,129 @@ test('11. Admin retrieves paginated user list (200)', async () => {
   assert.strictEqual(res.statusCode, 200);
   assert.ok(Array.isArray(res.body.users));
   assert.ok(res.body.pagination);
+});
+
+test('12. Student Dashboard: 100% lessons complete without formal completion remains inProgress (not completed)', async () => {
+  const student = createMockUser({ _id: new mongoose.Types.ObjectId(), name: 'Dan Student', email: 'dan@example.com', role: 'student' });
+  const token = makeToken(student);
+
+  const courseId = new mongoose.Types.ObjectId();
+  const lesson1Id = new mongoose.Types.ObjectId();
+  const lesson2Id = new mongoose.Types.ObjectId();
+
+  const mockCourse = {
+    _id: courseId,
+    title: 'Advanced Microservices',
+    slug: 'advanced-microservices',
+    summary: 'Cloud patterns',
+    status: 'published',
+    sections: [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        title: 'Section 1',
+        lessons: [
+          { _id: lesson1Id, title: 'Lesson 1', isPublished: true },
+          { _id: lesson2Id, title: 'Lesson 2', isPublished: true },
+        ],
+      },
+    ],
+  };
+
+  const mockEnrollment = {
+    _id: new mongoose.Types.ObjectId(),
+    student: student._id,
+    course: mockCourse,
+    status: 'active',
+    isCompleted: false,
+    completedLessons: [lesson1Id, lesson2Id],
+    enrolledAt: new Date(),
+    lastAccessedAt: new Date(),
+  };
+
+  const originalFind = Enrollment.find;
+  Enrollment.find = () => ({
+    populate: () => ({
+      sort: () => ({
+        lean: () => Promise.resolve([mockEnrollment]),
+      }),
+    }),
+  });
+
+  try {
+    const res = await request(app)
+      .get('/api/dashboard/student')
+      .set('Cookie', [`jwt=${token}`]);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.overview.enrolledCount, 1);
+    assert.strictEqual(res.body.overview.completedCount, 0, 'Must NOT count as completed course without formal completion');
+    assert.strictEqual(res.body.overview.inProgressCount, 1, 'Must count as in-progress course');
+    assert.strictEqual(res.body.enrolledCourses[0].progressPercentage, 100);
+    assert.strictEqual(res.body.enrolledCourses[0].completedCount, 2);
+    assert.strictEqual(res.body.enrolledCourses[0].totalLessons, 2);
+    assert.strictEqual(res.body.enrolledCourses[0].isCompleted, false);
+  } finally {
+    Enrollment.find = originalFind;
+  }
+});
+
+test('13. Student Dashboard: Excludes draft/unpublished lessons and deleted/orphaned lesson IDs from progress', async () => {
+  const student = createMockUser({ _id: new mongoose.Types.ObjectId(), name: 'Eve Student', email: 'eve@example.com', role: 'student' });
+  const token = makeToken(student);
+
+  const courseId = new mongoose.Types.ObjectId();
+  const publishedLessonId = new mongoose.Types.ObjectId();
+  const draftLessonId = new mongoose.Types.ObjectId();
+  const deletedLessonId = new mongoose.Types.ObjectId();
+
+  const mockCourse = {
+    _id: courseId,
+    title: 'Clean Architecture Track',
+    slug: 'clean-architecture-track',
+    summary: 'Architecture',
+    status: 'published',
+    sections: [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        title: 'Core Concepts',
+        lessons: [
+          { _id: publishedLessonId, title: 'Published Lesson', isPublished: true },
+          { _id: draftLessonId, title: 'Draft Lesson (Unpublished)', isPublished: false },
+        ],
+      },
+    ],
+  };
+
+  const mockEnrollment = {
+    _id: new mongoose.Types.ObjectId(),
+    student: student._id,
+    course: mockCourse,
+    status: 'active',
+    isCompleted: false,
+    completedLessons: [publishedLessonId, deletedLessonId],
+    enrolledAt: new Date(),
+    lastAccessedAt: new Date(),
+  };
+
+  const originalFind = Enrollment.find;
+  Enrollment.find = () => ({
+    populate: () => ({
+      sort: () => ({
+        lean: () => Promise.resolve([mockEnrollment]),
+      }),
+    }),
+  });
+
+  try {
+    const res = await request(app)
+      .get('/api/dashboard/student')
+      .set('Cookie', [`jwt=${token}`]);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.enrolledCourses[0].totalLessons, 1, 'Draft lessons must be excluded from totalLessons');
+    assert.strictEqual(res.body.enrolledCourses[0].completedCount, 1, 'Deleted/orphaned lesson IDs must be excluded');
+    assert.strictEqual(res.body.enrolledCourses[0].progressPercentage, 100);
+  } finally {
+    Enrollment.find = originalFind;
+  }
 });

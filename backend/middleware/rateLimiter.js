@@ -1,9 +1,6 @@
 const rateLimit = require('express-rate-limit');
 
-/**
- * Strict limiter for sensitive authentication endpoints (Login, Register)
- * Max 20 requests per 15 minutes per IP (disabled/relaxed in test mode)
- */
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,

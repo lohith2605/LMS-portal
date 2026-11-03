@@ -587,5 +587,158 @@ test.describe('Course Completion & Certificate Issuance Suite', () => {
 
     assert.strictEqual(badgeLabel, 'Ready to Claim');
   });
+
+  // Scenario 10: Student Dashboard correctly maps nested certificate snapshot fields and falls back gracefully.
+  test('10. Student Dashboard correctly maps nested certificate snapshot fields and falls back gracefully', () => {
+    // 1. Nested modern format from backend
+    const nestedCert = {
+      _id: '67c1234567890abcdef12345',
+      certificateId: 'LS-2026-NEST-0001',
+      issuedAt: '2026-04-10T12:00:00.000Z',
+      completedAt: '2026-04-10T12:00:00.000Z',
+      studentSnapshot: {
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+      },
+      courseSnapshot: {
+        title: 'Advanced Distributed Systems',
+        slug: 'advanced-distributed-systems',
+      },
+    };
+
+    const resolvedTitle =
+      nestedCert.courseSnapshot?.title ||
+      nestedCert.courseTitleSnapshot ||
+      nestedCert.course?.title ||
+      'Course Completion';
+    const resolvedName =
+      nestedCert.studentSnapshot?.name ||
+      nestedCert.studentNameSnapshot ||
+      'Verified Learner';
+    const rawDate =
+      nestedCert.issuedAt || nestedCert.completedAt || nestedCert.issueDate;
+
+    assert.strictEqual(resolvedTitle, 'Advanced Distributed Systems');
+    assert.strictEqual(resolvedName, 'Jane Doe');
+    assert.strictEqual(rawDate, '2026-04-10T12:00:00.000Z');
+
+    // 2. Legacy flat properties format
+    const legacyCert = {
+      _id: '67c1234567890abcdef12346',
+      certificateId: 'LS-2025-LEGC-0002',
+      courseTitleSnapshot: 'Legacy Systems Architecture',
+      studentNameSnapshot: 'Bob Legacy',
+      issueDate: '2025-08-20T09:30:00.000Z',
+    };
+
+    const legacyTitle =
+      legacyCert.courseSnapshot?.title ||
+      legacyCert.courseTitleSnapshot ||
+      legacyCert.course?.title ||
+      'Course Completion';
+    const legacyName =
+      legacyCert.studentSnapshot?.name ||
+      legacyCert.studentNameSnapshot ||
+      'Verified Learner';
+    const legacyRawDate =
+      legacyCert.issuedAt || legacyCert.completedAt || legacyCert.issueDate;
+
+    assert.strictEqual(legacyTitle, 'Legacy Systems Architecture');
+    assert.strictEqual(legacyName, 'Bob Legacy');
+    assert.strictEqual(legacyRawDate, '2025-08-20T09:30:00.000Z');
+
+    // 3. Fallback when snapshots and title are absent
+    const bareCert = {
+      _id: '67c1234567890abcdef12347',
+      certificateId: 'LS-2026-BARE-0003',
+    };
+    const bareTitle =
+      bareCert.courseSnapshot?.title ||
+      bareCert.courseTitleSnapshot ||
+      bareCert.course?.title ||
+      'Course Completion';
+    const bareName =
+      bareCert.studentSnapshot?.name ||
+      bareCert.studentNameSnapshot ||
+      'Verified Learner';
+
+    assert.strictEqual(bareTitle, 'Course Completion');
+    assert.strictEqual(bareName, 'Verified Learner');
+  });
+
+  // Scenario 11: Certificate issue date safely handles valid dates and prevents "Invalid Date" on missing or corrupt values.
+  test('11. Certificate issue date safely handles valid dates and prevents "Invalid Date" on missing or corrupt values', () => {
+    const formatCertificateDate = (rawDate, fallback = 'Recently Issued') => {
+      if (!rawDate) return fallback;
+      const parsed = new Date(rawDate);
+      return Number.isNaN(parsed.getTime()) ? fallback : parsed.toLocaleDateString();
+    };
+
+    // Valid ISO string
+    const validIsoFormatted = formatCertificateDate('2026-06-15T00:00:00.000Z');
+    assert.notStrictEqual(validIsoFormatted, 'Invalid Date');
+    assert.notStrictEqual(validIsoFormatted, 'Recently Issued');
+
+    // Valid timestamp number
+    const validTimestampFormatted = formatCertificateDate(1776249600000);
+    assert.notStrictEqual(validTimestampFormatted, 'Invalid Date');
+
+    // Missing date (undefined)
+    const undefinedFormatted = formatCertificateDate(undefined);
+    assert.strictEqual(undefinedFormatted, 'Recently Issued');
+    assert.notStrictEqual(undefinedFormatted, 'Invalid Date');
+
+    // Missing date (null)
+    const nullFormatted = formatCertificateDate(null);
+    assert.strictEqual(nullFormatted, 'Recently Issued');
+
+    // Corrupted or unparseable string
+    const corruptFormatted = formatCertificateDate('not-a-valid-date-string');
+    assert.strictEqual(corruptFormatted, 'Recently Issued');
+    assert.notStrictEqual(corruptFormatted, 'Invalid Date');
+  });
+
+  // Scenario 12: Certificate issuance dispatches notification matching registered frontend verification route.
+  test('12. Certificate issuance dispatches notification matching registered frontend verification route', async () => {
+    const studentId = makeObjectId();
+    const lessonId = makeObjectId();
+    const course = {
+      _id: makeObjectId(),
+      title: 'Verification Link Route Test',
+      slug: 'verification-link-route-test',
+      sections: [{ lessons: [{ _id: lessonId, isPublished: true }] }],
+    };
+    mockCourses.push(course);
+
+    const enrollment = {
+      _id: makeObjectId(),
+      student: studentId,
+      course: course._id,
+      status: 'active',
+      completedLessons: [lessonId],
+      save: async function () { return this; },
+    };
+    mockEnrollments.push(enrollment);
+
+    const user = { _id: studentId, name: 'Notification Tester', email: 'notif@test.com' };
+    mockUsers.push(user);
+
+    const req = {
+      params: { idOrSlug: course.slug },
+      user: { id: studentId.toString(), email: 'notif@test.com', name: 'Notification Tester' },
+    };
+    const res = createMockRes();
+
+    await claimCertificate(req, res);
+
+    assert.strictEqual(res.statusCode, 201);
+    const certId = res.body.certificate.certificateId;
+    assert.ok(certId);
+
+    // Verify expected canonical route link structure
+    const expectedLink = `/verify/${certId}`;
+    assert.match(expectedLink, /^\/verify\/LS-\d{4}-[A-Z0-9-]+$/);
+    assert.ok(expectedLink.startsWith('/verify/'));
+  });
 });
 

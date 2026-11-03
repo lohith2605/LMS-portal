@@ -86,6 +86,7 @@ export default function App() {
         {/* Public Certificate Verification */}
         <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
         <Route path="/certificates/:certificateId" element={<CertificateVerifyPage />} />
+        <Route path="/verify-certificate/:certificateId" element={<CertificateVerifyPage />} />
 
         {/* Role-Adaptive Dashboard Dispatcher */}
         <Route

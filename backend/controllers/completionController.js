@@ -142,7 +142,7 @@ const getCourseCompletionStatus = async (req, res) => {
         lessonsCompleted,
         totalLessons,
         lessonProgressPercentage:
-          totalLessons > 0 ? Math.round((lessonsCompleted / totalLessons) * 100) : 0,
+          totalLessons > 0 ? Math.min(100, Math.round((lessonsCompleted / totalLessons) * 100)) : 0,
         allQuizzesPassed,
         mandatoryQuizzesPassed,
         totalMandatoryQuizzes,
@@ -289,7 +289,7 @@ const claimCertificate = async (req, res) => {
         type: 'certificate_issued',
         title: 'Certificate of Completion Issued!',
         message: `Congratulations! Your certificate for "${course.title}" is ready to view.`,
-        link: `/verify-certificate/${certificateId}`,
+        link: `/verify/${certificateId}`,
         metadata: { certificateId, courseId: course._id },
       });
     } catch (notifErr) {

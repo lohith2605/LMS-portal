@@ -42,9 +42,9 @@ function calculateCourseProgress(enrollment, course) {
   const uniqueCompletedValid = new Set(
     rawCompleted
       .map((id) => (id ? id.toString() : ''))
-      .filter((idStr) => idStr && (totalLessons === 0 || validLessonIds.has(idStr)))
+      .filter((idStr) => idStr && validLessonIds.has(idStr))
   );
-  const completedCount = totalLessons > 0 ? uniqueCompletedValid.size : rawCompleted.length;
+  const completedCount = totalLessons > 0 ? uniqueCompletedValid.size : 0;
 
   let progressPercent = 0;
   if (totalLessons > 0) {

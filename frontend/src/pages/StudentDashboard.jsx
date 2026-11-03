@@ -69,6 +69,12 @@ const EXPLORE_SORT_OPTIONS = [
   { value: 'title', label: 'Title (A-Z)' },
 ];
 
+const formatCertificateDate = (rawDate, fallback = 'Recently Issued') => {
+  if (!rawDate) return fallback;
+  const parsed = new Date(rawDate);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toLocaleDateString();
+};
+
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -363,6 +369,40 @@ export default function StudentDashboard() {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  // Synchronize dashboard metrics when activity updates or window regains focus
+  useEffect(() => {
+    let isMounted = true;
+    let isRefreshing = false;
+
+    const handleRefresh = async () => {
+      if (isRefreshing || !isMounted) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+
+      isRefreshing = true;
+      try {
+        const res = await dashboardService.getStudentOverview();
+        if (isMounted && res) {
+          setData(res);
+        }
+      } catch (err) {
+        // Silent catch on background refresh to prevent UI disruption
+      } finally {
+        isRefreshing = false;
+      }
+    };
+
+    window.addEventListener('learnspace:activity-updated', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+    document.addEventListener('visibilitychange', handleRefresh);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('learnspace:activity-updated', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+      document.removeEventListener('visibilitychange', handleRefresh);
     };
   }, []);
 
@@ -918,7 +958,10 @@ export default function StudentDashboard() {
                         </div>
 
                         <h3 className="text-base font-bold text-primary mb-1">
-                          {cert.courseTitleSnapshot || cert.course?.title || 'Course Completion'}
+                          {cert.courseSnapshot?.title ||
+                            cert.courseTitleSnapshot ||
+                            cert.course?.title ||
+                            'Course Completion'}
                         </h3>
 
                         <div className="space-y-1.5 my-4 p-3 bg-surface-subtle rounded-xl border border-border-subtle text-xs">
@@ -931,13 +974,18 @@ export default function StudentDashboard() {
                           <div className="flex justify-between">
                             <span className="text-secondary">Issued To:</span>
                             <span className="font-semibold text-primary">
-                              {cert.studentNameSnapshot}
+                              {cert.studentSnapshot?.name ||
+                                cert.studentNameSnapshot ||
+                                user?.name ||
+                                'Verified Learner'}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-secondary">Completion Date:</span>
                             <span className="font-medium text-primary">
-                              {new Date(cert.issueDate).toLocaleDateString()}
+                              {formatCertificateDate(
+                                cert.issuedAt || cert.completedAt || cert.issueDate
+                              )}
                             </span>
                           </div>
                         </div>

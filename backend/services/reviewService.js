@@ -320,7 +320,7 @@ const createReview = async ({ user, courseIdOrSlug, rating, reviewText }) => {
 /**
  * Edit an existing review owned by the student
  */
-const updateReview = async ({ user, reviewId, rating, reviewText }) => {
+const updateReview = async ({ user, courseIdOrSlug, reviewId, rating, reviewText }) => {
   validateRating(rating);
   const cleanText = validateReviewText(reviewText);
 
@@ -337,8 +337,24 @@ const updateReview = async ({ user, reviewId, rating, reviewText }) => {
     throw err;
   }
 
+  // Validate course scope if courseIdOrSlug is provided
+  if (courseIdOrSlug) {
+    const scopedCourse = await resolveCourse(courseIdOrSlug);
+    if (!scopedCourse) {
+      const err = new Error('Course not found.');
+      err.status = 404;
+      throw err;
+    }
+    if (review.course.toString() !== scopedCourse._id.toString()) {
+      const err = new Error('Review does not belong to the requested course.');
+      err.status = 404;
+      throw err;
+    }
+  }
+
   // Enforce ownership: student can only edit their own review
-  if (review.student.toString() !== user.id) {
+  const userId = user.id ? user.id.toString() : (user._id ? user._id.toString() : '');
+  if (review.student.toString() !== userId) {
     const err = new Error('Forbidden: You can only edit your own reviews.');
     err.status = 403;
     throw err;
@@ -382,7 +398,7 @@ const updateReview = async ({ user, reviewId, rating, reviewText }) => {
 /**
  * Delete a review (Student deletes their own, Admin can delete any)
  */
-const deleteReview = async ({ user, reviewId }) => {
+const deleteReview = async ({ user, courseIdOrSlug, reviewId }) => {
   if (!mongoose.Types.ObjectId.isValid(reviewId)) {
     const err = new Error('Invalid review ID.');
     err.status = 400;
@@ -396,7 +412,23 @@ const deleteReview = async ({ user, reviewId }) => {
     throw err;
   }
 
-  const isOwner = review.student.toString() === user.id;
+  // Validate course scope if courseIdOrSlug is provided
+  if (courseIdOrSlug) {
+    const scopedCourse = await resolveCourse(courseIdOrSlug);
+    if (!scopedCourse) {
+      const err = new Error('Course not found.');
+      err.status = 404;
+      throw err;
+    }
+    if (review.course.toString() !== scopedCourse._id.toString()) {
+      const err = new Error('Review does not belong to the requested course.');
+      err.status = 404;
+      throw err;
+    }
+  }
+
+  const userId = user.id ? user.id.toString() : (user._id ? user._id.toString() : '');
+  const isOwner = review.student.toString() === userId;
   const isAdmin = user.role === 'admin';
 
   if (!isOwner && !isAdmin) {

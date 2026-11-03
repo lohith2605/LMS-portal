@@ -1091,3 +1091,137 @@ test('24. Non-instructor calling GET /api/instructor/learners is rejected with 4
 
   assert.strictEqual(res.statusCode, 403);
 });
+
+test('25. Lesson completion with explicit payload is idempotent on repeated requests', async () => {
+  const student = createMockUser({ name: 'Sam Idempotent', email: 'sam.idem@example.com', role: 'student' });
+  const lessonId = makeObjectId();
+
+  const course = createMockCourse({
+    title: 'Idempotency Test Course',
+    status: 'published',
+    sections: [
+      {
+        title: 'Section 1',
+        lessons: [
+          {
+            _id: lessonId,
+            title: 'Idempotent Lesson',
+            isPublished: true,
+          },
+        ],
+      },
+    ],
+  });
+
+  const enrollment = {
+    _id: makeObjectId(),
+    student: student._id,
+    course: course._id,
+    status: 'active',
+    completedLessons: [],
+    async save() { return this; },
+  };
+  mockEnrollments.push(enrollment);
+
+  const token = makeToken(student);
+
+  // 1. Explicit complete: true
+  const res1 = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${lessonId}/complete`)
+    .set('Cookie', `jwt=${token}`)
+    .send({ completed: true });
+
+  assert.strictEqual(res1.statusCode, 200);
+  assert.strictEqual(res1.body.isCompleted, true);
+  assert.strictEqual(res1.body.completedLessons.length, 1);
+
+  // 2. Repeated explicit complete: true (idempotent, does not duplicate or toggle off)
+  const res2 = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${lessonId}/complete`)
+    .set('Cookie', `jwt=${token}`)
+    .send({ completed: true });
+
+  assert.strictEqual(res2.statusCode, 200);
+  assert.strictEqual(res2.body.isCompleted, true);
+  assert.strictEqual(res2.body.completedLessons.length, 1);
+
+  // 3. Explicit complete: false
+  const res3 = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${lessonId}/complete`)
+    .set('Cookie', `jwt=${token}`)
+    .send({ completed: false });
+
+  assert.strictEqual(res3.statusCode, 200);
+  assert.strictEqual(res3.body.isCompleted, false);
+  assert.strictEqual(res3.body.completedLessons.length, 0);
+
+  // 4. Repeated explicit complete: false (idempotent)
+  const res4 = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${lessonId}/complete`)
+    .set('Cookie', `jwt=${token}`)
+    .send({ completed: false });
+
+  assert.strictEqual(res4.statusCode, 200);
+  assert.strictEqual(res4.body.isCompleted, false);
+  assert.strictEqual(res4.body.completedLessons.length, 0);
+});
+
+test('26. Lesson completion rejects invalid lesson/course combinations (404) and non-enrolled user (403)', async () => {
+  const student = createMockUser({ name: 'Unenrolled Student', email: 'unenrolled@example.com', role: 'student' });
+  const instructor = createMockUser({ name: 'Course Instructor', email: 'instructor@example.com', role: 'instructor' });
+  const validLessonId = makeObjectId();
+  const foreignLessonId = makeObjectId();
+
+  const course = createMockCourse({
+    title: 'Access Control Course',
+    instructor: instructor._id,
+    status: 'published',
+    sections: [
+      {
+        title: 'Section 1',
+        lessons: [
+          {
+            _id: validLessonId,
+            title: 'Valid Lesson',
+            isPublished: true,
+          },
+        ],
+      },
+    ],
+  });
+
+  const studentToken = makeToken(student);
+  const instructorToken = makeToken(instructor);
+
+  // 1. Unenrolled student tries to mark complete -> 403 Forbidden
+  const unenrolledRes = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${validLessonId}/complete`)
+    .set('Cookie', `jwt=${studentToken}`);
+
+  assert.strictEqual(unenrolledRes.statusCode, 403);
+
+  // 2. Instructor tries to mark lesson complete -> 403 Forbidden (restricted to student/admin)
+  const instructorRes = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${validLessonId}/complete`)
+    .set('Cookie', `jwt=${instructorToken}`);
+
+  assert.strictEqual(instructorRes.statusCode, 403);
+
+  // Now enroll student
+  mockEnrollments.push({
+    _id: makeObjectId(),
+    student: student._id,
+    course: course._id,
+    status: 'active',
+    completedLessons: [],
+    async save() { return this; },
+  });
+
+  // 3. Foreign lesson ID not in course curriculum -> 404
+  const foreignRes = await request(app)
+    .post(`/api/courses/${course._id}/lessons/${foreignLessonId}/complete`)
+    .set('Cookie', `jwt=${studentToken}`);
+
+  assert.strictEqual(foreignRes.statusCode, 404);
+  assert.strictEqual(foreignRes.body.error, 'Lesson not found in this course.');
+});
