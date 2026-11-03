@@ -128,6 +128,15 @@ const quizSchema = new mongoose.Schema(
       default: 'draft',
       index: true,
     },
+    availableFrom: {
+      type: Date,
+      default: null,
+    },
+    dueDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     questions: [quizQuestionSchema],
   },
   {
@@ -145,6 +154,15 @@ quizSchema.virtual('totalPoints').get(function () {
 
 // Pre-save validation: Ensure published quiz is fully valid
 quizSchema.pre('save', function () {
+  if (this.availableFrom && isNaN(new Date(this.availableFrom).getTime())) {
+    throw new Error('Invalid availability start date.');
+  }
+  if (this.dueDate && isNaN(new Date(this.dueDate).getTime())) {
+    throw new Error('Invalid due date.');
+  }
+  if (this.availableFrom && this.dueDate && new Date(this.dueDate) < new Date(this.availableFrom)) {
+    throw new Error('Quiz due date cannot be earlier than availability start date.');
+  }
   if (this.status === 'published') {
     if (!this.questions || this.questions.length === 0) {
       throw new Error('A published quiz must contain at least one question.');
@@ -162,6 +180,7 @@ quizSchema.pre('save', function () {
 
 // Compound indexes
 quizSchema.index({ course: 1, status: 1 });
+quizSchema.index({ course: 1, dueDate: 1 });
 
 const Quiz = mongoose.model('Quiz', quizSchema);
 

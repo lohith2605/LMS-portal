@@ -288,7 +288,7 @@ export const showDesktopNotification = async (notif, onNavigate = null) => {
         desktopNotice.close();
 
         if (typeof onNavigate === 'function') {
-          onNavigate(safeLink);
+          onNavigate(safeLink, notif._id);
         } else if (typeof window !== 'undefined') {
           window.location.pathname = safeLink;
         }

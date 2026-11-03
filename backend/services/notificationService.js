@@ -4,6 +4,26 @@ const { emitToUser } = require('./socketService');
 const { logger } = require('../utils/logger');
 
 /**
+ * Normalizes notification title to satisfy the Notification schema limit (max 120 characters)
+ */
+const normalizeNotificationTitle = (rawTitle) => {
+  if (!rawTitle || typeof rawTitle !== 'string') return 'Notification';
+  const trimmed = rawTitle.trim();
+  if (trimmed.length <= 120) return trimmed;
+  return trimmed.slice(0, 117) + '...';
+};
+
+/**
+ * Normalizes notification message to satisfy the Notification schema limit (max 500 characters)
+ */
+const normalizeNotificationMessage = (rawMessage) => {
+  if (!rawMessage || typeof rawMessage !== 'string') return '';
+  const trimmed = rawMessage.trim();
+  if (trimmed.length <= 500) return trimmed;
+  return trimmed.slice(0, 497) + '...';
+};
+
+/**
  * Persist and emit a real-time notification to a user
  */
 const createNotification = async ({
@@ -26,6 +46,9 @@ const createNotification = async ({
       return null;
     }
 
+    const safeTitle = normalizeNotificationTitle(title);
+    const safeMessage = normalizeNotificationMessage(message);
+
     let notification;
     // Check if disconnected and unmocked (e.g. running other unit tests without DB connection)
     if (mongoose.connection.readyState === 0 && Notification.create === mongoose.Model.create) {
@@ -33,8 +56,8 @@ const createNotification = async ({
         _id: new mongoose.Types.ObjectId(),
         recipient: recipientId,
         type,
-        title: title ? title.trim() : 'Notification',
-        message: message ? message.trim() : '',
+        title: safeTitle,
+        message: safeMessage,
         link: link || '',
         metadata: metadata || {},
         isRead: false,
@@ -44,8 +67,8 @@ const createNotification = async ({
       notification = await Notification.create({
         recipient: recipientId,
         type,
-        title: title ? title.trim() : 'Notification',
-        message: message ? message.trim() : '',
+        title: safeTitle,
+        message: safeMessage,
         link: link || '',
         metadata: metadata || {},
       });
@@ -71,9 +94,13 @@ const createNotification = async ({
 const createBatchNotifications = async (items = []) => {
   if (!items || items.length === 0) return [];
   try {
-    const validItems = items.filter(
-      (item) => item.recipient && mongoose.Types.ObjectId.isValid(item.recipient.toString())
-    );
+    const validItems = items
+      .filter((item) => item.recipient && mongoose.Types.ObjectId.isValid(item.recipient.toString()))
+      .map((item) => ({
+        ...item,
+        title: normalizeNotificationTitle(item.title),
+        message: normalizeNotificationMessage(item.message),
+      }));
 
     if (validItems.length === 0) return [];
 
@@ -199,5 +226,7 @@ module.exports = {
   getUnreadCount,
   markAsRead,
   markAllAsRead,
+  normalizeNotificationTitle,
+  normalizeNotificationMessage,
 };
 

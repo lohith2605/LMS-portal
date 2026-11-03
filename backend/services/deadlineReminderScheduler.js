@@ -5,6 +5,8 @@ const Enrollment = require('../models/Enrollment');
 const DeadlineReminderDelivery = require('../models/DeadlineReminderDelivery');
 const User = require('../models/User');
 const Course = require('../models/Course');
+const Quiz = require('../models/Quiz');
+const QuizAttempt = require('../models/QuizAttempt');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 const { logger } = require('../utils/logger');
@@ -153,11 +155,13 @@ const processDeadlineReminders = async (currentTime = new Date()) => {
             if (isNotificationEnabled) {
               try {
                 const timeDesc = interval === '1h' ? 'in less than 1 hour' : 'in 24 hours';
+                const assignmentTitle = assignment.title ? assignment.title.trim() : 'Assignment';
+                const reminderTitle = `Deadline Approaching: ${assignmentTitle}`;
                 await notificationService.createNotification({
                   recipient: studentId,
                   type: 'deadline_reminder',
-                  title: `Deadline Approaching: ${assignment.title}`,
-                  message: `Your assignment "${assignment.title}" is due ${timeDesc}. Be sure to submit your work before the deadline.`,
+                  title: reminderTitle,
+                  message: `Your assignment "${assignmentTitle}" is due ${timeDesc}. Be sure to submit your work before the deadline.`,
                   link: `/student/dashboard?tab=assignments&assignmentId=${assignment._id}`,
                   metadata: {
                     assignmentId: assignment._id,
@@ -228,6 +232,220 @@ const processDeadlineReminders = async (currentTime = new Date()) => {
         logger.error(`Error processing assignment ${assignment._id} reminders: ${assignErr.message}`);
         results.errors.push(assignErr.message);
       }
+    }
+
+    // 3b. Process approaching published quizzes
+    const isQuizModelAvailable =
+      mongoose.connection.readyState === 1 ||
+      (typeof Quiz.find === 'function' && Quiz.find !== mongoose.Model.find);
+
+    if (isQuizModelAvailable) {
+    const quizzes = await Quiz.find({
+      status: 'published',
+      dueDate: { $gt: now, $lte: windowEnd, $ne: null },
+    }).lean();
+
+    results.processedQuizzes = quizzes.length;
+
+    for (const quiz of quizzes) {
+      try {
+        if (!quiz.dueDate || isNaN(new Date(quiz.dueDate).getTime())) continue;
+
+        // If quiz is not yet available for attempts, do not send impending deadline reminders
+        if (quiz.availableFrom && now < new Date(quiz.availableFrom)) continue;
+
+        const timeRemainingMs = new Date(quiz.dueDate).getTime() - now.getTime();
+        if (timeRemainingMs <= 0) continue;
+
+        const courseId = quiz.course?._id || quiz.course;
+        let courseTitle = quiz.course?.title;
+        let courseSlug = quiz.course?.slug;
+        let courseInstructorId = quiz.course?.instructor?.toString() || quiz.instructor?.toString();
+
+        if ((!courseTitle || !courseSlug) && courseId && typeof Course.find === 'function') {
+          const courses = await Course.find({ _id: { $in: [courseId] } });
+          if (courses && courses.length > 0) {
+            courseTitle = courses[0].title;
+            courseSlug = courses[0].slug;
+            courseInstructorId = courses[0].instructor?.toString();
+          }
+        }
+
+        const enrollments = await Enrollment.find({
+          course: courseId,
+          status: { $in: ['active', 'completed'] },
+        }).select('student').lean();
+
+        if (!enrollments || enrollments.length === 0) continue;
+
+        // Fetch attempts for this quiz to identify students who completed or passed
+        const attempts = await QuizAttempt.find({
+          quiz: quiz._id,
+        }).select('student isPassed passed status').lean();
+
+        const completedQuizStudents = new Set();
+        const attemptsByStudent = new Map();
+        for (const att of attempts) {
+          const sId = att.student.toString();
+          if (att.isPassed || att.passed) {
+            completedQuizStudents.add(sId);
+          }
+          const list = attemptsByStudent.get(sId) || [];
+          list.push(att);
+          attemptsByStudent.set(sId, list);
+        }
+
+        // If max attempts is reached, learner cannot take more attempts -> suppress reminder
+        if (quiz.maxAttempts > 0) {
+          for (const [sId, atts] of attemptsByStudent.entries()) {
+            if (atts.length >= quiz.maxAttempts) {
+              completedQuizStudents.add(sId);
+            }
+          }
+        }
+
+        const intervalsToCheck = [];
+        if (timeRemainingMs <= 1 * 60 * 60 * 1000) {
+          if (is1hEnabled) intervalsToCheck.push('1h');
+        } else if (timeRemainingMs <= 24 * 60 * 60 * 1000) {
+          if (is24hEnabled) intervalsToCheck.push('24h');
+        }
+
+        if (intervalsToCheck.length === 0) continue;
+
+        for (const enr of enrollments) {
+          const studentId = (enr.student?._id || enr.student)?.toString();
+          if (!studentId) continue;
+
+          // Skip students who have passed or completed their attempts
+          if (completedQuizStudents.has(studentId)) {
+            results.completedSkipped++;
+            continue;
+          }
+
+          let studentUser = null;
+          if (typeof User.findById === 'function') {
+            studentUser = await User.findById(studentId);
+          }
+          if (studentUser && (studentUser.role === 'admin' || studentUser.accountStatus === 'suspended')) {
+            continue;
+          }
+          if (studentUser && courseInstructorId && studentUser._id.toString() === courseInstructorId) {
+            continue;
+          }
+
+          const studentEmail = studentUser?.email || enr.student?.email;
+          const studentName = studentUser?.name || enr.student?.name || 'Learner';
+
+          for (const interval of intervalsToCheck) {
+            const deadlineTime = new Date(quiz.dueDate).getTime();
+            const idempotencyKey = `${studentId}_quiz_${quiz._id}_${interval}_${deadlineTime}`;
+
+            let deliveryClaim;
+            try {
+              deliveryClaim = await DeadlineReminderDelivery.create({
+                idempotencyKey,
+                recipient: studentId,
+                quiz: quiz._id,
+                activityType: 'quiz',
+                reminderType: interval,
+                deadlineVersion: quiz.dueDate,
+                status: 'pending',
+                emailStatus: 'pending',
+                notificationStatus: 'pending',
+              });
+            } catch (claimErr) {
+              if (claimErr.code === 11000 || claimErr.message?.includes('duplicate key')) {
+                results.duplicatesSuppressed++;
+                continue;
+              }
+              throw claimErr;
+            }
+
+            // In-app notification
+            if (isNotificationEnabled) {
+              try {
+                const timeDesc = interval === '1h' ? 'in less than 1 hour' : 'in 24 hours';
+                const quizTitle = quiz.title ? quiz.title.trim() : 'Quiz';
+                const reminderTitle = `Quiz Deadline Approaching: ${quizTitle}`;
+                const resolvedCourseSlug = courseSlug || courseId;
+
+                await notificationService.createNotification({
+                  recipient: studentId,
+                  type: 'deadline_reminder',
+                  title: reminderTitle,
+                  message: `Your quiz "${quizTitle}" is due ${timeDesc}. Complete your attempts before the deadline.`,
+                  link: `/courses/${resolvedCourseSlug}/learn?quiz=${quiz._id}`,
+                  metadata: {
+                    quizId: quiz._id,
+                    courseId,
+                    dueDate: quiz.dueDate,
+                    reminderType: interval,
+                    activityType: 'quiz',
+                  },
+                });
+
+                deliveryClaim.notificationStatus = 'delivered';
+                results.notificationsSent++;
+              } catch (dispatchErr) {
+                logger.error(`Failed to dispatch in-app quiz notification to student ${studentId}: ${dispatchErr.message}`);
+                deliveryClaim.notificationStatus = 'failed';
+                deliveryClaim.notificationError = dispatchErr.message;
+                results.errors.push(dispatchErr.message);
+              }
+            } else {
+              deliveryClaim.notificationStatus = 'skipped';
+            }
+
+            // Email reminder
+            if (isEmailEnabled && studentEmail) {
+              try {
+                const resolvedCourseSlug = courseSlug || courseId;
+                const quizUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/courses/${resolvedCourseSlug}/learn?quiz=${quiz._id}`;
+                const emailSuccess = await emailService.sendQuizDeadlineReminderEmail({
+                  to: studentEmail,
+                  name: studentName,
+                  quizTitle: quiz.title,
+                  courseTitle: courseTitle || 'Your Course',
+                  dueDate: quiz.dueDate,
+                  reminderType: interval,
+                  quizUrl,
+                });
+
+                if (emailSuccess) {
+                  deliveryClaim.emailStatus = 'delivered';
+                  deliveryClaim.emailSentAt = new Date();
+                  results.emailsSent++;
+                } else {
+                  deliveryClaim.emailStatus = 'failed';
+                  deliveryClaim.emailError = 'Email transport unconfigured or rejected delivery';
+                }
+              } catch (emailErr) {
+                logger.warn(`Failed to dispatch quiz deadline email to ${studentEmail}: ${emailErr.message}`);
+                deliveryClaim.emailStatus = 'failed';
+                deliveryClaim.emailError = emailErr.message;
+              }
+            } else {
+              deliveryClaim.emailStatus = 'skipped';
+            }
+
+            if (deliveryClaim.notificationStatus === 'delivered' || deliveryClaim.emailStatus === 'delivered') {
+              deliveryClaim.status = 'delivered';
+              results.remindersSent++;
+            } else {
+              deliveryClaim.status = 'failed';
+              deliveryClaim.errorDetails = deliveryClaim.notificationError || deliveryClaim.emailError || 'Failed to dispatch quiz reminder';
+            }
+
+            await deliveryClaim.save();
+          }
+        }
+      } catch (quizErr) {
+        logger.error(`Error processing quiz ${quiz._id} reminders: ${quizErr.message}`);
+        results.errors.push(quizErr.message);
+      }
+    }
+
     }
 
     // 4. Bounded retry of previously failed emails (maximum 3 retry attempts per reminder)

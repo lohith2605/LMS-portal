@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   MessageSquare,
   HelpCircle,
@@ -32,6 +33,8 @@ export default function CourseDiscussionForum({
   currentUser,
   initialDiscussionId,
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Navigation & View: 'list' | 'thread'
   const [activeView, setActiveView] = useState('list');
   const [selectedDiscussionId, setSelectedDiscussionId] = useState(null);
@@ -45,6 +48,12 @@ export default function CourseDiscussionForum({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [canModerate, setCanModerate] = useState(false);
+  const [isArchived, setIsArchived] = useState(false);
+
+  // Thread Reply Pagination State
+  const [replyPage, setReplyPage] = useState(1);
+  const [replyTotalPages, setReplyTotalPages] = useState(1);
+  const [replyTotalCount, setReplyTotalCount] = useState(0);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,6 +124,7 @@ export default function CourseDiscussionForum({
       setTotalCount(data.pagination?.total || 0);
       setTotalPages(data.pagination?.totalPages || 1);
       setCanModerate(Boolean(data.permissions?.canModerate));
+      setIsArchived(Boolean(data.permissions?.isArchived));
     } catch (err) {
       setError(err.normalizedMessage || 'Failed to load course discussions.');
     } finally {
@@ -128,18 +138,29 @@ export default function CourseDiscussionForum({
     }
   }, [fetchDiscussions, activeView]);
 
-  // Load Discussion Thread
-  const fetchThread = useCallback(async (discId) => {
+  // Load Discussion Thread with Reply Pagination
+  const fetchThread = useCallback(async (discId, pageNumber = 1) => {
     if (!discId) return;
     try {
       setThreadLoading(true);
       setThreadError(null);
-      const data = await discussionService.getDiscussionById(discId);
+      const data = await discussionService.getDiscussionById(discId, {
+        page: pageNumber,
+        limit: 20,
+      });
       setThreadDiscussion(data.discussion);
       setThreadReplies(data.replies || []);
+      setReplyPage(data.pagination?.page || pageNumber);
+      setReplyTotalPages(data.pagination?.totalPages || 1);
+      setReplyTotalCount(
+        data.pagination?.total ??
+        data.discussion?.replyCount ??
+        (data.replies ? data.replies.length : 0)
+      );
       setCanModerate(Boolean(data.permissions?.canModerate));
-      setEditTitle(data.discussion.title);
-      setEditBody(data.discussion.body);
+      setIsArchived(Boolean(data.permissions?.isArchived));
+      setEditTitle(data.discussion?.title || '');
+      setEditBody(data.discussion?.body || '');
     } catch (err) {
       setThreadError(err.normalizedMessage || 'Failed to load discussion thread.');
     } finally {
@@ -147,19 +168,36 @@ export default function CourseDiscussionForum({
     }
   }, []);
 
-  // Open initial discussion if deep linked via route / query param
+  // Synchronize discussionId with URL search params (supports back/forward & refresh)
   useEffect(() => {
-    if (initialDiscussionId) {
-      setSelectedDiscussionId(initialDiscussionId);
-      setActiveView('thread');
-      fetchThread(initialDiscussionId);
+    const urlDiscId = searchParams.get('discussionId') || initialDiscussionId;
+    if (urlDiscId) {
+      if (selectedDiscussionId !== urlDiscId || activeView !== 'thread') {
+        setSelectedDiscussionId(urlDiscId);
+        setActiveView('thread');
+        fetchThread(urlDiscId, 1);
+      }
+    } else {
+      if (activeView === 'thread') {
+        setActiveView('list');
+        setSelectedDiscussionId(null);
+        setThreadDiscussion(null);
+        setThreadReplies([]);
+        setIsEditingDiscussion(false);
+      }
     }
-  }, [initialDiscussionId, fetchThread]);
+  }, [searchParams, initialDiscussionId, fetchThread, selectedDiscussionId, activeView]);
 
   const openThread = (discussion) => {
-    setSelectedDiscussionId(discussion._id);
+    const discId = discussion._id || discussion;
+    setSelectedDiscussionId(discId);
     setActiveView('thread');
-    fetchThread(discussion._id);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('discussionId', discId);
+      return next;
+    });
+    fetchThread(discId, 1);
   };
 
   const backToList = () => {
@@ -168,6 +206,11 @@ export default function CourseDiscussionForum({
     setThreadDiscussion(null);
     setThreadReplies([]);
     setIsEditingDiscussion(false);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('discussionId');
+      return next;
+    });
     fetchDiscussions();
   };
 
@@ -225,7 +268,7 @@ export default function CourseDiscussionForum({
         body: replyBody.trim(),
       });
       setReplyBody('');
-      fetchThread(threadDiscussion._id);
+      fetchThread(threadDiscussion._id, replyPage);
     } catch (err) {
       setReplyError(err.normalizedMessage || 'Failed to post reply.');
     } finally {
@@ -271,7 +314,7 @@ export default function CourseDiscussionForum({
     try {
       await discussionService.togglePinDiscussion(discId);
       if (activeView === 'thread') {
-        fetchThread(discId);
+        fetchThread(discId, replyPage);
       } else {
         fetchDiscussions();
       }
@@ -285,7 +328,7 @@ export default function CourseDiscussionForum({
     try {
       await discussionService.toggleLockDiscussion(discId);
       if (activeView === 'thread') {
-        fetchThread(discId);
+        fetchThread(discId, replyPage);
       } else {
         fetchDiscussions();
       }
@@ -298,7 +341,7 @@ export default function CourseDiscussionForum({
   const handleToggleAcceptedAnswer = async (replyId) => {
     try {
       await discussionService.toggleAcceptedAnswer(threadDiscussion._id, replyId);
-      fetchThread(threadDiscussion._id);
+      fetchThread(threadDiscussion._id, replyPage);
     } catch (err) {
       alert(err.normalizedMessage || 'Failed to update accepted answer.');
     }
@@ -309,7 +352,7 @@ export default function CourseDiscussionForum({
     if (!window.confirm('Are you sure you want to delete this reply?')) return;
     try {
       await discussionService.deleteReply(threadDiscussion._id, replyId);
-      fetchThread(threadDiscussion._id);
+      fetchThread(threadDiscussion._id, replyPage);
     } catch (err) {
       alert(err.normalizedMessage || 'Failed to delete reply.');
     }
@@ -324,7 +367,7 @@ export default function CourseDiscussionForum({
       });
       setEditingReplyId(null);
       setEditReplyBody('');
-      fetchThread(threadDiscussion._id);
+      fetchThread(threadDiscussion._id, replyPage);
     } catch (err) {
       alert(err.normalizedMessage || 'Failed to update reply.');
     } finally {
@@ -581,7 +624,7 @@ export default function CourseDiscussionForum({
               <h2 className="text-sm font-bold text-primary flex items-center gap-2">
                 <span>Responses & Answers</span>
                 <span className="px-2 py-0.5 rounded-full bg-surface-subtle border border-border-subtle text-xs text-secondary">
-                  {threadReplies.length}
+                  {replyTotalCount}
                 </span>
               </h2>
             </div>
@@ -731,9 +774,43 @@ export default function CourseDiscussionForum({
               </div>
             )}
 
+            {/* Replies Pagination */}
+            {replyTotalPages > 1 && (
+              <div className="flex items-center justify-between px-3 py-2.5 bg-white border border-border-subtle rounded-2xl shadow-xs">
+                <button
+                  type="button"
+                  disabled={replyPage <= 1 || threadLoading}
+                  onClick={() => fetchThread(threadDiscussion._id, replyPage - 1)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border-subtle text-xs font-semibold text-secondary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  <ChevronLeft size={14} />
+                  <span>Previous</span>
+                </button>
+                <span className="text-xs text-secondary font-medium">
+                  Page {replyPage} of {replyTotalPages} ({replyTotalCount} total)
+                </span>
+                <button
+                  type="button"
+                  disabled={replyPage >= replyTotalPages || threadLoading}
+                  onClick={() => fetchThread(threadDiscussion._id, replyPage + 1)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border-subtle text-xs font-semibold text-secondary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  <span>Next</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Reply Composer Card */}
             <div className="bg-white border border-border-subtle rounded-2xl p-5 shadow-xs">
-              {threadDiscussion.isLocked ? (
+              {isArchived ? (
+                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>
+                    This course has been archived. Discussions are read-only and new contributions are disabled.
+                  </span>
+                </div>
+              ) : threadDiscussion.isLocked ? (
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700">
                   <Lock size={15} className="shrink-0" />
                   <span>
@@ -811,18 +888,32 @@ export default function CourseDiscussionForum({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setCreateError(null);
-            setIsCreateModalOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition cursor-pointer shadow-xs self-start sm:self-auto shrink-0"
-        >
-          <Plus size={14} />
-          <span>New Question or Topic</span>
-        </button>
+        {isArchived ? (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-800 self-start sm:self-auto shrink-0 flex items-center gap-1.5">
+            <AlertCircle size={14} />
+            <span>Archived (Read-Only)</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setCreateError(null);
+              setIsCreateModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition cursor-pointer shadow-xs self-start sm:self-auto shrink-0"
+          >
+            <Plus size={14} />
+            <span>New Question or Topic</span>
+          </button>
+        )}
       </div>
+
+      {isArchived && (
+        <div className="flex items-center gap-2 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 shadow-xs">
+          <AlertCircle size={15} className="shrink-0" />
+          <span>This course is archived. Enrolled learners can read all discussions and answers in read-only mode.</span>
+        </div>
+      )}
 
       {/* Search & Filter Controls */}
       <div className="bg-white border border-border-subtle rounded-2xl p-4 shadow-xs space-y-3">
@@ -875,6 +966,9 @@ export default function CourseDiscussionForum({
                 type="button"
                 onClick={() => {
                   setTypeFilter(t.id);
+                  if (t.id === 'discussion') {
+                    setStatusFilter('all');
+                  }
                   setPage(1);
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
@@ -895,23 +989,31 @@ export default function CourseDiscussionForum({
               { id: 'all', label: 'Any' },
               { id: 'answered', label: 'Answered' },
               { id: 'unanswered', label: 'Unanswered' },
-            ].map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(s.id);
-                  setPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  statusFilter === s.id
-                    ? 'bg-accent-blue-dark text-white'
-                    : 'bg-surface-subtle text-secondary hover:text-primary'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+            ].map((s) => {
+              const isDisabled = typeFilter === 'discussion';
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (isDisabled) return;
+                    setStatusFilter(s.id);
+                    setPage(1);
+                  }}
+                  title={isDisabled ? 'Status filter applies only to Questions' : ''}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                    isDisabled
+                      ? 'bg-surface-subtle text-tertiary opacity-40 cursor-not-allowed'
+                      : statusFilter === s.id
+                      ? 'bg-accent-blue-dark text-white cursor-pointer'
+                      : 'bg-surface-subtle text-secondary hover:text-primary cursor-pointer'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -938,19 +1040,21 @@ export default function CourseDiscussionForum({
               ? 'No topics match your active search and filter criteria. Try clearing filters.'
               : 'There are no questions or discussions posted in this course yet. Be the first to start a conversation!'}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setTypeFilter('all');
-              setStatusFilter('all');
-              setIsCreateModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition cursor-pointer"
-          >
-            <Plus size={14} />
-            <span>Ask First Question</span>
-          </button>
+          {!isArchived && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setTypeFilter('all');
+                setStatusFilter('all');
+                setIsCreateModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-black transition cursor-pointer"
+            >
+              <Plus size={14} />
+              <span>Ask First Question</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

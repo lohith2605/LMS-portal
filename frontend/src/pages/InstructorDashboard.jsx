@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
@@ -60,12 +60,18 @@ import ProfileEditModal from '../components/profile/ProfileEditModal';
 import ProfileView from '../components/profile/ProfileView';
 import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
+import InstructorAnnouncementManager from '../components/announcements/InstructorAnnouncementManager';
+import AcademicCalendar from '../components/dashboard/AcademicCalendar';
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTabState, setActiveTabState] = useState(() => searchParams.get('tab') || 'overview');
-  const activeTab = searchParams.get('tab') || activeTabState;
+  const [activeTabState, setActiveTabState] = useState(() => {
+    const tab = searchParams.get('tab');
+    if (!tab && searchParams.get('assignmentId')) return 'assignments';
+    return tab || 'overview';
+  });
+  const activeTab = searchParams.get('tab') || (searchParams.get('assignmentId') ? 'assignments' : activeTabState);
 
   const setActiveTab = useCallback((tabId) => {
     setActiveTabState(tabId);
@@ -305,6 +311,35 @@ export default function InstructorDashboard() {
       fetchLearners(selectedLearnerCourse, learnerSearchQuery);
     }
   }, [activeTab, selectedLearnerCourse, learnerSearchQuery, fetchLearners]);
+
+  const handledDeepLinkAssignmentRef = useRef(null);
+
+  useEffect(() => {
+    const targetAssignmentId = searchParams.get('assignmentId');
+    if (!targetAssignmentId) {
+      handledDeepLinkAssignmentRef.current = null;
+      return;
+    }
+
+    if (handledDeepLinkAssignmentRef.current === targetAssignmentId) {
+      return;
+    }
+
+    if (activeTab === 'assignments' && !assignmentsLoading && courseAssignments.length > 0) {
+      const found = courseAssignments.find(
+        (a) => (a._id || a.id)?.toString() === targetAssignmentId.toString()
+      );
+      if (found) {
+        handledDeepLinkAssignmentRef.current = targetAssignmentId;
+        setSelectedAssignmentId(found._id || found.id);
+        const cid = typeof found.course === 'object' ? found.course?._id : found.course;
+        if (cid) setAssignmentCourseId(cid);
+        setAssignmentStudioModalOpen(true);
+      } else {
+        handledDeepLinkAssignmentRef.current = targetAssignmentId;
+      }
+    }
+  }, [searchParams, activeTab, assignmentsLoading, courseAssignments]);
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Educator';
   const isApproved = user?.accountStatus === 'active' && data?.isApproved !== false;
@@ -2064,38 +2099,26 @@ export default function InstructorDashboard() {
             </div>
           )}
 
+          {/* TAB: CALENDAR */}
+          {activeTab === 'calendar' && (
+            <AcademicCalendar
+              isInstructor={true}
+              onSelectAssignment={(item) => {
+                if (item.type === 'quiz') {
+                  setActiveTab('assessments');
+                } else {
+                  setSelectedAssignmentId(item.id || item._id);
+                  const cid = typeof item.course === 'object' ? item.course?._id : item.course;
+                  if (cid) setAssignmentCourseId(cid);
+                  setAssignmentStudioModalOpen(true);
+                }
+              }}
+            />
+          )}
+
           {/* TAB: ANNOUNCEMENTS */}
           {activeTab === 'announcements' && (
-            <div className="space-y-6">
-              <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                <h2 className="text-base font-bold text-primary mb-1">
-                  Educator Guidelines & Announcements
-                </h2>
-                <p className="text-xs text-secondary">
-                  Teaching standards, curriculum quality benchmarks, and platform feature releases.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {data?.announcements?.map((ann) => (
-                  <div
-                    key={ann.id}
-                    className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40">
-                        {ann.tag}
-                      </span>
-                      <span className="text-xs text-tertiary">{ann.date}</span>
-                    </div>
-                    <h3 className="text-sm font-bold text-primary mb-1">{ann.title}</h3>
-                    <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                      {ann.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <InstructorAnnouncementManager courses={data?.courses || []} />
           )}
 
           {/* TAB: PROFILE */}
@@ -2296,12 +2319,22 @@ export default function InstructorDashboard() {
           onClose={() => {
             setAssignmentStudioModalOpen(false);
             setSelectedAssignmentId(null);
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('assignmentId');
+              return next;
+            }, { replace: true });
           }}
           onSaved={() => {
             setAssignmentStudioModalOpen(false);
             setSelectedAssignmentId(null);
             fetchAssignments(selectedAssignmentCourse);
             fetchInstructorData();
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('assignmentId');
+              return next;
+            }, { replace: true });
           }}
         />
       )}

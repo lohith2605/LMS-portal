@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Eye,
   Loader2,
+  Megaphone,
 } from 'lucide-react';
 import {
   courseService,
@@ -34,6 +35,7 @@ import {
 import AssignmentSubmissionModal from '../components/dashboard/AssignmentSubmissionModal';
 import { useAuth } from '../context/useAuth';
 import CourseDiscussionForum from '../components/dashboard/CourseDiscussionForum';
+import CourseAnnouncementSection from '../components/announcements/CourseAnnouncementSection';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function CoursePlayerPage() {
@@ -152,11 +154,33 @@ export default function CoursePlayerPage() {
     );
   }, [setSearchParams]);
 
+  const handleOpenAnnouncements = useCallback(() => {
+    setActiveView('announcements');
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('view', 'announcements');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
+
   // Sync activeView with URL query params on navigation / back-forward
   useEffect(() => {
     const view = searchParams.get('view');
     if (view === 'discussions') {
       setActiveView('discussions');
+    } else if (view === 'announcements') {
+      setActiveView('announcements');
+    } else if (view === 'completion') {
+      setActiveView('completion');
+    } else if (!view) {
+      if (searchParams.get('quizId')) {
+        setActiveView('quiz');
+      } else if (searchParams.get('lesson')) {
+        setActiveView('lesson');
+      }
     }
   }, [searchParams]);
 
@@ -374,6 +398,16 @@ export default function CoursePlayerPage() {
     setSelectedAnswers({});
     setQuizError(null);
     if (window.innerWidth < 768) setSidebarOpen(false);
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('view');
+        next.set('quizId', quiz._id?.toString() || quiz.id);
+        return next;
+      },
+      { replace: true }
+    );
 
     try {
       setQuizDetailsLoading(true);
@@ -775,6 +809,7 @@ export default function CoursePlayerPage() {
               {activeView === 'quiz' && `Assessment • ${activeQuiz?.title || 'Quiz'}`}
               {activeView === 'completion' && 'Course Completion & Verified Certificate'}
               {activeView === 'discussions' && 'Course Discussion Forum & Q&A'}
+              {activeView === 'announcements' && 'Course Announcements & Bulletins'}
             </p>
           </div>
         </div>
@@ -804,6 +839,19 @@ export default function CoursePlayerPage() {
           >
             <MessageSquare size={14} className="text-cobalt" />
             <span className="hidden sm:inline">Q&A Forum</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenAnnouncements}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              activeView === 'announcements'
+                ? 'bg-cobalt-soft text-cobalt border border-cobalt-border'
+                : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
+            }`}
+          >
+            <Megaphone size={14} className="text-cobalt" />
+            <span className="hidden sm:inline">Announcements</span>
           </button>
 
           <button
@@ -1032,6 +1080,30 @@ export default function CoursePlayerPage() {
               </button>
             </div>
 
+            {/* COURSE ANNOUNCEMENTS */}
+            <div className="py-2 border-t border-border-subtle">
+              <button
+                type="button"
+                onClick={handleOpenAnnouncements}
+                className={`w-full px-4 py-2.5 flex items-center justify-between text-left transition cursor-pointer ${
+                  activeView === 'announcements'
+                    ? 'bg-cobalt-soft text-cobalt font-semibold border-r-2 border-cobalt'
+                    : 'hover:bg-surface-subtle text-secondary'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Megaphone
+                    size={14}
+                    className={activeView === 'announcements' ? 'text-cobalt' : 'text-tertiary'}
+                  />
+                  <span className="text-xs">Course Announcements</span>
+                </div>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-subtle text-secondary border border-border-subtle">
+                  Notices
+                </span>
+              </button>
+            </div>
+
             {/* COURSE ASSIGNMENTS & DELIVERABLES */}
             {courseAssignments && courseAssignments.length > 0 && (
               <div className="py-3 border-t border-border-subtle">
@@ -1117,6 +1189,11 @@ export default function CoursePlayerPage() {
                 currentUser={user}
                 initialDiscussionId={searchParams.get('discussionId')}
               />
+            )}
+
+            {/* VIEW 5: COURSE ANNOUNCEMENTS & NOTICES */}
+            {activeView === 'announcements' && (
+              <CourseAnnouncementSection course={course} />
             )}
 
             {/* VIEW 1: LESSON CONTENT */}

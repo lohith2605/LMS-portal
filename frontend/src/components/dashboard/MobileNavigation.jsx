@@ -52,6 +52,7 @@ export default function MobileNavigation({
           { id: 'approvals', label: 'Instructor Approvals', icon: ShieldAlert },
           { id: 'users', label: 'User Directory', icon: Users },
           { id: 'moderation', label: 'Course Moderation', icon: Library },
+          { id: 'announcements', label: 'Platform Announcements', icon: Megaphone },
         ];
         break;
       case 'instructor':

@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   ChevronRight,
+  Megaphone,
 } from 'lucide-react';
 
 const getToastIconInfo = (type) => {
@@ -31,12 +32,19 @@ const getToastIconInfo = (type) => {
         bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         badge: 'Graded',
       };
+    case 'course_enrolled':
+      return {
+        icon: Award,
+        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        badge: 'Enrollment',
+      };
     case 'assignment_submitted':
       return {
         icon: FileText,
         bg: 'bg-amber-50 text-amber-700 border-amber-200',
         badge: 'Submission',
       };
+    case 'discussion_created':
     case 'discussion_reply':
       return {
         icon: MessageSquare,
@@ -60,6 +68,25 @@ const getToastIconInfo = (type) => {
         icon: Clock,
         bg: 'bg-rose-50 text-rose-700 border-rose-200',
         badge: 'Deadline Alert',
+      };
+    case 'assignment_rescheduled':
+    case 'quiz_rescheduled':
+      return {
+        icon: Clock,
+        bg: 'bg-blue-50 text-blue-700 border-blue-200',
+        badge: 'Deadline Updated',
+      };
+    case 'course_announcement':
+      return {
+        icon: Megaphone,
+        bg: 'bg-amber-50 text-amber-800 border-amber-200',
+        badge: 'Course Announcement',
+      };
+    case 'platform_announcement':
+      return {
+        icon: Megaphone,
+        bg: 'bg-rose-50 text-rose-800 border-rose-200',
+        badge: 'Platform Notice',
       };
     default:
       return {
@@ -109,7 +136,7 @@ function ToastItem({ toast, onDismiss, onNavigate }) {
       return;
     }
     if (toast.link && onNavigate) {
-      onNavigate(toast.link);
+      onNavigate(toast.link, toast.id);
     }
     onDismiss(toast.id);
   };

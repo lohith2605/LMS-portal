@@ -8,6 +8,7 @@ const {
   sendPaymentReceiptEmail,
   sendInstructorEnrollmentNotificationEmail,
 } = require('../services/emailService');
+const notificationService = require('../services/notificationService');
 const { getRazorpayInstance } = require('../config/razorpay');
 const { getClientBaseUrl } = require('../utils/authUtils');
 const { logger } = require('../utils/logger');
@@ -385,6 +386,48 @@ const verifyPayment = async (req, res) => {
       }
 
       await payment.save();
+
+      // 3. Real-time & in-app notifications for successful paid enrollment
+      try {
+        // Notify Student
+        await notificationService.createNotification({
+          recipient: studentId,
+          type: 'course_enrolled',
+          title: 'Course Enrollment Confirmed!',
+          message: `Your payment was successful and you are now enrolled in "${course ? course.title : 'the course'}".`,
+          link: course && course.slug ? `/courses/${course.slug}/learn` : `/courses/${payment.course}/learn`,
+          metadata: {
+            courseId: payment.course,
+            enrollmentId: enrollment._id,
+            paymentId: payment._id,
+            enrollmentType: 'paid',
+            amount: payment.amount,
+          },
+        });
+
+        // Notify Instructor (if not self-enrollment)
+        const instructorId = course && course.instructor ? (course.instructor._id || course.instructor).toString() : '';
+        if (instructorId && instructorId !== studentId.toString()) {
+          const studentName = student ? student.name : 'A student';
+          await notificationService.createNotification({
+            recipient: instructorId,
+            type: 'course_enrolled',
+            title: 'New Student Enrolled',
+            message: `${studentName} purchased and enrolled in your course "${course ? course.title : 'Course'}".`,
+            link: '/instructor/dashboard',
+            metadata: {
+              courseId: payment.course,
+              studentId,
+              enrollmentId: enrollment._id,
+              paymentId: payment._id,
+              enrollmentType: 'paid',
+              amount: payment.amount,
+            },
+          });
+        }
+      } catch (inAppErr) {
+        logger.warn(`Failed to dispatch in-app enrollment notifications: ${inAppErr.message}`);
+      }
     } catch (notifErr) {
       logger.warn(`Notification processing error for payment ${payment._id}: ${notifErr.message}`);
     }

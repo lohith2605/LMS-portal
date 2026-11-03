@@ -16,6 +16,7 @@ const {
   restoreReview,
 } = require('../controllers/reviewController');
 const { getAdminAnalytics } = require('../controllers/analyticsController');
+const { createPlatformAnnouncement } = require('../controllers/announcementController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // All admin routes require authenticated session with admin role
@@ -40,6 +41,9 @@ router.patch('/courses/:id/reject', rejectCourse);
 
 // User management
 router.get('/users', getUsers);
+
+// Platform Announcements
+router.post('/announcements', createPlatformAnnouncement);
 
 // Phase 12: Review Moderation Queue & Actions
 router.get('/reviews', getAdminReviews);

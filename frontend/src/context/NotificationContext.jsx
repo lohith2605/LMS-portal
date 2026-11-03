@@ -15,7 +15,11 @@ export function NotificationProvider({ children }) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [toasts, setToasts] = useState([]);
 
@@ -25,34 +29,6 @@ export function NotificationProvider({ children }) {
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
-
-  const handleToastNavigate = useCallback((link) => {
-    if (link) {
-      navigate(link);
-    }
-  }, [navigate]);
-
-  // Listen for desktop notification navigation events relayed by Service Worker
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-
-    registerNotificationServiceWorker();
-
-    if (typeof navigator.serviceWorker.startMessages === 'function') {
-      navigator.serviceWorker.startMessages();
-    }
-
-    const handleServiceWorkerMessage = (event) => {
-      if (event.data?.type === 'NOTIFICATION_NAVIGATE' && event.data.link) {
-        handleToastNavigate(event.data.link);
-      }
-    };
-
-    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-    return () => {
-      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
-    };
-  }, [handleToastNavigate]);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user) return;
@@ -66,14 +42,65 @@ export function NotificationProvider({ children }) {
     }
   }, [user]);
 
+  const markAsRead = useCallback(async (id) => {
+    if (!id) return;
+    const idStr = String(id);
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (String(n._id) === idStr ? { ...n, isRead: true } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
+    try {
+      await notificationService.markAsRead(idStr);
+    } catch {
+      // Fallback: sync state with server
+      fetchUnreadCount();
+    }
+  }, [fetchUnreadCount]);
+
+  const handleToastNavigate = useCallback((link, notificationId = null) => {
+    if (notificationId) {
+      markAsRead(notificationId);
+    }
+    if (link) {
+      navigate(link);
+    }
+  }, [navigate, markAsRead]);
+
+  // Listen for desktop notification navigation events relayed by Service Worker
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    registerNotificationServiceWorker();
+
+    if (typeof navigator.serviceWorker.startMessages === 'function') {
+      navigator.serviceWorker.startMessages();
+    }
+
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data?.type === 'NOTIFICATION_NAVIGATE' && event.data.link) {
+        handleToastNavigate(event.data.link, event.data.id);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, [handleToastNavigate]);
+
   const fetchNotifications = useCallback(async (params = { limit: 20 }) => {
     if (!user) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await notificationService.getNotifications(params);
+      const data = await notificationService.getNotifications({ page: 1, ...params });
       if (data && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
+        setPage(data.pagination?.page || 1);
+        setTotalPages(data.pagination?.pages || 1);
+        setTotalCount(data.pagination?.total ?? data.notifications.length);
         if (typeof data.unreadCount === 'number') {
           setUnreadCount(data.unreadCount);
         }
@@ -85,11 +112,40 @@ export function NotificationProvider({ children }) {
     }
   }, [user]);
 
+  const loadMoreNotifications = useCallback(async () => {
+    if (!user || isLoadingMore || page >= totalPages) return;
+    setIsLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const data = await notificationService.getNotifications({ page: nextPage, limit: 20 });
+      if (data && Array.isArray(data.notifications)) {
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map((n) => String(n._id)));
+          const newUnique = data.notifications.filter((n) => !existingIds.has(String(n._id)));
+          return [...prev, ...newUnique];
+        });
+        setPage(data.pagination?.page || nextPage);
+        setTotalPages(data.pagination?.pages || totalPages);
+        setTotalCount(data.pagination?.total ?? (totalCount + data.notifications.length));
+        if (typeof data.unreadCount === 'number') {
+          setUnreadCount(data.unreadCount);
+        }
+      }
+    } catch (err) {
+      setError(err.normalizedMessage || 'Failed to load more notifications');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [user, isLoadingMore, page, totalPages, totalCount]);
+
   // Connect socket and register listener when authenticated
   useEffect(() => {
     if (!user) {
       setNotifications([]);
       setUnreadCount(0);
+      setTotalCount(0);
+      setPage(1);
+      setTotalPages(1);
       setToasts([]);
       processedNotificationIdsRef.current.clear();
       initialFetchDoneRef.current = false;
@@ -128,6 +184,8 @@ export function NotificationProvider({ children }) {
         return [notif, ...prev];
       });
 
+      setTotalCount((prev) => prev + 1);
+
       // Increment unread count only for genuinely new unread notifications
       if (!notif.isRead) {
         setUnreadCount((prev) => prev + 1);
@@ -157,22 +215,6 @@ export function NotificationProvider({ children }) {
     };
   }, [user, fetchNotifications, fetchUnreadCount, handleToastNavigate]);
 
-  const markAsRead = useCallback(async (id) => {
-    if (!id) return;
-    // Optimistic update
-    setNotifications((prev) =>
-      prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-
-    try {
-      await notificationService.markAsRead(id);
-    } catch {
-      // Fallback: sync state with server
-      fetchUnreadCount();
-    }
-  }, [fetchUnreadCount]);
-
   const markAllAsRead = useCallback(async () => {
     // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
@@ -190,11 +232,17 @@ export function NotificationProvider({ children }) {
   const value = {
     notifications,
     unreadCount,
+    totalCount,
+    page,
+    totalPages,
+    hasMore: page < totalPages,
     isLoading,
+    isLoadingMore,
     error,
     toasts,
     dismissToast,
     fetchNotifications,
+    loadMoreNotifications,
     fetchUnreadCount,
     markAsRead,
     markAllAsRead,

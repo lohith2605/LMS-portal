@@ -1099,4 +1099,63 @@ export const learningActivityService = {
   },
 };
 
+export const announcementService = {
+  /**
+   * Fetch announcements visible to the current authenticated user
+   */
+  getUserAnnouncements: async (params = {}) => {
+    const res = await api.get('/announcements', { params });
+    return res.data;
+  },
+
+  /**
+   * Fetch announcements for a specific course
+   */
+  getCourseAnnouncements: async (courseId, params = {}) => {
+    const res = await api.get(`/courses/${courseId}/announcements`, { params });
+    return res.data;
+  },
+
+  /**
+   * Create a course-specific announcement (Instructor or Admin)
+   */
+  createCourseAnnouncement: async (courseId, data) => {
+    const res = await api.post(`/courses/${courseId}/announcements`, data);
+    return res.data;
+  },
+
+  /**
+   * Create a platform-wide announcement (Admin only)
+   */
+  createPlatformAnnouncement: async (data) => {
+    const res = await api.post('/admin/announcements', data);
+    return res.data;
+  },
+
+  /**
+   * Update an existing announcement (Author or Admin)
+   */
+  updateAnnouncement: async (id, data) => {
+    const res = await api.patch(`/announcements/${id}`, data);
+    return res.data;
+  },
+
+  /**
+   * Delete an announcement (Author or Admin)
+   */
+  deleteAnnouncement: async (id) => {
+    const res = await api.delete(`/announcements/${id}`);
+    return res.data;
+  },
+
+  /**
+   * Toggle pinned status of an announcement (Author or Admin)
+   */
+  togglePinAnnouncement: async (id, isPinned) => {
+    const payload = typeof isPinned === 'boolean' ? { isPinned } : {};
+    const res = await api.patch(`/announcements/${id}/pin`, payload);
+    return res.data;
+  },
+};
+
 export default api;

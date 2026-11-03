@@ -18,7 +18,20 @@ const deadlineReminderDeliverySchema = new mongoose.Schema(
     assignment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Assignment',
-      required: [true, 'Assignment reference is required'],
+      default: null,
+      required: false,
+      index: true,
+    },
+    quiz: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Quiz',
+      default: null,
+      index: true,
+    },
+    activityType: {
+      type: String,
+      enum: ['assignment', 'quiz'],
+      default: 'assignment',
       index: true,
     },
     reminderType: {
@@ -84,6 +97,13 @@ const deadlineReminderDeliverySchema = new mongoose.Schema(
 
 // Compound index for quick lookups on specific assignment reminders
 deadlineReminderDeliverySchema.index({ assignment: 1, recipient: 1, reminderType: 1 });
+deadlineReminderDeliverySchema.index({ quiz: 1, recipient: 1, reminderType: 1 });
+
+deadlineReminderDeliverySchema.pre('validate', function () {
+  if (!this.assignment && !this.quiz) {
+    throw new Error('Either assignment or quiz reference is required.');
+  }
+});
 
 const DeadlineReminderDelivery = mongoose.model(
   'DeadlineReminderDelivery',

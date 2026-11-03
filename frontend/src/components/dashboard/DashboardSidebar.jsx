@@ -41,6 +41,7 @@ export default function DashboardSidebar({
           { id: 'approvals', label: 'Instructor Approvals', icon: ShieldAlert },
           { id: 'users', label: 'User Directory', icon: Users },
           { id: 'moderation', label: 'Course Moderation', icon: Library },
+          { id: 'announcements', label: 'Platform Announcements', icon: Megaphone },
         ];
         break;
       case 'instructor':
@@ -52,6 +53,7 @@ export default function DashboardSidebar({
           { id: 'reviews', label: 'Submissions & Grading', icon: Inbox },
           { id: 'assessments', label: 'Assessments & Quizzes', icon: ListChecks },
           { id: 'learners', label: 'Enrolled Learners', icon: Users },
+          { id: 'calendar', label: 'Schedule & Calendar', icon: CalendarDays },
           { id: 'announcements', label: 'Announcements', icon: Megaphone },
         ];
         break;

@@ -31,6 +31,10 @@ const {
   deleteReview,
   getTestimonials,
 } = require('../controllers/reviewController');
+const {
+  getCourseAnnouncements,
+  createCourseAnnouncement,
+} = require('../controllers/announcementController');
 const { protect, restrictTo, optionalProtect } = require('../middleware/authMiddleware');
 
 // Public verified student testimonials (placed before :idOrSlug to prevent route capture)
@@ -72,6 +76,10 @@ router.post('/:idOrSlug/claim-certificate', protect, claimCertificate);
 
 // Course assignments
 router.get('/:idOrSlug/assignments', protect, getCourseAssignments);
+
+// Course Announcements
+router.get('/:idOrSlug/announcements', protect, getCourseAnnouncements);
+router.post('/:idOrSlug/announcements', protect, createCourseAnnouncement);
 
 // Phase 7: Course Discussion Forum & Q&A
 router.get('/:idOrSlug/discussions', protect, getCourseDiscussions);

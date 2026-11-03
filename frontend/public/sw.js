@@ -116,6 +116,7 @@ self.addEventListener('notificationclick', (event) => {
               type: 'NOTIFICATION_NAVIGATE',
               link: targetPath,
               url: targetUrl,
+              id: event.notification.data?.id,
             });
             messageSent = true;
           } catch (msgErr) {

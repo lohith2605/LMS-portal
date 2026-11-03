@@ -39,11 +39,21 @@ const STATUS_CONFIG = {
     dot: 'bg-emerald-500',
     icon: CheckCircle2,
   },
+  draft: {
+    label: 'Draft',
+    badge: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+    dot: 'bg-zinc-400',
+    icon: CalendarIcon,
+  },
 };
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) {
+export default function AcademicCalendar({
+  onOpenAssignmentSubmission = null,
+  isInstructor = false,
+  onSelectAssignment = null,
+}) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
@@ -52,6 +62,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all'); // all, due_soon, overdue, upcoming, completed
   const [selectedCourseId, setSelectedCourseId] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all'); // all, assignment, quiz
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
@@ -75,6 +86,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
         calendarService.getCalendarEvents({
           startDate: monthStartISO,
           endDate: monthEndISO,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
         calendarService.getUpcomingDeadlines({ limit: 5 }),
       ]);
@@ -110,11 +122,12 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
   // Filtered events
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
-      if (statusFilter !== 'all' && ev.status !== statusFilter) return false;
+      if (statusFilter !== 'all' && ev.status !== statusFilter && ev.publishStatus !== statusFilter) return false;
+      if (typeFilter !== 'all' && ev.type !== typeFilter) return false;
       if (selectedCourseId !== 'all' && ev.course?._id !== selectedCourseId) return false;
       return true;
     });
-  }, [events, statusFilter, selectedCourseId]);
+  }, [events, statusFilter, selectedCourseId, typeFilter]);
 
   // Month grid calculation
   const calendarGrid = useMemo(() => {
@@ -209,15 +222,17 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40">
-              Academic Planner
+              {isInstructor ? 'Educator Planner' : 'Academic Planner'}
             </span>
             <span className="text-xs text-tertiary">Real-Time Sync</span>
           </div>
           <h2 className="text-lg font-extrabold text-primary tracking-tight">
-            Course Schedule & Deadlines
+            {isInstructor ? 'Teaching Schedule & Assessment Milestones' : 'Course Schedule & Deadlines'}
           </h2>
           <p className="text-xs text-secondary mt-0.5">
-            Track assignment milestones, monitor due dates, and manage deliverables across all enrolled tracks.
+            {isInstructor
+              ? 'Track assignment deadlines, monitor quiz availability windows, and manage deliverables across all taught courses.'
+              : 'Track assignment milestones, monitor due dates, and manage deliverables across all enrolled tracks.'}
           </p>
         </div>
 
@@ -326,7 +341,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                       to={item.destinationUrl}
                       className="text-xs font-bold text-accent-blue-dark hover:underline flex items-center gap-0.5"
                     >
-                      <span>Submit</span>
+                      <span>{isInstructor ? (item.stats ? `${item.stats.totalSubmissions} Subs` : 'Manage') : (item.type === 'quiz' ? 'Take Quiz' : 'Submit')}</span>
                       <ArrowRight size={11} />
                     </Link>
                   </div>
@@ -350,7 +365,9 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
             { id: 'due_soon', label: 'Due Soon', count: events.filter((e) => e.status === 'due_soon').length },
             { id: 'overdue', label: 'Overdue', count: events.filter((e) => e.status === 'overdue').length },
             { id: 'upcoming', label: 'Upcoming', count: events.filter((e) => e.status === 'upcoming').length },
-            { id: 'completed', label: 'Completed', count: events.filter((e) => e.status === 'completed').length },
+            ...(isInstructor
+              ? [{ id: 'draft', label: 'Draft', count: events.filter((e) => e.publishStatus === 'draft').length }]
+              : [{ id: 'completed', label: 'Completed', count: events.filter((e) => e.status === 'completed').length }]),
           ].map((tab) => (
             <button
               key={tab.id}
@@ -366,6 +383,29 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
             </button>
           ))}
         </div>
+
+        {/* Type & Course Filter Controls */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <div className="flex items-center gap-1 bg-surface-subtle p-1 rounded-xl border border-border-subtle text-xs">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'assignment', label: 'Assignments' },
+              { id: 'quiz', label: 'Quizzes' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTypeFilter(t.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  typeFilter === t.id
+                    ? 'bg-white text-primary shadow-xs'
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
         {/* Course Filter Dropdown */}
         {availableCourses.length > 1 && (
@@ -384,6 +424,7 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
             </select>
           </div>
         )}
+        </div>
       </div>
 
       {/* Main Layout: Calendar Grid & Selected Day Drawer */}
@@ -586,7 +627,11 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                       <Clock size={12} className="text-tertiary" />
                       <span>Due: {dueTime}</span>
                       <span className="text-tertiary">•</span>
-                      <span>Max marks: {item.maxMarks}</span>
+                      {item.type === 'quiz' ? (
+                        <span>{item.durationMinutes ? `${item.durationMinutes} mins` : 'Untimed'} ({item.passingPercentage}% pass)</span>
+                      ) : (
+                        <span>Max marks: {item.maxMarks}</span>
+                      )}
                     </div>
 
                     {/* Submission status details if submitted */}
@@ -609,9 +654,38 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                       </div>
                     )}
 
+                    {/* Instructor submission metrics */}
+                    {isInstructor && item.stats && (
+                      <div className="p-2.5 rounded-lg bg-white border border-border-subtle mb-3 text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-tertiary">{item.type === 'quiz' ? 'Learner Attempts:' : 'Learner Submissions:'}</span>
+                          <span className="font-bold text-primary">
+                            {item.stats.totalSubmissions} turned in
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-tertiary">{item.type === 'quiz' ? 'Passed Attempts:' : 'Grading Completed:'}</span>
+                          <span className="font-bold text-emerald-700">
+                            {item.stats.gradedSubmissions} / {item.stats.totalSubmissions}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Action Link */}
                     <div className="pt-2 border-t border-border-subtle flex items-center justify-end">
-                      {onOpenAssignmentSubmission ? (
+                      {isInstructor ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onSelectAssignment) onSelectAssignment(item);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 cursor-pointer"
+                        >
+                          <span>{item.type === 'quiz' ? 'Manage Assessment' : 'Review & Manage'}</span>
+                          <ArrowRight size={12} />
+                        </button>
+                      ) : onOpenAssignmentSubmission && item.type !== 'quiz' ? (
                         <button
                           type="button"
                           onClick={() => onOpenAssignmentSubmission(item)}
@@ -623,10 +697,10 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                         >
                           <span>
                             {isCompleted
-                              ? 'View Submission & Grade'
+                              ? (item.type === 'quiz' ? 'Review Quiz' : 'View Submission & Grade')
                               : item.status === 'overdue'
                               ? 'Submit Overdue Deliverable'
-                              : 'Open Assignment'}
+                              : (item.type === 'quiz' ? 'Take Quiz' : 'Open Assignment')}
                           </span>
                           <ArrowRight size={12} />
                         </button>
@@ -641,10 +715,10 @@ export default function AcademicCalendar({ onOpenAssignmentSubmission = null }) 
                         >
                           <span>
                             {isCompleted
-                              ? 'View Submission & Grade'
+                              ? (item.type === 'quiz' ? 'Review Quiz' : 'View Submission & Grade')
                               : item.status === 'overdue'
                               ? 'Submit Overdue Deliverable'
-                              : 'Open Assignment'}
+                              : (item.type === 'quiz' ? 'Take Quiz' : 'Open Assignment')}
                           </span>
                           <ArrowRight size={12} />
                         </Link>

@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const { sendInstructorEnrollmentNotificationEmail } = require('../services/emailService');
+const notificationService = require('../services/notificationService');
 const { getClientBaseUrl } = require('../utils/authUtils');
 const { logger } = require('../utils/logger');
 
@@ -141,6 +142,44 @@ const enrollInCourse = async (req, res) => {
       } catch (notifErr) {
         logger.warn(`Notification processing error for free enrollment ${enrollment._id}: ${notifErr.message}`);
       }
+    }
+
+    // Real-time & in-app notifications for successful free enrollment
+    try {
+      // 1. Notify Student
+      await notificationService.createNotification({
+        recipient: studentId,
+        type: 'course_enrolled',
+        title: 'Course Enrollment Confirmed!',
+        message: `You have successfully enrolled in "${course.title}". Start learning now!`,
+        link: `/courses/${course.slug || course._id}/learn`,
+        metadata: {
+          courseId: course._id,
+          enrollmentId: enrollment._id,
+          enrollmentType: 'free',
+        },
+      });
+
+      // 2. Notify Instructor (if not self-enrollment)
+      const instructorId = course.instructor ? course.instructor.toString() : '';
+      if (instructorId && instructorId !== studentId.toString()) {
+        const studentName = req.user.name || 'A student';
+        await notificationService.createNotification({
+          recipient: instructorId,
+          type: 'course_enrolled',
+          title: 'New Student Enrolled',
+          message: `${studentName} enrolled in your course "${course.title}".`,
+          link: '/instructor/dashboard',
+          metadata: {
+            courseId: course._id,
+            studentId,
+            enrollmentId: enrollment._id,
+            enrollmentType: 'free',
+          },
+        });
+      }
+    } catch (inAppErr) {
+      logger.warn(`Failed to dispatch in-app enrollment notifications: ${inAppErr.message}`);
     }
 
     logger.success(`Student ${req.user.email} enrolled in course: ${course.title} (${course._id})`);

@@ -149,6 +149,11 @@ const createAssignment = async (req, res) => {
       return res.status(400).json({ error: 'A valid due date is required.' });
     }
 
+    const parsedDueDate = new Date(dueDate);
+    if (parsedDueDate.getTime() <= Date.now()) {
+      return res.status(400).json({ error: 'Assignment due date must be in the future.' });
+    }
+
     const marksNum = Number(maxMarks);
     if (isNaN(marksNum) || marksNum <= 0 || marksNum > 1000) {
       return res.status(400).json({ error: 'Maximum marks must be a positive number between 1 and 1000.' });
@@ -373,6 +378,24 @@ const updateAssignment = async (req, res) => {
     const { assignment, error, status } = await verifyInstructorAssignment(assignmentId, req.user.id, req.user.role);
     if (error) return res.status(status).json({ error });
 
+    let isDueDateChanged = false;
+    const oldDueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
+    let validatedNewDueDate = null;
+
+    if (req.body.dueDate !== undefined) {
+      validatedNewDueDate = new Date(req.body.dueDate);
+      if (isNaN(validatedNewDueDate.getTime())) {
+        return res.status(400).json({ error: 'A valid due date is required.' });
+      }
+      const isDifferent = !oldDueDate || validatedNewDueDate.getTime() !== oldDueDate.getTime();
+      if (isDifferent) {
+        if (validatedNewDueDate.getTime() <= Date.now()) {
+          return res.status(400).json({ error: 'Rescheduled due date must be in the future.' });
+        }
+        isDueDateChanged = true;
+      }
+    }
+
     const allowedUpdates = [
       'title',
       'description',
@@ -397,8 +420,8 @@ const updateAssignment = async (req, res) => {
         else if (field === 'maxMarks') {
           const marksNum = Number(req.body[field]);
           if (!isNaN(marksNum) && marksNum > 0 && marksNum <= 1000) assignment.maxMarks = marksNum;
-        } else if (field === 'dueDate' && !isNaN(new Date(req.body[field]).getTime())) {
-          assignment.dueDate = new Date(req.body[field]);
+        } else if (field === 'dueDate' && validatedNewDueDate) {
+          assignment.dueDate = validatedNewDueDate;
         } else if (field === 'submissionTypes' && Array.isArray(req.body[field]) && req.body[field].length > 0) {
           assignment.submissionTypes = req.body[field];
         } else if (field === 'allowedFileTypes' && Array.isArray(req.body[field])) {
@@ -420,6 +443,50 @@ const updateAssignment = async (req, res) => {
     });
 
     await assignment.save();
+
+    // Phase 3: Notify enrolled students if published assignment due date actually changed
+    if (assignment.status === 'published' && isDueDateChanged) {
+      try {
+        const courseId = assignment.course?._id || assignment.course;
+        const enrollments = await Enrollment.find({
+          course: courseId,
+          status: { $in: ['active', 'completed'] },
+        }).select('student');
+
+        if (enrollments && enrollments.length > 0) {
+          const formattedDate = new Date(assignment.dueDate).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+          const notifPayloads = enrollments
+            .map((enr) => ({
+              recipient: enr.student,
+              type: 'assignment_rescheduled',
+              title: 'Assignment Deadline Rescheduled',
+              message: `The deadline for "${assignment.title}" has been updated to ${formattedDate}.`,
+              link: `/student/dashboard?tab=assignments&assignmentId=${assignment._id}`,
+              metadata: {
+                assignmentId: assignment._id,
+                courseId,
+                oldDueDate,
+                newDueDate: assignment.dueDate,
+              },
+            }))
+            .filter((item) => item.recipient && item.recipient.toString() !== req.user.id);
+
+          if (notifPayloads.length > 0) {
+            await notificationService.createBatchNotifications(notifPayloads);
+          }
+        }
+      } catch (notifErr) {
+        logger.warn(`Failed to dispatch assignment rescheduled notifications: ${notifErr.message}`);
+      }
+    }
+
     return res.status(200).json({ message: 'Assignment updated successfully.', assignment });
   } catch (err) {
     logger.error(`updateAssignment error: ${err.message}`);
@@ -454,38 +521,41 @@ const publishAssignment = async (req, res) => {
       return res.status(400).json({ error: 'Assignment must have maximum marks greater than zero before publishing.' });
     }
 
+    const wasAlreadyPublished = assignment.status === 'published';
     assignment.status = 'published';
     await assignment.save();
 
-    // Real-time notification: batch notify active enrolled learners
-    try {
-      const courseId = assignment.course?._id || assignment.course;
-      const enrollments = await Enrollment.find({
-        course: courseId,
-        status: { $in: ['active', 'completed'] },
-      }).select('student');
+    // Real-time notification: batch notify active enrolled learners on fresh publication
+    if (!wasAlreadyPublished) {
+      try {
+        const courseId = assignment.course?._id || assignment.course;
+        const enrollments = await Enrollment.find({
+          course: courseId,
+          status: { $in: ['active', 'completed'] },
+        }).select('student');
 
-      if (enrollments && enrollments.length > 0) {
-        const notifPayloads = enrollments
-          .map((enr) => ({
-            recipient: enr.student,
-            type: 'assignment_published',
-            title: 'New Assignment Published',
-            message: `A new assignment "${assignment.title}" has been published in your course.`,
-            link: '/student/dashboard?tab=assignments',
-            metadata: {
-              assignmentId: assignment._id,
-              courseId,
-            },
-          }))
-          .filter((item) => item.recipient && item.recipient.toString() !== req.user.id);
+        if (enrollments && enrollments.length > 0) {
+          const notifPayloads = enrollments
+            .map((enr) => ({
+              recipient: enr.student,
+              type: 'assignment_published',
+              title: 'New Assignment Published',
+              message: `A new assignment "${assignment.title}" has been published in your course.`,
+              link: '/student/dashboard?tab=assignments',
+              metadata: {
+                assignmentId: assignment._id,
+                courseId,
+              },
+            }))
+            .filter((item) => item.recipient && item.recipient.toString() !== req.user.id);
 
-        if (notifPayloads.length > 0) {
-          await notificationService.createBatchNotifications(notifPayloads);
+          if (notifPayloads.length > 0) {
+            await notificationService.createBatchNotifications(notifPayloads);
+          }
         }
+      } catch (notifErr) {
+        logger.warn(`Failed to dispatch assignment published notifications: ${notifErr.message}`);
       }
-    } catch (notifErr) {
-      logger.warn(`Failed to dispatch assignment published notifications: ${notifErr.message}`);
     }
 
     logger.success(`Assignment published: "${assignment.title}" by ${req.user.email}`);

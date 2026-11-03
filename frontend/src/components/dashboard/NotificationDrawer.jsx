@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Monitor,
   AlertCircle,
+  Megaphone,
 } from 'lucide-react';
 import { useNotifications } from '../../context/useNotifications';
 import {
@@ -66,6 +67,13 @@ const getNotificationIcon = (type) => {
         bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         label: 'Graded',
       };
+    case 'course_enrolled':
+      return {
+        icon: Award,
+        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        label: 'Enrollment',
+      };
+    case 'discussion_created':
     case 'discussion_reply':
       return {
         icon: MessageSquare,
@@ -90,6 +98,25 @@ const getNotificationIcon = (type) => {
         bg: 'bg-amber-50 text-amber-700 border-amber-200',
         label: 'Deadline Reminder',
       };
+    case 'assignment_rescheduled':
+    case 'quiz_rescheduled':
+      return {
+        icon: Calendar,
+        bg: 'bg-blue-50 text-blue-700 border-blue-200',
+        label: 'Deadline Rescheduled',
+      };
+    case 'course_announcement':
+      return {
+        icon: Megaphone,
+        bg: 'bg-amber-50 text-amber-800 border-amber-200',
+        label: 'Course Notice',
+      };
+    case 'platform_announcement':
+      return {
+        icon: Megaphone,
+        bg: 'bg-rose-50 text-rose-800 border-rose-200',
+        label: 'Platform Notice',
+      };
     default:
       return {
         icon: Bell,
@@ -104,6 +131,10 @@ export default function NotificationDrawer({ isOpen, onClose, announcements = []
   const {
     notifications,
     unreadCount,
+    totalCount,
+    hasMore,
+    isLoadingMore,
+    loadMoreNotifications,
     isLoading,
     error,
     fetchNotifications,
@@ -244,7 +275,7 @@ export default function NotificationDrawer({ isOpen, onClose, announcements = []
                     : 'text-secondary hover:text-primary'
                 }`}
               >
-                All ({notifications.length})
+                All ({totalCount || notifications.length})
               </button>
               <button
                 type="button"
@@ -349,86 +380,108 @@ export default function NotificationDrawer({ isOpen, onClose, announcements = []
                 ))}
               </div>
             ) : displayedNotifications.length > 0 ? (
-              displayedNotifications.map((item) => {
-                const iconInfo = getNotificationIcon(item.type);
-                const IconComponent = iconInfo.icon;
-                const isUnread = !item.isRead;
+              <>
+                {displayedNotifications.map((item) => {
+                  const iconInfo = getNotificationIcon(item.type);
+                  const IconComponent = iconInfo.icon;
+                  const isUnread = !item.isRead;
 
-                return (
-                  <div
-                    key={item._id}
-                    onClick={() => handleNotificationClick(item)}
-                    className={`group relative p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
-                      isUnread
-                        ? 'bg-blue-50/40 border-blue-200/80 hover:bg-blue-50/70 shadow-xs'
-                        : 'bg-white border-border-subtle hover:bg-surface-subtle'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Icon */}
-                      <div
-                        className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 ${iconInfo.bg}`}
-                      >
-                        <IconComponent size={15} />
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span
-                            className={`text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded border ${iconInfo.bg}`}
-                          >
-                            {iconInfo.label}
-                          </span>
-                          <span className="text-[10px] text-tertiary font-medium flex items-center gap-1 shrink-0">
-                            <Calendar size={10} />
-                            {formatRelativeTime(item.createdAt)}
-                          </span>
+                  return (
+                    <div
+                      key={item._id}
+                      onClick={() => handleNotificationClick(item)}
+                      className={`group relative p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
+                        isUnread
+                          ? 'bg-blue-50/40 border-blue-200/80 hover:bg-blue-50/70 shadow-xs'
+                          : 'bg-white border-border-subtle hover:bg-surface-subtle'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Icon */}
+                        <div
+                          className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 ${iconInfo.bg}`}
+                        >
+                          <IconComponent size={15} />
                         </div>
 
-                        <h3
-                          className={`text-xs font-bold leading-snug mb-0.5 ${
-                            isUnread ? 'text-primary' : 'text-primary/90'
-                          }`}
-                        >
-                          {item.title}
-                        </h3>
-
-                        <p className="text-xs text-secondary leading-relaxed line-clamp-2">
-                          {item.message}
-                        </p>
-
-                        {item.link && (
-                          <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-accent-blue-dark group-hover:underline">
-                            <span>View details</span>
-                            <ChevronRight size={12} />
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span
+                              className={`text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded border ${iconInfo.bg}`}
+                            >
+                              {iconInfo.label}
+                            </span>
+                            <span className="text-[10px] text-tertiary font-medium flex items-center gap-1 shrink-0">
+                              <Calendar size={10} />
+                              {formatRelativeTime(item.createdAt)}
+                            </span>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Read indicator / Action */}
-                      <div className="flex flex-col items-center gap-1 shrink-0 pt-1">
-                        {isUnread && (
-                          <span
-                            className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"
-                            title="Unread"
-                          />
-                        )}
-                        {isUnread && (
-                          <button
-                            type="button"
-                            onClick={(e) => handleMarkItemRead(e, item._id)}
-                            title="Mark as read"
-                            className="p-1 rounded text-secondary hover:text-primary hover:bg-white transition-colors cursor-pointer"
+                          <h3
+                            className={`text-xs font-bold leading-snug mb-0.5 ${
+                              isUnread ? 'text-primary' : 'text-primary/90'
+                            }`}
                           >
-                            <CheckCheck size={13} />
-                          </button>
-                        )}
+                            {item.title}
+                          </h3>
+
+                          <p className="text-xs text-secondary leading-relaxed line-clamp-2">
+                            {item.message}
+                          </p>
+
+                          {item.link && (
+                            <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-accent-blue-dark group-hover:underline">
+                              <span>View details</span>
+                              <ChevronRight size={12} />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Read indicator / Action */}
+                        <div className="flex flex-col items-center gap-1 shrink-0 pt-1">
+                          {isUnread && (
+                            <span
+                              className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"
+                              title="Unread"
+                            />
+                          )}
+                          {isUnread && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleMarkItemRead(e, item._id)}
+                              title="Mark as read"
+                              className="p-1 rounded text-secondary hover:text-primary hover:bg-white transition-colors cursor-pointer"
+                            >
+                              <CheckCheck size={13} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+
+                {filter === 'all' && hasMore && (
+                  <div className="pt-2 pb-1 text-center">
+                    <button
+                      type="button"
+                      onClick={loadMoreNotifications}
+                      disabled={isLoadingMore}
+                      className="w-full py-2 px-3 text-xs font-semibold rounded-xl border border-border-subtle bg-white hover:bg-surface-subtle text-primary transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <RefreshCw size={13} className="animate-spin" />
+                          <span>Loading more...</span>
+                        </>
+                      ) : (
+                        <span>Load More Notifications</span>
+                      )}
+                    </button>
                   </div>
-                );
-              })
+                )}
+              </>
             ) : announcements && announcements.length > 0 && filter === 'all' ? (
               // Announcements fallback if no notifications exist yet
               <div className="space-y-3">
@@ -437,14 +490,16 @@ export default function NotificationDrawer({ isOpen, onClose, announcements = []
                 </div>
                 {announcements.map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id || item.id}
                     className="p-4 rounded-2xl border border-border-subtle bg-surface-subtle"
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40">
-                        {item.tag || 'Announcement'}
+                        {item.tag || (item.scope === 'course' ? 'Course Notice' : 'System Notice')}
                       </span>
-                      <span className="text-[11px] text-tertiary">{item.date}</span>
+                      <span className="text-[11px] text-tertiary">
+                        {item.date || (item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '')}
+                      </span>
                     </div>
                     <h3 className="text-xs font-bold text-primary mb-1">{item.title}</h3>
                     <p className="text-xs text-secondary leading-relaxed">{item.content}</p>

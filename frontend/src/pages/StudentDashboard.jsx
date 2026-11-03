@@ -60,6 +60,7 @@ import ProfileEditModal from '../components/profile/ProfileEditModal';
 import ProfileView from '../components/profile/ProfileView';
 import StudentAnalyticsView from '../components/analytics/StudentAnalyticsView';
 import StudentStreakWidget from '../components/dashboard/learningStreak/StudentStreakWidget';
+import StudentAnnouncementFeed from '../components/announcements/StudentAnnouncementFeed';
 
 
 const EXPLORE_CATEGORIES = ['All', 'Development', 'Design', 'Data', 'Business', 'Other'];
@@ -82,10 +83,11 @@ export default function StudentDashboard() {
   const [activeTabState, setActiveTabState] = useState(() => {
     const tab = searchParams.get('tab');
     if (tab === 'progress') return 'analytics';
+    if (!tab && searchParams.get('assignmentId')) return 'assignments';
     return tab || 'overview';
   });
   const rawTab = searchParams.get('tab');
-  const activeTab = rawTab === 'progress' ? 'analytics' : (rawTab || activeTabState);
+  const activeTab = rawTab === 'progress' ? 'analytics' : (rawTab || (searchParams.get('assignmentId') ? 'assignments' : activeTabState));
 
   const setActiveTab = useCallback((tabId) => {
     const targetTab = tabId === 'progress' ? 'analytics' : tabId;
@@ -349,6 +351,33 @@ export default function StudentDashboard() {
       fetchAssignments();
     }
   }, [activeTab, fetchAssignments]);
+
+  const handledDeepLinkAssignmentRef = useRef(null);
+
+  useEffect(() => {
+    const targetAssignmentId = searchParams.get('assignmentId');
+    if (!targetAssignmentId) {
+      handledDeepLinkAssignmentRef.current = null;
+      return;
+    }
+
+    if (handledDeepLinkAssignmentRef.current === targetAssignmentId) {
+      return;
+    }
+
+    if (!assignmentsLoading && assignments.length > 0) {
+      const found = assignments.find(
+        (a) => (a.id || a._id)?.toString() === targetAssignmentId.toString()
+      );
+      if (found) {
+        handledDeepLinkAssignmentRef.current = targetAssignmentId;
+        setSelectedAssignmentForSubmission(found);
+        setSubmissionModalOpen(true);
+      } else {
+        handledDeepLinkAssignmentRef.current = targetAssignmentId;
+      }
+    }
+  }, [searchParams, assignments, assignmentsLoading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -729,35 +758,126 @@ export default function StudentDashboard() {
               {/* Upcoming Deadlines & Recent Activity Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Upcoming Deadlines */}
-                <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
-                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
-                    <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-accent-blue-dark" />
-                      <h3 className="text-sm font-bold text-primary">Upcoming Deadlines</h3>
+                <div className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-accent-blue-dark" />
+                        <h3 className="text-sm font-bold text-primary">Upcoming Deadlines</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-secondary">
+                          {data?.upcomingDeadlines?.length || 0} scheduled
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('calendar')}
+                          className="text-xs font-bold text-accent-blue-dark hover:underline flex items-center gap-0.5 cursor-pointer ml-1"
+                        >
+                          <span>Calendar</span>
+                          <ArrowRight size={11} />
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-[11px] font-semibold text-secondary">
-                      {data?.upcomingDeadlines?.length || 0} scheduled
-                    </span>
-                  </div>
 
-                  {data?.upcomingDeadlines && data.upcomingDeadlines.length > 0 ? (
-                    <div className="space-y-3">
-                      {data.upcomingDeadlines.map((item, idx) => (
-                        <div key={idx} className="p-3 bg-surface-subtle rounded-xl text-xs">
-                          <span className="font-semibold text-primary">{item.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-xs font-semibold text-primary mb-1">
-                        No upcoming deadlines
-                      </p>
-                      <p className="text-[11px] text-secondary max-w-xs mx-auto">
-                        You have no pending assignments due. Deadlines will be scheduled when you enroll in cohorts.
-                      </p>
-                    </div>
-                  )}
+                    {loading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="p-3 bg-surface-subtle/60 rounded-xl animate-pulse space-y-2">
+                            <div className="h-3.5 w-3/4 bg-gray-200 rounded" />
+                            <div className="h-3 w-1/2 bg-gray-200 rounded" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : data?.upcomingDeadlines && data.upcomingDeadlines.length > 0 ? (
+                      <div className="space-y-3">
+                        {data.upcomingDeadlines.map((item) => {
+                          const now = Date.now();
+                          const due = item.dueDate ? new Date(item.dueDate).getTime() : null;
+                          const diffHours = due ? Math.round((due - now) / (1000 * 60 * 60)) : 999;
+                          let badgeLabel = 'Upcoming';
+                          let badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                          if (diffHours <= 0) {
+                            badgeLabel = 'Overdue';
+                            badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                          } else if (diffHours <= 24) {
+                            badgeLabel = diffHours === 1 ? 'Due in 1 hour' : `Due in ${diffHours}h`;
+                            badgeColor = 'bg-amber-50 text-amber-800 border-amber-200';
+                          } else if (diffHours <= 72) {
+                            const days = Math.ceil(diffHours / 24);
+                            badgeLabel = `Due in ${days}d`;
+                            badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                          }
+
+                          const formattedDate = item.dueDate
+                            ? `${new Date(item.dueDate).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                              })} at ${new Date(item.dueDate).toLocaleTimeString(undefined, {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}`
+                            : 'No due date';
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="p-3.5 bg-surface-subtle/80 hover:bg-surface-subtle border border-border-subtle rounded-xl flex items-center justify-between gap-3 transition"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-[10px] font-bold text-tertiary truncate">
+                                    {item.courseTitle || 'Course Deliverable'}
+                                  </span>
+                                  <span
+                                    className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${badgeColor}`}
+                                  >
+                                    {badgeLabel}
+                                  </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-primary truncate mb-1">
+                                  {item.title}
+                                </h4>
+                                <div className="flex items-center gap-1.5 text-[11px] text-secondary">
+                                  <Clock size={11} className="text-tertiary shrink-0" />
+                                  <span>{formattedDate}</span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('assignments');
+                                  setSearchParams(
+                                    (prev) => {
+                                      const next = new URLSearchParams(prev);
+                                      next.set('tab', 'assignments');
+                                      next.set('assignmentId', item.id);
+                                      return next;
+                                    },
+                                    { replace: true }
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-2xs shrink-0 cursor-pointer"
+                              >
+                                <span>Submit</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-xs font-semibold text-primary mb-1">
+                          No upcoming deadlines
+                        </p>
+                        <p className="text-[11px] text-secondary max-w-xs mx-auto">
+                          You have no pending assignments due. Deadlines will be scheduled when you enroll in cohorts.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Recent Activity */}
@@ -1755,30 +1875,9 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              {/* System Announcements */}
-              <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-tertiary px-1">
-                  System Announcements
-                </h3>
-                <div className="space-y-4">
-                  {data?.announcements?.map((ann) => (
-                    <div
-                      key={ann.id}
-                      className="bg-white border border-border-subtle rounded-2xl p-6 shadow-xs"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-accent-sage-pale text-accent-sage-dark border border-[#A8B5A0]/40">
-                          {ann.tag}
-                        </span>
-                        <span className="text-xs text-tertiary">{ann.date}</span>
-                      </div>
-                      <h3 className="text-sm font-bold text-primary mb-1.5">{ann.title}</h3>
-                      <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                        {ann.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+              {/* System and Course Announcements Feed */}
+              <div className="pt-2">
+                <StudentAnnouncementFeed />
               </div>
             </div>
           )}
@@ -1958,12 +2057,22 @@ export default function StudentDashboard() {
           onClose={() => {
             setSubmissionModalOpen(false);
             setSelectedAssignmentForSubmission(null);
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('assignmentId');
+              return next;
+            }, { replace: true });
           }}
           onSubmitted={() => {
             setSubmissionModalOpen(false);
             setSelectedAssignmentForSubmission(null);
             fetchAssignments();
             fetchStudentData();
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('assignmentId');
+              return next;
+            }, { replace: true });
           }}
         />
       )}

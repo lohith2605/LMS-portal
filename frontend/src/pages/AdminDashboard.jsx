@@ -33,6 +33,7 @@ import ErrorState from '../components/dashboard/ErrorState';
 import AdminAnalyticsView from '../components/analytics/AdminAnalyticsView';
 import MfaSettingsCard from '../components/security/MfaSettingsCard';
 import ActiveSessionsCard from '../components/security/ActiveSessionsCard';
+import AdminAnnouncementManager from '../components/announcements/AdminAnnouncementManager';
 
 const ADMIN_ANNOUNCEMENTS = [
   {
@@ -1395,6 +1396,11 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB: PLATFORM ANNOUNCEMENTS */}
+          {activeTab === 'announcements' && (
+            <AdminAnnouncementManager />
           )}
 
           {/* TAB: SECURITY & PASSWORD MANAGEMENT */}

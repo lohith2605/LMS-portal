@@ -72,12 +72,38 @@ const createQuiz = async (req, res) => {
       passingPercentage,
       maxAttempts,
       isRequiredForCompletion,
+      availableFrom,
+      dueDate,
       sectionId,
       questions,
     } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Quiz title is required.' });
+    }
+
+    let parsedAvailableFrom = null;
+    let parsedDueDate = null;
+
+    if (availableFrom) {
+      parsedAvailableFrom = new Date(availableFrom);
+      if (isNaN(parsedAvailableFrom.getTime())) {
+        return res.status(400).json({ error: 'A valid availability start date is required.' });
+      }
+    }
+
+    if (dueDate) {
+      parsedDueDate = new Date(dueDate);
+      if (isNaN(parsedDueDate.getTime())) {
+        return res.status(400).json({ error: 'A valid due date is required.' });
+      }
+      if (parsedDueDate.getTime() <= Date.now()) {
+        return res.status(400).json({ error: 'Quiz due date must be in the future.' });
+      }
+    }
+
+    if (parsedAvailableFrom && parsedDueDate && parsedDueDate < parsedAvailableFrom) {
+      return res.status(400).json({ error: 'Quiz due date cannot be earlier than availability start date.' });
     }
 
     const newQuiz = await Quiz.create({
@@ -91,6 +117,8 @@ const createQuiz = async (req, res) => {
       passingPercentage: typeof passingPercentage === 'number' ? Math.min(100, Math.max(1, passingPercentage)) : 70,
       maxAttempts: typeof maxAttempts === 'number' ? Math.max(0, maxAttempts) : 3,
       isRequiredForCompletion: isRequiredForCompletion !== false,
+      availableFrom: parsedAvailableFrom,
+      dueDate: parsedDueDate,
       status: 'draft',
       questions: Array.isArray(questions) ? questions : [],
     });
@@ -187,6 +215,8 @@ const updateQuiz = async (req, res) => {
       passingPercentage,
       maxAttempts,
       isRequiredForCompletion,
+      availableFrom,
+      dueDate,
       sectionId,
       questions,
     } = req.body;
@@ -198,6 +228,44 @@ const updateQuiz = async (req, res) => {
     if (passingPercentage !== undefined) quiz.passingPercentage = Math.min(100, Math.max(1, passingPercentage));
     if (maxAttempts !== undefined) quiz.maxAttempts = Math.max(0, maxAttempts);
     if (isRequiredForCompletion !== undefined) quiz.isRequiredForCompletion = Boolean(isRequiredForCompletion);
+
+    let isDueDateChanged = false;
+    const oldDueDate = quiz.dueDate ? new Date(quiz.dueDate) : null;
+
+    if (availableFrom !== undefined) {
+      if (!availableFrom) {
+        quiz.availableFrom = null;
+      } else {
+        const d = new Date(availableFrom);
+        if (isNaN(d.getTime())) {
+          return res.status(400).json({ error: 'A valid availability start date is required.' });
+        }
+        quiz.availableFrom = d;
+      }
+    }
+
+    if (dueDate !== undefined) {
+      if (!dueDate) {
+        quiz.dueDate = null;
+      } else {
+        const d = new Date(dueDate);
+        if (isNaN(d.getTime())) {
+          return res.status(400).json({ error: 'A valid due date is required.' });
+        }
+        const isDifferent = !oldDueDate || d.getTime() !== oldDueDate.getTime();
+        if (isDifferent) {
+          if (d.getTime() <= Date.now()) {
+            return res.status(400).json({ error: 'Rescheduled quiz due date must be in the future.' });
+          }
+          isDueDateChanged = true;
+        }
+        quiz.dueDate = d;
+      }
+    }
+
+    if (quiz.availableFrom && quiz.dueDate && new Date(quiz.dueDate) < new Date(quiz.availableFrom)) {
+      return res.status(400).json({ error: 'Quiz due date cannot be earlier than availability start date.' });
+    }
     if (sectionId !== undefined) {
       quiz.sectionId = sectionId && mongoose.Types.ObjectId.isValid(sectionId) ? sectionId : null;
     }
@@ -206,6 +274,50 @@ const updateQuiz = async (req, res) => {
     }
 
     await quiz.save();
+
+    // Phase 6: Notify enrolled students if published quiz due date actually changed
+    if (quiz.status === 'published' && isDueDateChanged && quiz.dueDate) {
+      try {
+        const courseId = quiz.course?._id || quiz.course;
+        const enrollments = await Enrollment.find({
+          course: courseId,
+          status: { $in: ['active', 'completed'] },
+        }).select('student');
+
+        if (enrollments && enrollments.length > 0) {
+          const course = await Course.findById(courseId).select('slug title');
+          const formattedDate = new Date(quiz.dueDate).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+          const notifPayloads = enrollments
+            .map((enr) => ({
+              recipient: enr.student,
+              type: 'quiz_rescheduled',
+              title: 'Quiz Schedule Rescheduled',
+              message: `The deadline for quiz "${quiz.title}" has been updated to ${formattedDate}.`,
+              link: `/courses/${course?.slug || courseId}/learn?quiz=${quiz._id}`,
+              metadata: {
+                quizId: quiz._id,
+                courseId,
+                oldDueDate,
+                newDueDate: quiz.dueDate,
+              },
+            }))
+            .filter((item) => item.recipient && item.recipient.toString() !== req.user.id);
+
+          if (notifPayloads.length > 0) {
+            await notificationService.createBatchNotifications(notifPayloads);
+          }
+        }
+      } catch (notifErr) {
+        logger.warn(`Failed to dispatch quiz rescheduled notifications: ${notifErr.message}`);
+      }
+    }
 
     logger.info(`Quiz updated: "${quiz.title}" (${quiz._id}) by ${req.user.email}`);
 
@@ -256,6 +368,7 @@ const publishQuiz = async (req, res) => {
     const wasAlreadyPublished = quiz.status === 'published';
     quiz.status = 'published';
     await quiz.save();
+
 
     // Notify enrolled students on fresh publication
     if (!wasAlreadyPublished) {
@@ -319,6 +432,7 @@ const unpublishQuiz = async (req, res) => {
     quiz.status = 'draft';
     await quiz.save();
 
+
     return res.status(200).json({
       message: 'Quiz reverted to draft.',
       quiz,
@@ -346,6 +460,7 @@ const deleteQuiz = async (req, res) => {
     if (attemptsCount > 0) {
       quiz.status = 'archived';
       await quiz.save();
+
       return res.status(200).json({
         message: 'Quiz has existing student attempts and was archived instead of permanently deleted.',
         action: 'archived',
@@ -511,6 +626,8 @@ const getCourseQuizzes = async (req, res) => {
           passingPercentage: q.passingPercentage,
           maxAttempts: q.maxAttempts,
           isRequiredForCompletion: q.isRequiredForCompletion,
+          availableFrom: q.availableFrom,
+          dueDate: q.dueDate,
           totalQuestions: (q.questions || []).length,
           totalPoints: q.totalPoints,
           attemptsCount: attempts.length,
@@ -564,6 +681,18 @@ const getQuizForAttempt = async (req, res) => {
       return res.status(404).json({ error: 'Published quiz not found.' });
     }
 
+    if (quiz.availableFrom && new Date() < new Date(quiz.availableFrom)) {
+      return res.status(403).json({
+        error: `Quiz is not yet available for attempts. Opens on ${new Date(quiz.availableFrom).toISOString()}.`,
+      });
+    }
+
+    if (quiz.dueDate && new Date() > new Date(quiz.dueDate)) {
+      return res.status(403).json({
+        error: `Quiz submission deadline has passed on ${new Date(quiz.dueDate).toISOString()}.`,
+      });
+    }
+
     const previousAttempts = await QuizAttempt.find({
       quiz: quiz._id,
       student: req.user.id,
@@ -596,6 +725,8 @@ const getQuizForAttempt = async (req, res) => {
         passingPercentage: quiz.passingPercentage,
         maxAttempts: quiz.maxAttempts,
         isRequiredForCompletion: quiz.isRequiredForCompletion,
+        availableFrom: quiz.availableFrom,
+        dueDate: quiz.dueDate,
         totalPoints: quiz.totalPoints,
         questions: sanitizedQuestions,
         attemptsCount,
@@ -636,6 +767,18 @@ const startQuizAttempt = async (req, res) => {
 
     if (!quiz) {
       return res.status(404).json({ error: 'Published quiz not found.' });
+    }
+
+    if (quiz.availableFrom && new Date() < new Date(quiz.availableFrom)) {
+      return res.status(403).json({
+        error: `Quiz is not yet available for attempts. Opens on ${new Date(quiz.availableFrom).toISOString()}.`,
+      });
+    }
+
+    if (quiz.dueDate && new Date() > new Date(quiz.dueDate)) {
+      return res.status(403).json({
+        error: `Quiz submission deadline has passed on ${new Date(quiz.dueDate).toISOString()}.`,
+      });
     }
 
     // Check for existing in-progress attempt

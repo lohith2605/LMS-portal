@@ -319,6 +319,98 @@ const sendAssignmentDeadlineReminderEmail = async ({
  * @param {Object} options - { to, name, otp }
  * @returns {Promise<boolean>}
  */
+const sendQuizDeadlineReminderEmail = async ({
+  to,
+  name,
+  quizTitle,
+  courseTitle,
+  dueDate,
+  reminderType = '24h',
+  quizUrl,
+}) => {
+  const mailTransporter = getTransporter();
+
+  const is1h = reminderType === '1h';
+  const subjectPrefix = is1h
+    ? 'Final Reminder: Quiz deadline in 1 hour — '
+    : 'Reminder: Quiz due tomorrow — ';
+  const subject = `${subjectPrefix}${quizTitle || 'Course Quiz'}`;
+
+  const safeName = escapeHtml(name || 'Learner');
+  const safeQuizTitle = escapeHtml(quizTitle || 'Course Quiz');
+  const safeCourseTitle = escapeHtml(courseTitle || 'Enrolled Course');
+
+  const formattedDueDate = dueDate
+    ? new Date(dueDate).toUTCString()
+    : 'Upcoming Deadline';
+
+  const timeRemainingText = is1h ? 'in less than 1 hour' : 'tomorrow (in 24 hours)';
+
+  const resolvedQuizUrl =
+    quizUrl ||
+    `${getClientBaseUrl()}/student/dashboard?tab=calendar`;
+
+  const text = `Hello ${safeName},\n\nThis is a reminder that your quiz "${quizTitle}" for "${courseTitle}" is due ${timeRemainingText}.\n\nDeadline (UTC): ${formattedDueDate}\n\nPlease complete your attempts before the deadline.\n\nTake Quiz:\n${resolvedQuizUrl}\n\n— The LearnSpace Team`;
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; background-color: #F8F8F6; border: 1px solid #E4E4E1; border-radius: 12px; color: #171717;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+        <span style="font-size: 18px; font-weight: 800; color: #171717;">LearnSpace</span>
+        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; background: ${is1h ? '#FDE8E8' : '#FEF3C7'}; color: ${is1h ? '#9B1C1C' : '#92400E'}; padding: 2px 8px; border-radius: 9999px;">
+          ${is1h ? 'Final 1-Hour Quiz Reminder' : '24-Hour Quiz Reminder'}
+        </span>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #171717;">
+        ${is1h ? 'Quiz Due in 1 Hour' : 'Quiz Due Tomorrow'}
+      </h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #686868; margin-bottom: 16px;">
+        Hello <strong>${safeName}</strong>,<br/>
+        This is an automated reminder that your quiz <strong>${safeQuizTitle}</strong> in <strong>${safeCourseTitle}</strong> is due <strong>${timeRemainingText}</strong>.
+      </p>
+      <div style="background-color: #FFFFFF; border: 1px solid #E4E4E1; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #8A8A86; margin-bottom: 4px;">Deadline (UTC)</div>
+        <div style="font-size: 16px; font-weight: 700; color: #171717;">${formattedDueDate}</div>
+      </div>
+      <div style="margin-bottom: 24px;">
+        <a href="${resolvedQuizUrl}" style="display: inline-block; background-color: #171717; color: #FFFFFF; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 8px; text-decoration: none;">
+          Take Quiz Now
+        </a>
+      </div>
+      <div style="font-size: 12px; color: #8A8A86; line-height: 1.5; border-top: 1px solid #E4E4E1; padding-top: 16px;">
+        Make sure you allow sufficient time to answer all questions before the deadline closes.<br/>
+        If you have already achieved a passing score, you may safely ignore this message.
+      </div>
+    </div>
+  `;
+
+  if (!mailTransporter) {
+    logger.info(
+      `[Email Service Simulation] Quiz deadline reminder prepared for ${to}. Email credentials not configured or operating in local test mode.`
+    );
+    return true;
+  }
+
+  try {
+    const fromAddress =
+      process.env.EMAIL_FROM ||
+      (process.env.SMTP_USER ? `"LearnSpace" <${process.env.SMTP_USER}>` : '"LearnSpace" <noreply@learnspace.org>');
+
+    const info = await mailTransporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    logger.success(`Quiz deadline reminder email delivered to ${to} (${info.messageId || 'ok'})`);
+    return true;
+  } catch (error) {
+    logger.warn(`Failed to dispatch quiz deadline reminder email to ${to}: ${error.message}`);
+    throw error;
+  }
+};
+
 const sendMfaEmailOtp = async ({ to, name, otp }) => {
   const mailTransporter = getTransporter();
 
@@ -657,6 +749,7 @@ module.exports = {
   sendVerificationEmail,
   sendInstructorApprovalEmail,
   sendAssignmentDeadlineReminderEmail,
+  sendQuizDeadlineReminderEmail,
   sendMfaEmailOtp,
   sendPaymentReceiptEmail,
   sendInstructorEnrollmentNotificationEmail,

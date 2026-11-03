@@ -20,7 +20,7 @@ const getUserId = (user) => {
  * - Course Instructor: Full access + moderation
  * - Student: Enrolled in course -> Full access, no moderation
  */
-const verifyCourseAccess = async (courseIdOrSlug, user) => {
+const verifyCourseAccess = async (courseIdOrSlug, user, { allowArchivedRead = false } = {}) => {
   if (!courseIdOrSlug) {
     return { error: 'Course identifier is required.', status: 400 };
   }
@@ -37,7 +37,8 @@ const verifyCourseAccess = async (courseIdOrSlug, user) => {
     return { error: 'Course not found.', status: 404 };
   }
 
-  if (course.status === 'archived') {
+  const isArchived = course.status === 'archived';
+  if (isArchived && !allowArchivedRead) {
     return { error: 'This course has been archived. Discussions are read-only or unavailable.', status: 400 };
   }
 
@@ -46,13 +47,13 @@ const verifyCourseAccess = async (courseIdOrSlug, user) => {
 
   // 1. System Administrator
   if (userRole === 'admin') {
-    return { course, isInstructor: false, isAdmin: true, canModerate: true };
+    return { course, isInstructor: false, isAdmin: true, canModerate: !isArchived, isArchived };
   }
 
   // 2. Course Instructor (Owner)
   const courseInstructorId = course.instructor ? course.instructor.toString() : '';
   if (courseInstructorId && courseInstructorId === userIdStr) {
-    return { course, isInstructor: true, isAdmin: false, canModerate: true };
+    return { course, isInstructor: true, isAdmin: false, canModerate: !isArchived, isArchived };
   }
 
   // 3. Student: Check active or completed enrollment
@@ -69,7 +70,7 @@ const verifyCourseAccess = async (courseIdOrSlug, user) => {
     };
   }
 
-  return { course, isInstructor: false, isAdmin: false, canModerate: false, isEnrolled: true };
+  return { course, isInstructor: false, isAdmin: false, canModerate: false, isEnrolled: true, isArchived };
 };
 
 /**
@@ -80,12 +81,12 @@ const verifyCourseAccess = async (courseIdOrSlug, user) => {
 const getCourseDiscussions = async (req, res) => {
   try {
     const courseIdOrSlug = req.params.idOrSlug || req.params.courseId;
-    const access = await verifyCourseAccess(courseIdOrSlug, req.user);
+    const access = await verifyCourseAccess(courseIdOrSlug, req.user, { allowArchivedRead: true });
     if (access.error) {
       return res.status(access.status).json({ error: access.error });
     }
 
-    const { course, canModerate } = access;
+    const { course, canModerate, isArchived } = access;
 
     // Parse query params safely
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
@@ -107,12 +108,24 @@ const getCourseDiscussions = async (req, res) => {
     // Filter by answered status (for questions)
     if (status) {
       const s = status.toLowerCase();
-      if (s === 'answered') {
-        query.type = 'question';
-        query.isAnswered = true;
-      } else if (s === 'unanswered') {
-        query.type = 'question';
-        query.isAnswered = false;
+      if (query.type === 'discussion') {
+        // Incompatible filter safeguard:
+        // Discussions do not have accepted solutions.
+        // If status is answered, match nothing (isAnswered: true); if unanswered, match discussions (isAnswered: false).
+        // Never overwrite query.type = 'question' when query.type is explicitly 'discussion'.
+        if (s === 'answered') {
+          query.isAnswered = true;
+        } else if (s === 'unanswered') {
+          query.isAnswered = false;
+        }
+      } else {
+        if (s === 'answered') {
+          query.type = 'question';
+          query.isAnswered = true;
+        } else if (s === 'unanswered') {
+          query.type = 'question';
+          query.isAnswered = false;
+        }
       }
     }
 
@@ -158,8 +171,8 @@ const getCourseDiscussions = async (req, res) => {
       const isAuthor = authorId === getUserId(req.user);
       return {
         ...d,
-        canEdit: isAuthor && !d.isLocked,
-        canDelete: isAuthor || canModerate,
+        canEdit: !isArchived && isAuthor && !d.isLocked,
+        canDelete: !isArchived && (isAuthor || canModerate),
       };
     });
 
@@ -168,6 +181,7 @@ const getCourseDiscussions = async (req, res) => {
         _id: course._id.toString(),
         title: course.title,
         slug: course.slug,
+        status: course.status,
       },
       discussions: formatted,
       pagination: {
@@ -177,7 +191,8 @@ const getCourseDiscussions = async (req, res) => {
         totalPages: Math.ceil(total / limit) || 1,
       },
       permissions: {
-        canModerate,
+        canModerate: !isArchived && canModerate,
+        isArchived: Boolean(isArchived),
       },
     });
   } catch (error) {
@@ -248,6 +263,29 @@ const createDiscussion = async (req, res) => {
       .populate('author', 'name email role avatar')
       .lean();
 
+    // Real-time notification: notify course instructor if not created by instructor
+    try {
+      const courseInstructorId = course.instructor ? course.instructor.toString() : '';
+      const creatorId = getUserId(req.user);
+      if (courseInstructorId && courseInstructorId !== creatorId) {
+        const itemType = discussion.type === 'question' ? 'question' : 'discussion';
+        await notificationService.createNotification({
+          recipient: courseInstructorId,
+          type: 'discussion_created',
+          title: discussion.type === 'question' ? 'New Question in Course' : 'New Discussion in Course',
+          message: `${req.user.name || 'A student'} asked a new ${itemType}: "${discussion.title}".`,
+          link: `/courses/${course.slug || course._id}/learn?view=discussions&discussionId=${discussion._id}`,
+          metadata: {
+            discussionId: discussion._id,
+            courseId: course._id,
+            type: discussion.type,
+          },
+        });
+      }
+    } catch (notifErr) {
+      logger.warn(`Failed to dispatch discussion created notification: ${notifErr.message}`);
+    }
+
     logger.success(
       `Discussion created: "${discussion.title}" (${discussion.type}) in course ${course.title} by ${req.user.email}`
     );
@@ -283,12 +321,12 @@ const getDiscussionById = async (req, res) => {
       return res.status(404).json({ error: 'Discussion not found or has been deleted.' });
     }
 
-    const access = await verifyCourseAccess(discussion.course, req.user);
+    const access = await verifyCourseAccess(discussion.course, req.user, { allowArchivedRead: true });
     if (access.error) {
       return res.status(access.status).json({ error: access.error });
     }
 
-    const { canModerate } = access;
+    const { canModerate, isArchived } = access;
     const authorId = discussion.author ? (discussion.author._id || discussion.author).toString() : '';
     const isAuthor = authorId === getUserId(req.user);
 
@@ -317,18 +355,18 @@ const getDiscussionById = async (req, res) => {
       const isReplyAuthor = replyAuthorId === getUserId(req.user);
       return {
         ...r,
-        canEdit: isReplyAuthor && !discussion.isLocked,
-        canDelete: isReplyAuthor || canModerate,
-        canAccept: (isAuthor || canModerate) && discussion.type === 'question',
+        canEdit: !isArchived && isReplyAuthor && !discussion.isLocked,
+        canDelete: !isArchived && (isReplyAuthor || canModerate),
+        canAccept: !isArchived && (isAuthor || canModerate) && discussion.type === 'question',
       };
     });
 
     return res.status(200).json({
       discussion: {
         ...discussion,
-        canEdit: isAuthor && !discussion.isLocked,
-        canDelete: isAuthor || canModerate,
-        canModerate,
+        canEdit: !isArchived && isAuthor && !discussion.isLocked,
+        canDelete: !isArchived && (isAuthor || canModerate),
+        canModerate: !isArchived && canModerate,
       },
       replies: formattedReplies,
       pagination: {
@@ -338,8 +376,9 @@ const getDiscussionById = async (req, res) => {
         totalPages: Math.ceil(totalReplies / replyLimit) || 1,
       },
       permissions: {
-        canModerate,
-        canReply: !discussion.isLocked,
+        canModerate: !isArchived && canModerate,
+        canReply: !isArchived && !discussion.isLocked,
+        isArchived: Boolean(isArchived),
       },
     });
   } catch (error) {
@@ -702,6 +741,13 @@ const deleteReply = async (req, res) => {
     }
 
     const { canModerate } = access;
+
+    if (discussion.isLocked && !canModerate) {
+      return res.status(400).json({
+        error: 'This discussion is locked. Content cannot be deleted by non-moderators.',
+      });
+    }
+
     const replyAuthorId = (reply.author._id || reply.author).toString();
     const isAuthor = replyAuthorId === getUserId(req.user);
 

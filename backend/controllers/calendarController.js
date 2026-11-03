@@ -40,7 +40,7 @@ const getCalendarEvents = async (req, res) => {
  */
 const getUpcoming = async (req, res) => {
   try {
-    const data = await getUpcomingDeadlines(req.user.id, req.query);
+    const data = await getUpcomingDeadlines(req.user.id, req.query, req.user.role);
     return res.status(200).json(data);
   } catch (err) {
     logger.error(`getUpcoming error: ${err.message}`);

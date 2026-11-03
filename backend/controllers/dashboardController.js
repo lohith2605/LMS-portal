@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
+const Announcement = require('../models/Announcement');
 const { logger } = require('../utils/logger');
 
 /**
@@ -148,6 +149,36 @@ const getStudentOverview = async (req, res) => {
       }
     }
 
+    let studentAnnouncements = [];
+    try {
+      const activeEnrolledCourseIds = activeEnrollments
+        .map((e) => (e.course?._id || e.course))
+        .filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+      studentAnnouncements = await Announcement.find({
+        $and: [
+          {
+            $or: [
+              { scope: 'platform', targetRoles: { $in: ['student', 'all'] } },
+              ...(activeEnrolledCourseIds.length > 0
+                ? [{ scope: 'course', course: { $in: activeEnrolledCourseIds } }]
+                : []),
+            ],
+          },
+          {
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+          },
+        ],
+      })
+        .sort({ isPinned: -1, createdAt: -1 })
+        .limit(5)
+        .populate('author', 'name role')
+        .populate('course', 'title slug')
+        .lean();
+    } catch (annErr) {
+      logger.warn(`Failed to retrieve student dashboard announcements: ${annErr.message}`);
+    }
+
     return res.status(200).json({
       overview: {
         enrolledCount: activeEnrollments.length,
@@ -158,15 +189,7 @@ const getStudentOverview = async (req, res) => {
       enrolledCourses,
       upcomingDeadlines,
       recentActivity: [],
-      announcements: [
-        {
-          id: 'ann-1',
-          title: 'Welcome to the LearnSpace Learning Platform',
-          content: 'Browse our curated catalog to begin your learning journey. Enrolled courses and interactive lessons appear directly on your dashboard.',
-          tag: 'Platform Update',
-          date: new Date().toISOString().split('T')[0],
-        },
-      ],
+      announcements: studentAnnouncements,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -262,6 +285,36 @@ const getInstructorOverview = async (req, res) => {
       };
     });
 
+    let instructorAnnouncements = [];
+    try {
+      const instructorCourseIds = courses
+        .map((c) => c._id)
+        .filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+      instructorAnnouncements = await Announcement.find({
+        $and: [
+          {
+            $or: [
+              { scope: 'platform', targetRoles: { $in: ['instructor', 'all'] } },
+              ...(instructorCourseIds.length > 0
+                ? [{ scope: 'course', course: { $in: instructorCourseIds } }]
+                : []),
+            ],
+          },
+          {
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+          },
+        ],
+      })
+        .sort({ isPinned: -1, createdAt: -1 })
+        .limit(5)
+        .populate('author', 'name role')
+        .populate('course', 'title slug')
+        .lean();
+    } catch (annErr) {
+      logger.warn(`Failed to retrieve instructor dashboard announcements: ${annErr.message}`);
+    }
+
     return res.status(200).json({
       accountStatus: req.user.accountStatus,
       isApproved,
@@ -273,15 +326,7 @@ const getInstructorOverview = async (req, res) => {
       },
       courses,
       pendingSubmissions: [],
-      announcements: [
-        {
-          id: 'ann-inst-1',
-          title: 'Course Studio Authoring Active',
-          content: 'You can now create, organize sections, add video or text lessons, and submit courses for administrative publication.',
-          tag: 'Studio',
-          date: new Date().toISOString().split('T')[0],
-        },
-      ],
+      announcements: instructorAnnouncements,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
