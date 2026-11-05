@@ -58,14 +58,14 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
 
         {/* Master Headline — Crisp, high-impact, editorial line breaks */}
         <Reveal triggerOnMount delayMs={80}>
-          <h1 className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-[62px] font-extrabold tracking-tight leading-[1.12] sm:leading-[1.08] text-slate-900 dark:text-white max-w-2xl mx-auto drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[62px] font-extrabold tracking-tight leading-[1.08] text-slate-900 dark:text-white max-w-2xl mx-auto drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             Make progress on what matters.
           </h1>
         </Reveal>
 
         {/* Supporting Narrative — Balanced width, clear legibility */}
         <Reveal triggerOnMount delayMs={160}>
-          <p className="text-sm sm:text-lg lg:text-[19px] text-slate-700 dark:text-slate-200 leading-relaxed max-w-xl mx-auto mt-3 sm:mt-4.5 font-medium drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+          <p className="text-base sm:text-lg lg:text-[19px] text-slate-700 dark:text-slate-200 leading-relaxed max-w-xl mx-auto mt-3.5 sm:mt-4.5 font-medium drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
             Discover practical courses, build valuable skills, and keep every step of your learning
             journey organized in one place.
           </p>
@@ -76,7 +76,7 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
           <div className="flex items-center justify-center w-full mt-6 sm:mt-7">
             <button
               type="button"
-              className="group w-full xs:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press shadow-md shadow-cobalt/25 transition-all cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 text-sm sm:text-base font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press shadow-md shadow-cobalt/25 transition-all cursor-pointer"
               onClick={onExploreCourses}
             >
               <span>Explore Courses</span>
