@@ -1,222 +1,278 @@
-# Learning Management System (LMS) — LearnSpace
+# LearnSpace LMS
 
-A scalable and modern Learning Management System (LMS) platform designed for courses, interactive learning, student-instructor collaboration, and role-based access control.
+LearnSpace is a full-featured Learning Management System built for modern online education. The platform connects students, instructors, and administrators in a single ecosystem for course delivery, assessment, communication, analytics, and secure role-based access.
+
+This project is now fully implemented and ready for local use, showcasing a complete LMS workflow from registration and authentication to course management, quizzes, assignments, reminders, reviews, certificates, and admin controls.
 
 ---
 
-## 🛠 Technology Stack
+## Overview
+
+LearnSpace includes:
+
+- Student enrollment and dashboard experiences
+- Instructor course and content management tools
+- Admin control panels for approvals, monitoring, and management
+- Secure authentication with JWT + HttpOnly cookies
+- Course discovery, announcements, and discussions
+- Assessment workflows with quizzes and assignments
+- Learning analytics, streak tracking, and completion insights
+- Payment and enrollment integration support
+- Notifications, calendar scheduling, and deadline reminders
+- Profile management, reviews, and certificate issuance
+
+---
+
+## Tech Stack
 
 ### Frontend
-- **Framework:** [React 19](https://react.dev/) + [Vite](https://vite.dev/)
-- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-- **Routing:** [React Router](https://reactrouter.com/) (`react-router-dom` v7)
-- **HTTP Client:** [Axios](https://axios-http.com/) (configured with `withCredentials: true` for HttpOnly cookies)
-- **Iconography:** [Lucide React](https://lucide.dev/)
-- **Linter:** [oxlint](https://oxc.rs/)
+- React 19
+- Vite
+- Tailwind CSS v4
+- React Router DOM
+- Axios
+- Lucide React
+- Framer Motion
+- Firebase for authentication-related integrations
 
 ### Backend
-- **Runtime:** [Node.js](https://nodejs.org/) (v20+ recommended)
-- **Web Framework:** [Express.js](https://expressjs.com/)
-- **Database Modeling:** [Mongoose](https://mongoosejs.com/)
-- **Database:** [MongoDB Atlas](https://www.mongodb.com/atlas) (Cloud NoSQL)
-- **Authentication:** `jsonwebtoken` (JWT), `bcryptjs` (Cost 12), `cookie-parser`
-- **Security:** `express-rate-limit`, strict CORS origin validation, sanitize user outputs
-- **Email Delivery:** `nodemailer` (integrated for password resets, with fallback simulation)
-- **Testing:** Node.js native test runner (`node:test`, `node:assert`) + `supertest`
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- JWT + bcryptjs
+- Cookie-based session management
+- Nodemailer for email workflows
+- Cloudinary for file/media storage
+- Razorpay for payment integration
+- Socket.IO for real-time updates
+- Node.js test runner + Supertest for API testing
+
+### Security Features
+- HttpOnly cookie-based auth
+- Role-based route protection
+- Rate limiting on sensitive endpoints
+- Session timeout and warning flow
+- Password hashing and token validation
+- Admin provisioning via secure script
 
 ---
 
-## 📁 Repository Structure
+## Project Structure
 
 ```text
 LMS-portal/
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   └── ...
-│   │   ├── context/
-│   │   │   ├── authContextInstance.js
-│   │   │   ├── AuthContext.jsx
-│   │   │   └── useAuth.js
-│   │   ├── layouts/
-│   │   │   └── AuthLayout.jsx
-│   │   ├── pages/
-│   │   │   ├── LandingPage.jsx
-│   │   │   ├── LoginPage.jsx
-│   │   │   ├── RegisterPage.jsx
-│   │   │   ├── ForgotPasswordPage.jsx
-│   │   │   ├── ResetPasswordPage.jsx
-│   │   │   ├── UnauthorizedPage.jsx
-│   │   │   ├── StudentDashboard.jsx
-│   │   │   ├── InstructorDashboard.jsx
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   └── NotFoundPage.jsx
-│   │   ├── services/
-│   │   │   └── api.js
-│   │   ├── App.jsx
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── .env.example
-│   ├── package.json
-│   └── vite.config.js
 ├── backend/
 │   ├── config/
-│   │   └── db.js
 │   ├── controllers/
-│   │   ├── authController.js
-│   │   └── healthController.js
 │   ├── middleware/
-│   │   ├── authMiddleware.js
-│   │   ├── rateLimiter.js
-│   │   ├── requestLogger.js
-│   │   └── validateAuth.js
 │   ├── models/
-│   │   └── User.js
 │   ├── routes/
-│   │   ├── authRoutes.js
-│   │   └── healthRoutes.js
 │   ├── scripts/
-│   │   └── provisionAdmin.js
 │   ├── services/
-│   │   └── emailService.js
 │   ├── tests/
-│   │   ├── auth.test.js
-│   │   └── health.test.js
 │   ├── utils/
-│   │   ├── authUtils.js
-│   │   └── logger.js
 │   ├── .env.example
 │   ├── package.json
 │   └── server.js
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.js
 ├── .gitignore
-└── README.md
+├── README.md
+└── backend-testing-report/
 ```
 
 ---
 
-## 🔐 Phase 2: Authentication & Role-Based Authorization
+## Main Features
 
-### 1. User Roles & Capabilities
-- **Student (`role: 'student'`):**
-  - Public self-registration (default role).
-  - Access to course discovery, syllabus previews, and Student Dashboard (`/student/dashboard`).
-  - Blocked from administrative and instructor-only endpoints.
-- **Instructor (`role: 'instructor'`):**
-  - Registration sets `accountStatus: 'pending'` awaiting administrative approval.
-  - Once active, gains access to Instructor Dashboard (`/instructor/dashboard`) and curriculum publishing APIs.
-  - Blocked from administrative endpoints.
-- **Admin (`role: 'admin'`):**
-  - Never provisioned through public forms.
-  - Provisioned safely and idempotently via CLI script (`npm run provision:admin`).
-  - Access to Admin Console (`/admin/dashboard`), system security management, and cross-tier authorization.
+### For Students
+- User registration and login
+- Personalized student dashboard
+- Course browsing and enrollment
+- Assignment submission workflow
+- Quiz participation and results viewing
+- Learning streak and activity tracking
+- Announcements and discussion feeds
+- Profile completion and academic progress insights
+- Certificate verification and download support
 
-### 2. Session Management & Security Features
-- **HttpOnly Cookies:** JWT tokens are stored inside strict `HttpOnly` cookies (`auth_token`) with `SameSite: 'lax'` (or `'none'` in cross-site production HTTPS) and `secure: true` in production.
-- **No Client Token Storage:** Frontend never stores JWTs in `localStorage` or `sessionStorage` (preventing XSS token extraction).
-- **Session Restoration:** On application load, `GET /api/auth/me` verifies the cookie session and rehydrates authenticated context.
-- **Password Hashing:** Passwords hashed with `bcryptjs` (salt factor 12) with schema-level `select: false`.
-- **Sensitive Rate Limiting:**
-  - Login / Register endpoints: 20 requests per 15-minute window per IP.
-  - Password Reset endpoints: 5 requests per 15-minute window per IP.
-- **Generic Responses:** Login and password reset endpoints return generic messages preventing account enumeration.
+### For Instructors
+- Instructor dashboard with course analytics
+- Course and lesson creation management
+- Assignment and quiz publishing tools
+- Student submissions review and grading
+- Announcement publishing for enrolled learners
+- Discussion moderation and updates
+- Performance tracking and teaching insights
+
+### For Admins
+- Secure admin dashboard
+- User approval and management workflows
+- Monitoring of learning activity and system health
+- Access control across roles and routes
+- Notification and communication oversight
+- Course and enrollment administration
 
 ---
 
-## ⚙️ Environment Variables Setup
+## Authentication & Authorization
 
-### Backend (`backend/.env`)
-Copy `backend/.env.example` to `backend/.env` and configure:
+The platform implements a role-based access model:
+
+- Student: public registration, course access, dashboard access
+- Instructor: registration with pending approval, course management access
+- Admin: protected provisioning and system-level control
+
+Security measures include:
+
+- HttpOnly cookies for JWT storage
+- Protected routes and middleware-based access checks
+- Strict rate limiting on sensitive APIs
+- Session restoration using `/api/auth/me`
+- Secure password handling with `bcryptjs`
+- Generic responses for auth-related flows to reduce enumeration risks
+
+---
+
+## Environment Setup
+
+### Backend
+Create `backend/.env` from `backend/.env.example`:
 
 ```env
-PORT=5000
+PORT=5001
 NODE_ENV=development
-MONGODB_URI=your-mongodb-atlas-uri
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
 CLIENT_URL=http://localhost:5174
 
-# JWT Configuration
-JWT_SECRET=your-super-strong-jwt-secret-min-32-chars
-JWT_EXPIRES_IN=7d
+JWT_SECRET=your_jwt_secret_key_minimum_32_characters_long
+JWT_EXPIRES_IN=8h
+ADMIN_SETUP_TOKEN=your_secure_admin_provisioning_token
 
-# Admin Provisioning CLI
-ADMIN_SETUP_TOKEN=your-random-offline-setup-secret
-ADMIN_EMAIL=admin@learnspace.io
-ADMIN_PASSWORD=AdminPassword123!
-ADMIN_NAME="LearnSpace Administrator"
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password
+EMAIL_FROM="LearnSpace" <your_email@example.com>
 
-# Email Configuration (Optional - simulation mode if left blank)
-EMAIL_HOST=smtp.mailtrap.io
-EMAIL_PORT=2525
-EMAIL_SECURE=false
-EMAIL_USER=your-smtp-user
-EMAIL_PASS=your-smtp-pass
-EMAIL_FROM="LearnSpace Security <no-reply@learnspace.io>"
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
+TOTP_ENCRYPTION_KEY=your_secure_32_character_totp_encryption_key
 ```
 
-### Frontend (`frontend/.env`)
-Copy `frontend/.env.example` to `frontend/.env`:
+### Frontend
+Create `frontend/.env` from `frontend/.env.example`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
+
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_project_id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_firebase_project_id.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### 1. Install Dependencies
+### 1. Install dependencies
+
 ```bash
-# Backend
 cd backend
 npm install
 
-# Frontend
 cd ../frontend
 npm install
 ```
 
-### 2. Provision the Initial Administrator
-Run the idempotent admin provisioning script from `backend/`:
+### 2. Provision the initial admin
+
 ```bash
 cd backend
 npm run provision:admin
 ```
-*(Uses credentials from `backend/.env` or creates default `admin@learnspace.io` if not specified).*
 
-### 3. Start the Backend Server
+This creates the initial admin account using the values from `backend/.env` if they are present.
+
+### 3. Start backend
+
 ```bash
 cd backend
 npm run dev
-# Server listens on http://localhost:5000
 ```
 
-### 4. Start the Frontend Application
+The backend runs on: `http://localhost:5000` (or the port configured in `.env`)
+
+### 4. Start frontend
+
 ```bash
 cd frontend
 npm run dev
-# Vite runs at http://localhost:5174
+```
+
+The frontend runs on: `http://localhost:5174`
+
+---
+
+## Available Scripts
+
+### Backend
+```bash
+npm run dev
+npm run start
+npm run test
+npm run provision:admin
+```
+
+### Frontend
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
 ```
 
 ---
 
-## 🔑 Backend API Endpoints
+## API Highlights
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| POST | `/api/auth/register` | Public | Register new Student or submit Instructor application |
-| POST | `/api/auth/login` | Public | Authenticate user, issue HttpOnly session cookie |
-| POST | `/api/auth/logout` | Authenticated | Invalidate browser cookie and clear session |
-| GET | `/api/auth/me` | Authenticated | Restore session and return sanitized user profile |
-| POST | `/api/auth/forgot-password` | Public | Generate reset token and dispatch email / simulation |
-| POST | `/api/auth/reset-password` | Public | Validate token hash and update password |
-| PATCH | `/api/auth/change-password` | Authenticated | Verify current password and update to new password |
-| GET | `/api/auth/student-only` | Student, Admin | Verification endpoint for role authorization |
-| GET | `/api/auth/instructor-only` | Instructor, Admin | Verification endpoint for role authorization |
-| GET | `/api/auth/admin-only` | Admin | Verification endpoint for role authorization |
-| GET | `/api/health` | Public | Cluster and server health monitoring |
+Key backend modules include:
+
+- Auth APIs: login, register, reset password, change password, session restore
+- Course APIs: browse, create, update, enroll learners, manage content
+- Assignment APIs: create, submit, grade, track deadlines
+- Quiz APIs: generate assessments, track attempts, evaluate performance
+- Discussion APIs: course discussions and replies
+- Notification APIs: notifications, announcements, reminders
+- Payment APIs: enrollment/payment processing support
+- Admin APIs: approvals, system monitoring, user management
+- Health APIs: service health checks
+
+---
+
+## Notes
+
+- The project is designed for local development and can be extended for production deployment.
+- MongoDB connection, email credentials, cloud storage keys, and payment credentials should be configured securely before deployment.
+- The repository includes test coverage for many LMS flows such as authentication, courses, quizzes, dashboard logic, discussions, and notifications.
+
+---
+
+## Final Note
+
+LearnSpace is a complete and modern LMS platform that covers the core workflow of online education systems, combining security, role management, analytics, and learning operations in a single application.
 
 ---
 
