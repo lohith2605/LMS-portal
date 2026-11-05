@@ -1,19 +1,27 @@
 import React from 'react';
 import { ArrowRight, Compass } from 'lucide-react';
-import Reveal from './ui/Reveal';
+import { motion, useReducedMotion } from 'motion/react';
 import campusHeroBg from '../assets/Bright Collaborative University Library Commons.png';
 
 export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWorks }) {
+  const shouldReduceMotion = useReducedMotion();
+  // Respect reduced-motion accessibility by eliminating vestibular translation (y/scale),
+  // while ensuring smooth opacity fade always visibly plays so normal browser settings never skip animations.
+  const isReduced = shouldReduceMotion === true;
+
+  // Staggered easing curve matching the design system
+  const easeCurve = [0.16, 1, 0.3, 1];
+
   return (
     <section
-      className="relative isolate overflow-hidden flex flex-col justify-start pt-14 sm:pt-18 md:pt-20 lg:pt-20 pb-36 sm:pb-44 md:pb-52 lg:pb-64 min-h-[580px] sm:min-h-[640px] md:min-h-[700px] lg:min-h-[720px] lg:aspect-[1672/941] lg:max-h-[960px]"
+      className="relative isolate overflow-hidden flex flex-col justify-start pt-10 sm:pt-14 md:pt-16 lg:pt-18 pb-24 sm:pb-28 md:pb-32 lg:pb-36 min-h-[540px] sm:min-h-[580px] md:min-h-[620px] lg:h-[calc(100svh-72px)] lg:max-h-[820px]"
       aria-label="Hero Introduction"
     >
       {/* ========================================================= */}
       {/* CAMPUS BACKGROUND PHOTOGRAPH — CINEMATIC & STUDENT-FOCUSED */}
       {/* ========================================================= */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
-        {/* Real photographic campus background with natural daylight color and crisp student focus */}
+        {/* Real photographic campus background anchored and sized to prominently reveal students and tables in initial viewport */}
         <img
           src={campusHeroBg}
           alt=""
@@ -24,7 +32,7 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
             // Browser URL fallback if spaces in dev asset URL are rejected by browser
             e.currentTarget.src = '/hero-campus.png';
           }}
-          className="w-full h-full object-cover object-[28%_bottom] sm:object-[40%_bottom] md:object-bottom lg:object-bottom select-none dark:brightness-[0.6] dark:contrast-[1.1] dark:saturate-[0.95]"
+          className="absolute inset-x-0 bottom-0 w-full min-w-full h-[125%] sm:h-[130%] md:h-[135%] lg:h-[138%] max-w-none object-cover object-[28%_bottom] sm:object-[40%_bottom] md:object-bottom lg:object-bottom select-none dark:brightness-[0.6] dark:contrast-[1.1] dark:saturate-[0.95]"
         />
 
         {/* Subtle localized upper wash: ensures headline contrast in sky without any box or card */}
@@ -34,7 +42,7 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
         />
 
         {/* Ultra-soft micro-feathering at the very bottom boundary so students and tables remain crisp */}
-        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-page to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-page to-transparent pointer-events-none" />
       </div>
 
       {/* ========================================================= */}
@@ -42,7 +50,11 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
       {/* ========================================================= */}
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 w-full relative z-10 text-center">
         {/* Eyebrow Badge */}
-        <Reveal triggerOnMount delayMs={0}>
+        <motion.div
+          initial={{ opacity: 0, y: isReduced ? 0 : 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: easeCurve }}
+        >
           <div className="group inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cobalt mb-3 sm:mb-4 cursor-default">
             <span className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm border border-cobalt/25 px-3.5 py-1 rounded-full inline-flex items-center gap-2 shadow-2xs hover:border-cobalt/45 transition-colors">
               <Compass
@@ -54,41 +66,55 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
               <span>LEARNING, WITH DIRECTION</span>
             </span>
           </div>
-        </Reveal>
+        </motion.div>
 
         {/* Master Headline — Crisp, high-impact, editorial line breaks */}
-        <Reveal triggerOnMount delayMs={80}>
+        <motion.div
+          initial={{ opacity: 0, y: isReduced ? 0 : 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35, ease: easeCurve }}
+        >
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[62px] font-extrabold tracking-tight leading-[1.08] text-slate-900 dark:text-white max-w-2xl mx-auto drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             Make progress on what matters.
           </h1>
-        </Reveal>
+        </motion.div>
 
         {/* Supporting Narrative — Balanced width, clear legibility */}
-        <Reveal triggerOnMount delayMs={160}>
+        <motion.div
+          initial={{ opacity: 0, y: isReduced ? 0 : 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6, ease: easeCurve }}
+        >
           <p className="text-base sm:text-lg lg:text-[19px] text-slate-700 dark:text-slate-200 leading-relaxed max-w-xl mx-auto mt-3.5 sm:mt-4.5 font-medium drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
             Discover practical courses, build valuable skills, and keep every step of your learning
             journey organized in one place.
           </p>
-        </Reveal>
+        </motion.div>
 
         {/* Action CTA */}
-        <Reveal triggerOnMount delayMs={240}>
-          <div className="flex items-center justify-center w-full mt-6 sm:mt-7">
-            <button
-              type="button"
-              className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 text-sm sm:text-base font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press shadow-md shadow-cobalt/25 transition-all cursor-pointer"
-              onClick={onExploreCourses}
-            >
-              <span>Explore Courses</span>
-              <ArrowRight
-                size={16}
-                strokeWidth={2}
-                className="group-hover-nudge-x"
-                aria-hidden="true"
-              />
-            </button>
-          </div>
-        </Reveal>
+        <motion.div
+          initial={{ opacity: 0, scale: isReduced ? 1 : 0.95, y: isReduced ? 0 : 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.85, ease: easeCurve }}
+          className="flex items-center justify-center w-full mt-6 sm:mt-7"
+        >
+          <motion.button
+            type="button"
+            whileHover={isReduced ? undefined : { scale: 1.03 }}
+            whileTap={isReduced ? undefined : { scale: 0.98 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 text-sm sm:text-base font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-md shadow-cobalt/25 hover:shadow-lg hover:shadow-cobalt/35 transition-all cursor-pointer"
+            onClick={onExploreCourses}
+          >
+            <span>Explore Courses</span>
+            <ArrowRight
+              size={16}
+              strokeWidth={2}
+              className="group-hover-nudge-x transition-transform duration-200 ease-out group-hover:translate-x-1"
+              aria-hidden="true"
+            />
+          </motion.button>
+        </motion.div>
       </div>
     </section>
   );
