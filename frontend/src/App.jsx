@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from './context/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -93,6 +94,7 @@ function CoursesRedirect() {
 export default function App() {
   return (
     <>
+      <ScrollToTop />
       <Routes>
         {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
