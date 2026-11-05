@@ -7,7 +7,12 @@ export default function CourseModal({ course, onClose, onEnrollInterest }) {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    const orig = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = orig;
+    };
   }, [onClose]);
 
   if (!course) return null;
@@ -19,7 +24,7 @@ export default function CourseModal({ course, onClose, onEnrollInterest }) {
       role="presentation"
     >
       <div
-        className="bg-white rounded-2xl md:rounded-3xl border border-border-subtle shadow-preview w-full max-w-[560px] max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative animate-[modalSlideUp_240ms_cubic-bezier(0.16,1,0.3,1)]"
+        className="bg-white rounded-2xl md:rounded-3xl border border-border-subtle shadow-preview w-full max-w-[560px] max-h-[90vh] overflow-y-auto p-5 sm:p-8 relative animate-[modalSlideUp_240ms_cubic-bezier(0.16,1,0.3,1)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

@@ -116,7 +116,7 @@ export default function CourseCard({ course, onSelectCourse }) {
         </div>
 
         {/* Bottom actions & metadata */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${

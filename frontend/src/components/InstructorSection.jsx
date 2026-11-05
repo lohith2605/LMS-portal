@@ -77,10 +77,10 @@ export default function InstructorSection({ onInstructorInquiry }) {
             </div>
 
             {/* Primary Action Button */}
-            <div className="shrink-0">
+            <div className="shrink-0 w-full sm:w-auto">
               <button
                 type="button"
-                className="group inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press shadow-sm shadow-cobalt/20 transition-all cursor-pointer"
+                className="group inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-xl bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover-lift btn-press shadow-sm shadow-cobalt/20 transition-all cursor-pointer w-full sm:w-auto"
                 onClick={onInstructorInquiry}
               >
                 <span>Learn About Teaching</span>

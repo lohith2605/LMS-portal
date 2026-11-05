@@ -18,6 +18,7 @@ import {
   Download,
   ArrowLeft,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { signInWithPopup } from 'firebase/auth';
 import AuthLayout from '../layouts/AuthLayout';
@@ -478,6 +479,14 @@ export default function LoginPage() {
               </div>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => setFormError(null)}
+            className="text-red-400 hover:text-red-600 transition-colors p-0.5 rounded cursor-pointer shrink-0"
+            aria-label="Dismiss error"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 

@@ -40,6 +40,16 @@ export default function MobileNavigation({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const getNavSections = () => {
@@ -150,7 +160,7 @@ export default function MobileNavigation({
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 left-0 w-72 max-w-full bg-surface border-r border-border-subtle shadow-elevated flex flex-col justify-between z-10 animate-[modalSlideUp_0.15s_ease-out]">
+      <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] sm:max-w-xs bg-surface border-r border-border-subtle shadow-elevated flex flex-col justify-between z-10 animate-[modalSlideUp_0.15s_ease-out]">
         <div className="overflow-y-auto flex-1">
           {/* Header */}
           <div className="h-16 px-5 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">

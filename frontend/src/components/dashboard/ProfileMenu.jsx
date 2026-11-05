@@ -92,7 +92,7 @@ export default function ProfileMenu({
         <div
           role="menu"
           aria-orientation="vertical"
-          className="absolute right-0 mt-2 w-64 bg-surface-elevated border border-border-subtle rounded-2xl shadow-elevated py-2 z-50 animate-[modalSlideUp_0.15s_ease-out]"
+          className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-surface-elevated border border-border-subtle rounded-2xl shadow-elevated py-2 z-50 animate-[modalSlideUp_0.15s_ease-out]"
         >
           {/* User Details Header */}
           <div className="px-4 py-3 border-b border-border-subtle">

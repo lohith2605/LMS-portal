@@ -831,7 +831,7 @@ export default function CoursePlayerPage() {
           <button
             type="button"
             onClick={handleOpenDiscussions}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               activeView === 'discussions'
                 ? 'bg-cobalt-soft text-cobalt border border-cobalt-border'
                 : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
@@ -844,7 +844,7 @@ export default function CoursePlayerPage() {
           <button
             type="button"
             onClick={handleOpenAnnouncements}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               activeView === 'announcements'
                 ? 'bg-cobalt-soft text-cobalt border border-cobalt-border'
                 : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
@@ -857,7 +857,7 @@ export default function CoursePlayerPage() {
           <button
             type="button"
             onClick={() => setActiveView('completion')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               isCertIssued || isEligibleToClaim
                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
                 : 'bg-surface-subtle text-secondary hover:text-primary border border-border-subtle'
@@ -885,7 +885,7 @@ export default function CoursePlayerPage() {
           <button
             type="button"
             onClick={() => setSidebarOpen((prev) => !prev)}
-            className="p-2 text-secondary hover:text-primary rounded-lg hover:bg-surface-subtle transition cursor-pointer"
+            className="p-1.5 sm:p-2 text-secondary hover:text-primary rounded-lg hover:bg-surface-subtle transition cursor-pointer"
             title={sidebarOpen ? 'Collapse playlist' : 'Expand playlist'}
           >
             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
@@ -895,10 +895,19 @@ export default function CoursePlayerPage() {
 
       {/* Main Workspace: Left Playlist Sidebar + Main Stage */}
       <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile backdrop for playlist sidebar */}
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-10 md:hidden cursor-pointer"
+          />
+        )}
+
         {/* Playlist Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? 'w-80 border-r border-border-subtle' : 'w-0'
+            sidebarOpen ? 'w-80 max-w-[85vw] md:max-w-none border-r border-border-subtle' : 'w-0'
           } bg-surface transition-all duration-200 shrink-0 overflow-y-auto flex flex-col z-20 absolute md:relative inset-y-0 left-0 shadow-md md:shadow-none`}
         >
           {/* Completion Progress Header */}

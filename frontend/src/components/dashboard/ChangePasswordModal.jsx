@@ -10,6 +10,17 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  // Body scroll locking when open
+  React.useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -58,7 +69,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
     >
       <div
-        className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-elevated relative animate-[modalSlideUp_0.2s_ease-out]"
+        className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-5 sm:p-8 max-h-[90vh] overflow-y-auto shadow-elevated relative animate-[modalSlideUp_0.2s_ease-out]"
       >
         <button
           type="button"

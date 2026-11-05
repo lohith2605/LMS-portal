@@ -37,7 +37,7 @@ export default function SessionTimeoutModal({
       aria-labelledby="session-timeout-title"
       aria-describedby="session-timeout-description"
     >
-      <div className="bg-white border border-border-subtle rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-[modalFadeIn_180ms_ease-out]">
+      <div className="bg-white border border-border-subtle rounded-2xl max-w-md w-full p-5 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden animate-[modalFadeIn_180ms_ease-out]">
         {/* Decorative Top Accent */}
         <div
           className={`absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300 ${
@@ -75,7 +75,7 @@ export default function SessionTimeoutModal({
 
         {/* Prominent Countdown Display */}
         <div
-          className={`my-5 py-4 px-6 rounded-xl border flex items-center justify-between transition-colors ${
+          className={`my-5 py-3 px-4 sm:px-6 rounded-xl border flex items-center justify-between transition-colors ${
             isCritical
               ? 'bg-rose-50/80 border-rose-200 text-rose-900'
               : 'bg-amber-50/80 border-amber-200 text-amber-900'

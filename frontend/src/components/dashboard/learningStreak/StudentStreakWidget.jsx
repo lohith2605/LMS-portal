@@ -95,7 +95,7 @@ export default function StudentStreakWidget({
   if (loading) {
     return (
       <div
-        className={`bg-white/95 border border-border-subtle rounded-2xl p-3 sm:px-4 sm:py-3 shadow-xs animate-pulse flex items-center gap-3 min-w-[200px] sm:min-w-[230px] ${className}`}
+        className={`bg-white/95 border border-border-subtle rounded-2xl p-3 sm:px-4 sm:py-3 shadow-xs animate-pulse flex items-center gap-3 w-full sm:w-auto min-w-0 sm:min-w-[230px] ${className}`}
         aria-hidden="true"
       >
         <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0" />
@@ -180,7 +180,7 @@ export default function StudentStreakWidget({
       }}
       aria-label={accessibleLabel}
       title="Click to view learning progress and streak history"
-      className={`group relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt/40 rounded-2xl bg-white border transition-all duration-300 p-3 sm:px-4 sm:py-3 shadow-xs hover:shadow-card hover:border-border-medium hover-lift select-none min-w-[200px] sm:min-w-[230px] ${
+      className={`group relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-cobalt/40 rounded-2xl bg-white border transition-all duration-300 p-3 sm:px-4 sm:py-3 shadow-xs hover:shadow-card hover:border-border-medium hover-lift select-none w-full sm:w-auto min-w-0 sm:min-w-[230px] ${
         isTodayQualified
           ? 'border-amber-200/80 bg-gradient-to-br from-white via-amber-50/20 to-orange-50/30'
           : 'border-border-subtle'

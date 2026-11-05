@@ -384,7 +384,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
                 <button
                   type="button"
                   onClick={activeSlide === 1 ? onGetStarted : onExploreCourses}
-                  className="px-6 py-3 rounded-full !bg-white !text-neutral-900 hover:!bg-neutral-100 font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-card hover-lift btn-press cursor-pointer group/cta transition-all focus:outline-none focus:ring-2 focus:ring-white"
+                  className="w-full sm:w-auto justify-center px-6 py-3 rounded-full !bg-white !text-neutral-900 hover:!bg-neutral-100 font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-card hover-lift btn-press cursor-pointer group/cta transition-all focus:outline-none focus:ring-2 focus:ring-white"
                   style={{ backgroundColor: '#ffffff', color: '#171717' }}
                   aria-label={current.cta}
                 >
@@ -472,7 +472,7 @@ export default function SkillShowcaseBanner({ onExploreCourses, onGetStarted }) 
           {/* ========================================================= */}
           {/* RIGHT: Visual Artwork & Floating Glass Skill Stickers     */}
           {/* ========================================================= */}
-          <div className="col-span-1 lg:col-span-5 relative h-full flex items-center justify-center p-6 lg:p-8 min-h-[320px] sm:min-h-[380px] lg:min-h-full overflow-hidden">
+          <div className="col-span-1 lg:col-span-5 relative h-full flex items-center justify-center p-4 sm:p-6 lg:p-8 min-h-[260px] sm:min-h-[380px] lg:min-h-full overflow-hidden">
             {/* Visual Container */}
             <div
               key={`visual-${activeSlide}`}

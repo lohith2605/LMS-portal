@@ -586,7 +586,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Priority Section: Instructor Approval Queue Preview */}
-              <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-xs">
+              <div className="bg-surface border border-border-subtle rounded-3xl p-4 sm:p-8 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-subtle mb-6">
                   <div>
                     <div className="flex items-center gap-2">
@@ -619,7 +619,7 @@ export default function AdminDashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-border-subtle text-secondary font-semibold">
+                        <tr className="border-b border-border-subtle text-secondary font-semibold whitespace-nowrap">
                           <th className="py-3 px-4">Applicant Name</th>
                           <th className="py-3 px-4">Email Address</th>
                           <th className="py-3 px-4">Application Date</th>
@@ -733,7 +733,7 @@ export default function AdminDashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-border-subtle text-secondary font-semibold">
+                        <tr className="border-b border-border-subtle text-secondary font-semibold whitespace-nowrap">
                           <th className="py-3 px-4">Applicant</th>
                           <th className="py-3 px-4">Email</th>
                           <th className="py-3 px-4">Application Date</th>
@@ -869,7 +869,7 @@ export default function AdminDashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-border-subtle text-secondary font-semibold">
+                        <tr className="border-b border-border-subtle text-secondary font-semibold whitespace-nowrap">
                           <th className="py-3 px-4">User Name</th>
                           <th className="py-3 px-4">Email</th>
                           <th className="py-3 px-4">Role</th>
@@ -1508,7 +1508,7 @@ export default function AdminDashboard() {
           aria-labelledby="confirm-dialog-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
         >
-          <div className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-elevated relative animate-[modalSlideUp_0.15s_ease-out]">
+          <div className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-5 sm:p-8 max-h-[90vh] overflow-y-auto shadow-elevated relative animate-[modalSlideUp_0.15s_ease-out]">
             <div
               className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${
                 confirmDialog.action === 'approve'
@@ -1567,7 +1567,7 @@ export default function AdminDashboard() {
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
         >
-          <div className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-6 sm:p-8 shadow-elevated relative animate-[modalSlideUp_0.15s_ease-out]">
+          <div className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-5 sm:p-8 max-h-[90vh] overflow-y-auto shadow-elevated relative animate-[modalSlideUp_0.15s_ease-out]">
             <div
               className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${
                 courseConfirmDialog.action === 'approve'

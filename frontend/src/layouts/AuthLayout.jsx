@@ -121,7 +121,7 @@ export default function AuthLayout({
         {/* ========================================================= */}
         {/* RIGHT PANEL: Form Container (~52-54%)                     */}
         {/* ========================================================= */}
-        <main className="col-span-1 lg:col-span-7 xl:col-span-7 bg-surface flex flex-col justify-between min-h-screen p-5 sm:p-8 lg:p-10 xl:p-12 overflow-y-auto">
+        <main className="col-span-1 lg:col-span-7 xl:col-span-7 bg-surface flex flex-col justify-between min-h-screen p-4 sm:p-8 lg:p-10 xl:p-12 overflow-y-auto">
           
           {/* Mobile Top Header (hidden on desktop) */}
           <div className="flex lg:hidden items-center justify-between pb-6 border-b border-border-subtle">

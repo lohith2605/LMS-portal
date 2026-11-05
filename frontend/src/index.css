@@ -222,6 +222,11 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -230,6 +235,26 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  position: relative;
+}
+
+/* Fluid Media & Imagery */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Touch targets & tap highlight feedback */
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth Table and Drawer Scroll Containers */
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Global Smooth Transitions for Theme Switching */

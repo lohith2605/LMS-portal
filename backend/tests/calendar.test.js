@@ -11,6 +11,8 @@ const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
 const DeadlineReminderDelivery = require('../models/DeadlineReminderDelivery');
 const Notification = require('../models/Notification');
+const Quiz = require('../models/Quiz');
+const QuizAttempt = require('../models/QuizAttempt');
 const { deriveActivityStatus } = require('../services/calendarService');
 const { processDeadlineReminders } = require('../services/deadlineReminderScheduler');
 
@@ -26,6 +28,8 @@ let mockAssignments = [];
 let mockSubmissions = [];
 let mockDeliveries = [];
 let mockNotifications = [];
+let mockQuizzes = [];
+let mockQuizAttempts = [];
 let idCounter = 900;
 
 const makeObjectId = () => {
@@ -41,6 +45,8 @@ const resetTestDb = () => {
   mockSubmissions = [];
   mockDeliveries = [];
   mockNotifications = [];
+  mockQuizzes = [];
+  mockQuizAttempts = [];
   idCounter = 900;
 };
 
@@ -269,6 +275,46 @@ AssignmentSubmission.find = function (query = {}) {
       then: (r) => r(list),
     }),
     lean: () => Promise.resolve(list.map((s) => ({ ...s }))),
+    then: (r) => r(list),
+  };
+};
+
+Quiz.find = function (query = {}) {
+  let list = mockQuizzes;
+  return {
+    populate: () => ({
+      sort: () => ({
+        limit: (l) => ({
+          lean: () => Promise.resolve(list.slice(0, l)),
+          then: (r) => r(list.slice(0, l)),
+        }),
+        lean: () => Promise.resolve(list),
+        then: (r) => r(list),
+      }),
+      lean: () => Promise.resolve(list),
+      then: (r) => r(list),
+    }),
+    sort: () => ({
+      limit: (l) => ({
+        lean: () => Promise.resolve(list.slice(0, l)),
+        then: (r) => r(list.slice(0, l)),
+      }),
+      lean: () => Promise.resolve(list),
+      then: (r) => r(list),
+    }),
+    lean: () => Promise.resolve(list),
+    then: (r) => r(list),
+  };
+};
+
+QuizAttempt.find = function (query = {}) {
+  let list = mockQuizAttempts;
+  return {
+    select: () => ({
+      lean: () => Promise.resolve(list),
+      then: (r) => r(list),
+    }),
+    lean: () => Promise.resolve(list),
     then: (r) => r(list),
   };
 };

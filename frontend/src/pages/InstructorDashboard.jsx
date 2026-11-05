@@ -580,7 +580,7 @@ export default function InstructorDashboard() {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Compact Welcome Header */}
-              <div className="bg-white border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <div className="bg-white border border-border-subtle rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                 <div className="space-y-1">
                   <h1 className="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">
                     Welcome back, {firstName}
@@ -645,7 +645,7 @@ export default function InstructorDashboard() {
                 <h2 className="text-xs font-bold uppercase tracking-wider text-secondary mb-3">
                   Key Metrics
                 </h2>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard
                     title="Published Courses"
                     value={data?.overview?.publishedCoursesCount ?? 0}
@@ -1400,7 +1400,7 @@ export default function InstructorDashboard() {
               </div>
 
               {/* Summary Metrics Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white border border-border-subtle rounded-2xl p-4 shadow-xs">
                   <div className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
                     Total Enrollments
@@ -1513,7 +1513,7 @@ export default function InstructorDashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-border-subtle bg-surface-subtle/50 text-[11px] font-bold text-secondary uppercase tracking-wider">
+                        <tr className="border-b border-border-subtle bg-surface-subtle/50 text-[11px] font-bold text-secondary uppercase tracking-wider whitespace-nowrap">
                           <th className="py-3.5 px-4 sm:px-6">Learner</th>
                           <th className="py-3.5 px-4">Course</th>
                           <th className="py-3.5 px-4">Progress</th>

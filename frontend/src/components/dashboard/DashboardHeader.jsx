@@ -26,9 +26,9 @@ export default function DashboardHeader({
     : 'Open navigation drawer';
 
   return (
-    <header className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border-subtle h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border-subtle h-16 shrink-0 flex items-center justify-between px-3 sm:px-6 lg:px-8">
       {/* Left: Responsive Sidebar / Drawer Toggle */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           type="button"
           id="sidebar-toggle-btn"
@@ -44,7 +44,7 @@ export default function DashboardHeader({
       </div>
 
       {/* Right: Actions & Profile */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3">
         {/* Theme Toggle (left of notification bell) */}
         <ThemeToggle />
 

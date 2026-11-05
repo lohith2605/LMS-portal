@@ -105,6 +105,18 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
     };
   }, []);
 
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   // Close mobile drawer and admin menu on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -365,11 +377,11 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-sm font-semibold bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover:-translate-y-0.5 px-4.5 py-2.25 rounded-xl shadow-sm shadow-cobalt/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold bg-cobalt text-white hover:bg-cobalt-hover active:bg-cobalt-pressed hover:-translate-y-0.5 px-3 py-1.5 sm:px-4.5 sm:py-2.25 rounded-xl shadow-sm shadow-cobalt/20 transition-all cursor-pointer shrink-0"
                 onClick={() => (onOpenAuth ? onOpenAuth('register') : navigate('/register'))}
               >
                 <span>Get Started</span>
-                <ArrowUpRight size={15} aria-hidden="true" />
+                <ArrowUpRight size={14} className="hidden sm:inline" aria-hidden="true" />
               </button>
             </>
           )}
@@ -377,7 +389,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           {/* Mobile hamburger button */}
           <button
             type="button"
-            className="flex md:hidden w-10 h-10 items-center justify-center rounded-xl text-primary border border-border-subtle bg-surface hover:bg-surface-subtle transition-colors cursor-pointer"
+            className="flex md:hidden w-10 h-10 items-center justify-center rounded-xl text-primary border border-border-subtle bg-surface hover:bg-surface-subtle transition-colors cursor-pointer shrink-0"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
@@ -395,7 +407,7 @@ export default function Navbar({ onOpenAuth, brandName = 'LearnSpace' }) {
           role="presentation"
         >
           <div
-            className="absolute top-0 inset-x-0 bg-surface border-b border-border-subtle px-6 pt-6 pb-8 shadow-elevated animate-[drawerSlide_220ms_cubic-bezier(0.16,1,0.3,1)]"
+            className="absolute top-0 inset-x-0 bg-surface border-b border-border-subtle px-4 sm:px-6 pt-5 pb-8 shadow-elevated animate-[drawerSlide_220ms_cubic-bezier(0.16,1,0.3,1)] max-h-[calc(100vh-72px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

@@ -336,7 +336,7 @@ export default function TestimonialsCarousel({ onSelectCourse }) {
                 {/* Primary Active Centered Card */}
                 {testimonials[currentIndex] && (
                   <div
-                    className="w-full max-w-md sm:max-w-lg lg:max-w-[510px] bg-surface rounded-xl p-5 sm:p-6 border border-cobalt-border shadow-md shadow-cobalt/10 ring-1 ring-focus-ring/30 relative transition-all duration-300 z-10"
+                    className="w-full max-w-md sm:max-w-lg lg:max-w-[510px] bg-surface rounded-xl p-4 sm:p-6 border border-cobalt-border shadow-md shadow-cobalt/10 ring-1 ring-focus-ring/30 relative transition-all duration-300 z-10"
                     role="group"
                     aria-roledescription="slide"
                     aria-label={`Testimonial ${currentIndex + 1} of ${count}`}

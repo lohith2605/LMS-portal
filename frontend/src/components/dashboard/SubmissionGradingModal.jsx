@@ -144,7 +144,7 @@ export default function SubmissionGradingModal({
     <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white border border-border-subtle rounded-3xl w-full max-w-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-border-subtle flex items-center justify-between shrink-0 bg-surface-subtle">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-border-subtle flex items-center justify-between shrink-0 bg-surface-subtle">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-accent-sage-pale text-accent-sage-dark flex items-center justify-center">
               <Award size={18} />
@@ -167,7 +167,7 @@ export default function SubmissionGradingModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
           {error && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0" />

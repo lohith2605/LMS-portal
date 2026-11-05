@@ -57,6 +57,17 @@ export default function ProfilePictureModal({ isOpen, onClose }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isUploading, isRemoving, onClose]);
 
+  // Body scroll locking when open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const currentAvatarUrl = user?.avatar?.url || null;
@@ -196,9 +207,9 @@ export default function ProfilePictureModal({ isOpen, onClose }) {
         }
       }}
     >
-      <div className="bg-surface border border-border-subtle rounded-3xl shadow-elevated w-full max-w-md overflow-hidden animate-[modalSlideUp_0.2s_ease-out]">
+      <div className="bg-surface border border-border-subtle rounded-3xl shadow-elevated w-full max-w-md max-h-[90vh] overflow-y-auto animate-[modalSlideUp_0.2s_ease-out]">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-accent-blue-pale text-accent-blue-dark flex items-center justify-center">
               <Camera size={16} strokeWidth={1.75} />
@@ -227,7 +238,7 @@ export default function ProfilePictureModal({ isOpen, onClose }) {
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-4 sm:p-6 space-y-5">
           {/* Feedback Banners */}
           {errorMessage && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 animate-[shake_0.2s_ease-in-out]">

@@ -237,7 +237,7 @@ export default function QuizStudioModal({
     <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[#FFFFFF] border border-[#E4E4E1] rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#E4E4E1] flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-[#E4E4E1] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#637D91]/10 text-[#637D91] flex items-center justify-center">
               <Award size={18} />
@@ -261,7 +261,7 @@ export default function QuizStudioModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0" />

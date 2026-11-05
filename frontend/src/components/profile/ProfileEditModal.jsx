@@ -85,6 +85,17 @@ export default function ProfileEditModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, loading, onClose]);
 
+  // Body scroll locking when open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleAddSkill = (e) => {
@@ -170,7 +181,7 @@ export default function ProfileEditModal({
     >
       <div className="bg-surface border border-border-subtle rounded-3xl shadow-elevated w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-[modalSlideUp_0.2s_ease-out]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle bg-surface-subtle/50 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-border-subtle bg-surface-subtle/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-cobalt-soft border border-cobalt-border/50 text-cobalt flex items-center justify-center">
               <User size={20} strokeWidth={2} />
@@ -198,7 +209,7 @@ export default function ProfileEditModal({
         </div>
 
         {/* Form Body (Scrollable) */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* Messages */}
           {errorMessage && (
             <div

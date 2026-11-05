@@ -186,7 +186,7 @@ export default function LearningJourney() {
         <Reveal key={currentStage.id} triggerOnMount delayMs={0}>
           <div
             id={`stage-panel-${currentStage.id}`}
-            className="bg-surface border border-border-subtle rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-card grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 items-center"
+            className="bg-surface border border-border-subtle rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 shadow-card grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 sm:gap-8 items-center"
             role="tabpanel"
             aria-label={`${currentStage.label} stage details`}
           >

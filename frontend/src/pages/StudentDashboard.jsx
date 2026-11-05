@@ -551,7 +551,7 @@ export default function StudentDashboard() {
           {activeTab === 'overview' && (
             <>
               {/* Welcome Banner */}
-              <div className="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
+              <div className="bg-surface border border-border-subtle rounded-3xl p-4 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
                   <div className="max-w-2xl">
                     <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-accent-blue-dark mb-2">
@@ -579,7 +579,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row lg:flex-row items-start sm:items-center gap-4 self-start lg:self-center shrink-0">
+                  <div className="flex flex-col sm:flex-row lg:flex-row items-start sm:items-center gap-4 self-start lg:self-center shrink-0 w-full sm:w-auto">
                     <StudentStreakWidget
                       timezone={user?.timezone}
                       onNavigate={() => setActiveTab('analytics')}
@@ -1465,7 +1465,7 @@ export default function StudentDashboard() {
           {activeTab === 'assignments' && (
             <div className="space-y-6">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-border-subtle rounded-2xl p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-border-subtle rounded-2xl p-4 sm:p-6 shadow-xs">
                 <div>
                   <h2 className="text-base font-bold text-primary mb-1">
                     Assignments & Lab Submissions

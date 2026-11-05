@@ -29,7 +29,11 @@ const initFirebaseAdmin = () => {
 
   if (isFirebaseAdminConfigured()) {
     try {
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      privateKey = privateKey.replace(/\\n/g, '\n');
       const app = initializeApp({
         credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID,

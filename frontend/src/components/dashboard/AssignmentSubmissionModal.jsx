@@ -165,7 +165,7 @@ export default function AssignmentSubmissionModal({
     <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white border border-border-subtle rounded-3xl w-full max-w-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-border-subtle flex items-center justify-between shrink-0 bg-surface-subtle">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-border-subtle flex items-center justify-between shrink-0 bg-surface-subtle">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-accent-blue-pale text-accent-blue-dark flex items-center justify-center">
               <FileText size={18} />
@@ -188,7 +188,7 @@ export default function AssignmentSubmissionModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 text-xs">
           {error && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0" />

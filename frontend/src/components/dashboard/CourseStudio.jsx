@@ -384,7 +384,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
   return (
     <div className="bg-[#FFFFFF] border border-[#E4E4E1] rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-[#E4E4E1] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#FAFAFA]">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[#E4E4E1] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#FAFAFA]">
         <div>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold text-[#171717]">
@@ -465,7 +465,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
       )}
 
       {/* Step Stepper Navigation */}
-      <div className="px-6 pt-5 pb-3 border-b border-[#E4E4E1]">
+      <div className="px-3 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-[#E4E4E1]">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           {steps.map((s, idx) => (
             <React.Fragment key={s.num}>
@@ -498,7 +498,7 @@ export default function CourseStudio({ courseId, onClose, onSaved }) {
       </div>
 
       {/* Step Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* STEP 1: Basic Information */}
         {activeStep === 1 && (
           <div className="space-y-6 max-w-2xl mx-auto">

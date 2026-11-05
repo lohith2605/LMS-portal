@@ -385,7 +385,7 @@ export default function CourseDetailsPage() {
           {/* Left Column: Description, Objectives, Curriculum */}
           <div className="lg:col-span-2 space-y-8">
             {/* About Course */}
-            <div className="bg-surface border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="bg-surface border border-border-subtle rounded-2xl p-4 sm:p-8 shadow-sm">
               <h2 className="text-base font-bold text-primary mb-3">About this Course</h2>
               <div className="text-xs sm:text-sm text-secondary leading-relaxed whitespace-pre-line">
                 {course.description}
@@ -394,7 +394,7 @@ export default function CourseDetailsPage() {
 
             {/* What you will learn */}
             {course.learningObjectives && course.learningObjectives.length > 0 && (
-              <div className="bg-surface border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="bg-surface border border-border-subtle rounded-2xl p-4 sm:p-8 shadow-sm">
                 <h2 className="text-base font-bold text-primary mb-4">What you will learn</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {course.learningObjectives.map((obj, idx) => (
@@ -408,7 +408,7 @@ export default function CourseDetailsPage() {
             )}
 
             {/* Structured Curriculum */}
-            <div className="bg-surface border border-border-subtle rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="bg-surface border border-border-subtle rounded-2xl p-4 sm:p-8 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-base font-bold text-primary">Course Curriculum</h2>
@@ -527,7 +527,7 @@ export default function CourseDetailsPage() {
 
           {/* Right Column: Enrollment Card */}
           <div className="space-y-6">
-            <div className="bg-surface border border-border-subtle rounded-2xl p-6 shadow-sm sticky top-6">
+            <div className="bg-surface border border-border-subtle rounded-2xl p-6 shadow-sm lg:sticky lg:top-6">
               <div className="h-44 rounded-xl overflow-hidden bg-surface-subtle mb-5 border border-border-subtle">
                 {course.thumbnail ? (
                   <img
