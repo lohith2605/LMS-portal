@@ -17,6 +17,7 @@ import {
   FileCheck,
   AlertTriangle,
   UploadCloud,
+  Download,
   Mail,
   MailCheck,
   RefreshCw,
@@ -255,6 +256,9 @@ export default function StudentDashboard() {
   const [certificates, setCertificates] = useState([]);
   const [certificatesLoading, setCertificatesLoading] = useState(false);
   const [certError, setCertError] = useState(null);
+  const [downloadingCertId, setDownloadingCertId] = useState(null);
+  const [retryingEmailCertId, setRetryingEmailCertId] = useState(null);
+  const [certActionFeedback, setCertActionFeedback] = useState(null);
 
   // Phase 6: Student Assignments State
   const [assignments, setAssignments] = useState([]);
@@ -461,6 +465,42 @@ export default function StudentDashboard() {
       setPwFeedback({ type: 'error', text: err.normalizedMessage || 'Failed to change password.' });
     } finally {
       setPwLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async (certificateId) => {
+    try {
+      setDownloadingCertId(certificateId);
+      setCertActionFeedback(null);
+      await certificateService.downloadCertificate(certificateId);
+      setCertActionFeedback({ type: 'success', text: 'Certificate PDF downloaded successfully.' });
+    } catch (err) {
+      setCertActionFeedback({
+        type: 'error',
+        text: err.normalizedMessage || 'Failed to download certificate PDF. Please try again.',
+      });
+    } finally {
+      setDownloadingCertId(null);
+    }
+  };
+
+  const handleRetryEmail = async (certificateId) => {
+    try {
+      setRetryingEmailCertId(certificateId);
+      setCertActionFeedback(null);
+      const res = await certificateService.retryCertificateEmail(certificateId);
+      setCertActionFeedback({
+        type: 'success',
+        text: res?.message || 'Certificate email resent successfully.',
+      });
+      fetchCertificates();
+    } catch (err) {
+      setCertActionFeedback({
+        type: 'error',
+        text: err.normalizedMessage || 'Failed to resend certificate email.',
+      });
+    } finally {
+      setRetryingEmailCertId(null);
     }
   };
 
@@ -1037,6 +1077,25 @@ export default function StudentDashboard() {
                 </button>
               </div>
 
+              {certActionFeedback && (
+                <div
+                  className={`p-4 rounded-2xl text-xs flex items-center justify-between ${
+                    certActionFeedback.type === 'success'
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border border-rose-200 text-rose-800'
+                  }`}
+                >
+                  <span>{certActionFeedback.text}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCertActionFeedback(null)}
+                    className="p-1 hover:opacity-70 transition cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
               {certError && (
                 <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
                   {certError}
@@ -1108,16 +1167,66 @@ export default function StudentDashboard() {
                               )}
                             </span>
                           </div>
+                          <div className="flex justify-between items-center pt-1.5 border-t border-border-subtle/60">
+                            <span className="text-secondary">Email Delivery:</span>
+                            {cert.emailStatus === 'sent' ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <MailCheck size={11} /> Sent
+                              </span>
+                            ) : cert.emailStatus === 'failed' ? (
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200"
+                                  title={cert.emailError || 'Failed to deliver email'}
+                                >
+                                  <Mail size={11} /> Failed
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRetryEmail(cert.certificateId)}
+                                  disabled={retryingEmailCertId === cert.certificateId}
+                                  className="text-[11px] font-semibold text-cobalt hover:underline inline-flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                                  title="Retry sending certificate email"
+                                >
+                                  <RefreshCw
+                                    size={10}
+                                    className={retryingEmailCertId === cert.certificateId ? 'animate-spin' : ''}
+                                  />
+                                  <span>Retry</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                <Mail size={11} /> Queued
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
+                      <div className="pt-4 border-t border-border-subtle flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPdf(cert.certificateId)}
+                          disabled={downloadingCertId === cert.certificateId}
+                          className="flex-1 min-w-[125px] py-2 px-3 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                        >
+                          {downloadingCertId === cert.certificateId ? (
+                            <RefreshCw size={13} className="animate-spin" />
+                          ) : (
+                            <Download size={13} />
+                          )}
+                          <span>
+                            {downloadingCertId === cert.certificateId ? 'Downloading...' : 'Download PDF'}
+                          </span>
+                        </button>
+
                         <Link
                           to={`/verify/${cert.certificateId}`}
-                          className="flex-1 py-2 px-3 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition flex items-center justify-center gap-1.5"
+                          className="py-2 px-3 rounded-xl bg-surface-subtle border border-border-subtle text-secondary hover:text-primary text-xs font-semibold transition flex items-center justify-center gap-1.5"
                         >
                           <ExternalLink size={13} />
-                          <span>View & Verify</span>
+                          <span>Verify</span>
                         </Link>
 
                         <button

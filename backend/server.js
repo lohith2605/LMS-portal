@@ -134,6 +134,10 @@ const startServer = async () => {
     initSocket(httpServer);
     if (NODE_ENV !== 'test') {
       startDeadlineReminderScheduler();
+      setTimeout(() => {
+        const { recoverPendingCertificateEmails } = require('./controllers/completionController');
+        recoverPendingCertificateEmails().catch(() => {});
+      }, 15000);
     }
     serverInstance = httpServer.listen(PORT, () => {
       // Extract safe database host info without credentials

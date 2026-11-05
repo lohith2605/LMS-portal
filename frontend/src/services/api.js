@@ -629,6 +629,36 @@ export const certificateService = {
     const res = await api.get(`/certificates/${certificateId}`);
     return res.data;
   },
+  downloadCertificate: async (certificateId) => {
+    const res = await api.get(`/certificates/${certificateId}/download`, {
+      responseType: 'blob',
+    });
+
+    let filename = `LearnSpace-Certificate-${certificateId}.pdf`;
+    const disposition = res.headers?.['content-disposition'];
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename=["']?([^"']+)["']?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+
+    return { success: true, filename };
+  },
+  retryCertificateEmail: async (certificateId) => {
+    const res = await api.post(`/certificates/${certificateId}/retry-email`);
+    return res.data;
+  },
 };
 
 export const assignmentService = {

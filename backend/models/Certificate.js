@@ -84,6 +84,35 @@ const certificateSchema = new mongoose.Schema(
       default: 'valid',
       index: true,
     },
+    // Email Delivery & Idempotency Tracking Fields
+    emailSent: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+    emailStatus: {
+      type: String,
+      enum: ['pending', 'sent', 'failed'],
+      default: 'pending',
+      index: true,
+    },
+    emailError: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    emailAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lastEmailAttemptAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

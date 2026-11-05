@@ -744,6 +744,158 @@ const sendInstructorEnrollmentNotificationEmail = async ({
   }
 };
 
+/**
+ * Send official course completion certificate email with PDF attachment
+ * @param {Object} options
+ * @param {string} options.to - Student email address
+ * @param {string} options.studentName - Student full name
+ * @param {string} options.courseTitle - Course title
+ * @param {string} options.certificateId - Certificate ID (e.g. LS-2026-XXXX-XXXX)
+ * @param {string|Date} [options.completionDate] - Completion date
+ * @param {Buffer} [options.pdfBuffer] - Generated PDF binary buffer
+ * @param {string} [options.verifyUrl] - Public verification page URL
+ * @param {string} [options.downloadUrl] - Direct PDF download API URL
+ * @returns {Promise<boolean>}
+ */
+const sendCertificateEmail = async ({
+  to,
+  studentName,
+  courseTitle,
+  certificateId,
+  completionDate = new Date(),
+  pdfBuffer,
+  verifyUrl,
+  downloadUrl,
+}) => {
+  const mailTransporter = getTransporter();
+  const safeName = studentName || 'Learner';
+  const safeCourse = courseTitle || 'Course of Study';
+  const safeId = certificateId || 'LS-CREDENTIAL';
+  const clientBase = getClientBaseUrl();
+  const directVerifyUrl = verifyUrl || `${clientBase}/verify/${safeId}`;
+  const directDownloadUrl = downloadUrl || `${clientBase}/api/certificates/${safeId}/download`;
+
+  const formattedDate = new Date(completionDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const subject = 'Congratulations! You have completed your LearnSpace course.';
+
+  const text = `Hello ${safeName},
+
+Congratulations on completing your course, "${safeCourse}"!
+
+Your verified Certificate of Completion has been officially issued.
+
+Credential Details:
+- Course: ${safeCourse}
+- Completion Date: ${formattedDate}
+- Certificate ID: ${safeId}
+- Public Verification Link: ${directVerifyUrl}
+- Direct Download Link: ${directDownloadUrl}
+
+Your official certificate PDF is attached to this email. You can also view and download it at any time from your LearnSpace Student Dashboard.
+
+Best regards,
+The LearnSpace Academic Team`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; color: #0F172A;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+        <span style="font-size: 20px; font-weight: 800; color: #1E3A8A; letter-spacing: -0.5px;">LearnSpace</span>
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: #EFF6FF; color: #1D4ED8; padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.5px;">Official Credential</span>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0 28px 0;">
+        <div style="display: inline-block; background-color: #FEF3C7; color: #D97706; padding: 6px 16px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+          ★ Graduation Achievement
+        </div>
+        <h1 style="font-size: 22px; font-weight: 800; color: #0F172A; margin: 0 0 8px 0; line-height: 1.3;">
+          Congratulations, ${safeName}!
+        </h1>
+        <p style="font-size: 14px; color: #475569; margin: 0; line-height: 1.5;">
+          You have successfully completed <strong>${safeCourse}</strong>.
+        </p>
+      </div>
+
+      <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748B; margin: 0 0 12px 0; letter-spacing: 0.5px;">
+          Credential Summary
+        </h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Course</td>
+            <td style="padding: 6px 0; font-weight: 600; color: #0F172A; text-align: right;">${safeCourse}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Issued To</td>
+            <td style="padding: 6px 0; font-weight: 600; color: #0F172A; text-align: right;">${safeName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Completion Date</td>
+            <td style="padding: 6px 0; font-weight: 600; color: #0F172A; text-align: right;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B;">Certificate ID</td>
+            <td style="padding: 6px 0; font-family: monospace; font-weight: 700; color: #1D4ED8; text-align: right;">${safeId}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
+        Your verified PDF certificate is attached to this email. You can also share your public verification link with employers or download your official credential from your student dashboard at any time.
+      </p>
+
+      <div style="text-align: center; margin-bottom: 28px;">
+        <a href="${directVerifyUrl}" style="display: inline-block; background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 10px; margin: 0 6px 8px 6px;">
+          View & Verify Credential
+        </a>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 24px 0 16px 0;" />
+      <p style="font-size: 11px; color: #94A3B8; text-align: center; margin: 0; line-height: 1.5;">
+        LearnSpace LMS Platform • Academic Credential Registry<br/>
+        Credential ID: ${safeId}
+      </p>
+    </div>
+  `;
+
+  const attachments = [];
+  if (pdfBuffer && Buffer.isBuffer(pdfBuffer)) {
+    attachments.push({
+      filename: `LearnSpace-Certificate-${safeId}.pdf`,
+      content: pdfBuffer,
+      contentType: 'application/pdf',
+    });
+  }
+
+  if (!mailTransporter) {
+    logger.info(
+      `[Email Service Simulation] Certificate email prepared for ${to} (Cert: ${safeId}, Attachments: ${attachments.length}). Operating in mock/test mode.`
+    );
+    return true;
+  }
+
+  try {
+    const fromAddress = process.env.EMAIL_FROM || `"LearnSpace Academy" <${process.env.EMAIL_USER}>`;
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+      attachments,
+    });
+    logger.success(`Certificate email successfully delivered to ${to} for credential ${safeId}`);
+    return true;
+  } catch (error) {
+    logger.warn(`Failed to dispatch certificate email to ${to}: ${error.message}`);
+    throw error;
+  }
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendVerificationEmail,
@@ -753,5 +905,6 @@ module.exports = {
   sendMfaEmailOtp,
   sendPaymentReceiptEmail,
   sendInstructorEnrollmentNotificationEmail,
+  sendCertificateEmail,
   setTransporter,
 };

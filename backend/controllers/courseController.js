@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const reviewService = require('../services/reviewService');
 const streakService = require('../services/streakService');
+const completionController = require('./completionController');
 const { logger } = require('../utils/logger');
 
 /**
@@ -434,6 +435,13 @@ const toggleLessonComplete = async (req, res) => {
         })
         .catch((streakErr) => {
           logger.warn(`Streak record on lesson complete warning: ${streakErr.message}`);
+        });
+
+      // Automatic Course Completion & Certificate Trigger
+      completionController
+        .issueCertificateForStudent(userId, courseId)
+        .catch((certErr) => {
+          logger.warn(`Automatic certificate check on lesson completion warning: ${certErr.message}`);
         });
     }
 

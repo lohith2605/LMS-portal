@@ -5,14 +5,13 @@ import {
   ShieldCheck,
   AlertTriangle,
   Award,
-  Calendar,
-  User,
-  BookOpen,
   ArrowLeft,
   Printer,
   Copy,
   Check,
   LayoutDashboard,
+  Download,
+  RefreshCw,
 } from 'lucide-react';
 import { certificateService } from '../services/api';
 import ThemeToggle from '../components/ThemeToggle';
@@ -26,6 +25,23 @@ export default function CertificateVerifyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
+
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      setDownloadError(null);
+      await certificateService.downloadCertificate(certificateId);
+    } catch (err) {
+      setDownloadError(
+        err.normalizedMessage ||
+          'Failed to download official certificate PDF. Ensure you are signed in as the authorized owner or admin.'
+      );
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const handleBack = () => {
     if (typeof window !== 'undefined' && window.history.state && window.history.state.idx > 0) {
@@ -199,11 +215,27 @@ export default function CertificateVerifyPage() {
             <button
               type="button"
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-cobalt text-white text-xs font-medium rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed transition flex items-center gap-1.5 shadow-sm shadow-cobalt/20 cursor-pointer"
+              className="px-3 py-1.5 bg-surface border border-border-subtle text-secondary hover:text-primary text-xs font-medium rounded-xl hover:bg-surface-subtle transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <Printer size={13} />
-              <span>Print Credential</span>
+              <span>Print</span>
             </button>
+
+            {user && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="px-3 py-1.5 bg-cobalt text-white text-xs font-medium rounded-xl hover:bg-cobalt-hover active:bg-cobalt-pressed transition flex items-center gap-1.5 shadow-sm shadow-cobalt/20 cursor-pointer disabled:opacity-60"
+              >
+                {downloading ? (
+                  <RefreshCw size={13} className="animate-spin" />
+                ) : (
+                  <Download size={13} />
+                )}
+                <span>{downloading ? 'Downloading...' : 'Download PDF'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -303,6 +335,39 @@ export default function CertificateVerifyPage() {
             </div>
           </div>
         </div>
+
+        {/* Authenticated Owner PDF Download Banner */}
+        {user && (
+          <div className="bg-surface border border-border-subtle rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-cobalt/10 text-cobalt flex items-center justify-center shrink-0">
+                <ShieldCheck size={18} />
+              </div>
+              <span className="text-secondary leading-normal">
+                Signed in as <strong className="text-primary font-semibold">{user.name || user.email}</strong>. Download your official, cryptographically verifiable PDF certificate with high-resolution vector layout.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={downloading}
+              className="w-full sm:w-auto px-4 py-2 bg-cobalt text-white rounded-xl font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition flex items-center justify-center gap-2 cursor-pointer shrink-0 disabled:opacity-60"
+            >
+              {downloading ? (
+                <RefreshCw size={14} className="animate-spin" />
+              ) : (
+                <Download size={14} />
+              )}
+              <span>{downloading ? 'Downloading...' : 'Download Official PDF'}</span>
+            </button>
+          </div>
+        )}
+
+        {downloadError && (
+          <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs text-center">
+            {downloadError}
+          </div>
+        )}
 
         {/* Public Registry Note */}
         <div className="text-center text-[11px] text-secondary space-y-1">

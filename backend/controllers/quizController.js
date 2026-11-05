@@ -4,6 +4,7 @@ const QuizAttempt = require('../models/QuizAttempt');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const notificationService = require('../services/notificationService');
+const completionController = require('./completionController');
 const { logger } = require('../utils/logger');
 
 /**
@@ -989,6 +990,16 @@ const submitQuizAttempt = async (req, res) => {
         explanation: q.explanation || '',
       };
     });
+
+    if (passed) {
+      // Automatic Course Completion & Certificate Trigger
+      const targetCourseId = attempt.quizSnapshot?.course || courseIdOrSlug;
+      completionController
+        .issueCertificateForStudent(req.user.id, targetCourseId)
+        .catch((certErr) => {
+          logger.warn(`Automatic certificate check on quiz pass warning: ${certErr.message}`);
+        });
+    }
 
     return res.status(200).json({
       message: passed

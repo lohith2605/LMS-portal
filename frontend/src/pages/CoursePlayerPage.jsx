@@ -24,6 +24,8 @@ import {
   Eye,
   Loader2,
   Megaphone,
+  Download,
+  RefreshCw,
 } from 'lucide-react';
 import {
   courseService,
@@ -80,6 +82,8 @@ export default function CoursePlayerPage() {
   const [completionError, setCompletionError] = useState(null);
   const [claimingCert, setClaimingCert] = useState(false);
   const [certFeedback, setCertFeedback] = useState(null);
+  const [downloadingCert, setDownloadingCert] = useState(false);
+  const [downloadCertError, setDownloadCertError] = useState(null);
 
   // Phase 6: Course Assignments State
   const [courseAssignments, setCourseAssignments] = useState([]);
@@ -694,6 +698,21 @@ export default function CoursePlayerPage() {
       });
     } finally {
       setClaimingCert(false);
+    }
+  };
+
+  const handleDownloadCertPdf = async (certId) => {
+    if (!certId) return;
+    try {
+      setDownloadingCert(true);
+      setDownloadCertError(null);
+      await certificateService.downloadCertificate(certId);
+    } catch (err) {
+      setDownloadCertError(
+        err.normalizedMessage || 'Failed to download certificate PDF. Please try again.'
+      );
+    } finally {
+      setDownloadingCert(false);
     }
   };
 
@@ -1997,46 +2016,96 @@ export default function CoursePlayerPage() {
 
                     {/* Certificate Claim Action or Preview Card */}
                     {isCertIssued && certificateObj ? (
-                      <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-white to-surface-subtle border-2 border-cobalt/30 shadow-sm space-y-6">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-border-subtle">
+                      <div className="space-y-4">
+                        <div className="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-cobalt-soft text-cobalt flex items-center justify-center">
-                              <Award size={24} />
+                            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                              <CheckCircle2 size={22} />
                             </div>
                             <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-cobalt">
-                                Official Credential
-                              </span>
-                              <h3 className="text-base font-bold text-primary">
-                                {certificateObj.courseSnapshot?.title ||
-                                  certificateObj.courseTitleSnapshot ||
-                                  course?.title}
-                              </h3>
-                              <span className="text-xs text-secondary font-mono">
-                                ID: {certificateObj.certificateId}
-                              </span>
+                              <h4 className="text-sm font-bold text-emerald-950">
+                                Congratulations! Course Completed!
+                              </h4>
+                              <p className="text-xs text-emerald-800/90 mt-0.5">
+                                Your tamper-evident Certificate of Completion is active and ready for download.
+                              </p>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <Link
-                              to={`/verify/${certificateObj.certificateId}`}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition"
-                            >
-                              <ExternalLink size={13} />
-                              <span>Verify Page</span>
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={() => window.print()}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-border-subtle text-primary text-xs font-semibold hover:bg-surface-subtle transition cursor-pointer"
-                            >
-                              <Printer size={13} />
-                              <span>Print</span>
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadCertPdf(certificateObj.certificateId)}
+                            disabled={downloadingCert}
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-60"
+                          >
+                            {downloadingCert ? (
+                              <RefreshCw size={13} className="animate-spin" />
+                            ) : (
+                              <Download size={13} />
+                            )}
+                            <span>{downloadingCert ? 'Downloading...' : 'Download PDF'}</span>
+                          </button>
                         </div>
+
+                        {downloadCertError && (
+                          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs">
+                            {downloadCertError}
+                          </div>
+                        )}
+
+                        <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-white to-surface-subtle border-2 border-cobalt/30 shadow-sm space-y-6">
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-border-subtle">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-2xl bg-cobalt-soft text-cobalt flex items-center justify-center">
+                                <Award size={24} />
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-cobalt">
+                                  Official Credential
+                                </span>
+                                <h3 className="text-base font-bold text-primary">
+                                  {certificateObj.courseSnapshot?.title ||
+                                    certificateObj.courseTitleSnapshot ||
+                                    course?.title}
+                                </h3>
+                                <span className="text-xs text-secondary font-mono">
+                                  ID: {certificateObj.certificateId}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadCertPdf(certificateObj.certificateId)}
+                                disabled={downloadingCert}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cobalt text-white text-xs font-semibold hover:bg-cobalt-hover active:bg-cobalt-pressed shadow-sm shadow-cobalt/20 transition cursor-pointer disabled:opacity-60"
+                              >
+                                {downloadingCert ? (
+                                  <RefreshCw size={13} className="animate-spin" />
+                                ) : (
+                                  <Download size={13} />
+                                )}
+                                <span>{downloadingCert ? 'Downloading...' : 'Download PDF'}</span>
+                              </button>
+
+                              <Link
+                                to={`/verify/${certificateObj.certificateId}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-border-subtle text-primary text-xs font-semibold hover:bg-surface-subtle transition"
+                              >
+                                <ExternalLink size={13} />
+                                <span>Verify</span>
+                              </Link>
+
+                              <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-border-subtle text-secondary hover:text-primary text-xs font-semibold hover:bg-surface-subtle transition cursor-pointer"
+                              >
+                                <Printer size={13} />
+                                <span>Print</span>
+                              </button>
+                            </div>
+                          </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs text-secondary">
                           <div>
@@ -2076,6 +2145,7 @@ export default function CoursePlayerPage() {
                           </div>
                         </div>
                       </div>
+                    </div>
                     ) : isEligibleToClaim ? (
                       <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
