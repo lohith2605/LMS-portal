@@ -6,7 +6,7 @@ import campusHeroBg from '../assets/Bright Collaborative University Library Comm
 export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWorks }) {
   return (
     <section
-      className="relative isolate overflow-hidden flex flex-col justify-start pt-14 sm:pt-18 md:pt-20 lg:pt-24 pb-44 sm:pb-52 md:pb-60 lg:pb-72 min-h-[600px] sm:min-h-[660px] md:min-h-[720px] lg:min-h-[760px]"
+      className="relative isolate overflow-hidden flex flex-col justify-start pt-14 sm:pt-18 md:pt-20 lg:pt-20 pb-36 sm:pb-44 md:pb-52 lg:pb-64 min-h-[580px] sm:min-h-[640px] md:min-h-[700px] lg:min-h-[720px] lg:aspect-[1672/941] lg:max-h-[960px]"
       aria-label="Hero Introduction"
     >
       {/* ========================================================= */}
@@ -24,17 +24,17 @@ export default function HeroSection({ onExploreCourses, onHowItWorks: _onHowItWo
             // Browser URL fallback if spaces in dev asset URL are rejected by browser
             e.currentTarget.src = '/hero-campus.png';
           }}
-          className="w-full h-full object-cover object-[28%_bottom] sm:object-[40%_bottom] md:object-[center_bottom] lg:object-[center_82%] select-none dark:brightness-[0.6] dark:contrast-[1.1] dark:saturate-[0.95]"
+          className="w-full h-full object-cover object-[28%_bottom] sm:object-[40%_bottom] md:object-bottom lg:object-bottom select-none dark:brightness-[0.6] dark:contrast-[1.1] dark:saturate-[0.95]"
         />
 
         {/* Subtle localized upper wash: ensures headline contrast in sky without any box or card */}
         <div
-          className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-white/35 via-white/15 to-transparent dark:from-black/60 dark:via-black/30 dark:to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-[55%] bg-gradient-to-b from-white/35 via-white/15 to-transparent dark:from-black/60 dark:via-black/30 dark:to-transparent pointer-events-none"
           aria-hidden="true"
         />
 
         {/* Ultra-soft micro-feathering at the very bottom boundary so students and tables remain crisp */}
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-page to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-page to-transparent pointer-events-none" />
       </div>
 
       {/* ========================================================= */}
